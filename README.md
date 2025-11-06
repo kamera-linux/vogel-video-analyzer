@@ -30,6 +30,24 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 
 ### Installation
 
+#### Recommended: Using Virtual Environment
+
+```bash
+# Install venv if needed (Debian/Ubuntu)
+sudo apt install python3-venv
+
+# Create virtual environment
+python3 -m venv ~/venv-vogel
+
+# Activate it
+source ~/venv-vogel/bin/activate  # On Windows: ~/venv-vogel\Scripts\activate
+
+# Install package
+pip install vogel-video-analyzer
+```
+
+#### Direct Installation
+
 ```bash
 pip install vogel-video-analyzer
 ```
