@@ -1,9 +1,11 @@
 # 🐦 Vogel Video Analyzer
 
-[![PyPI version](https://badge.fury.io/py/vogel-video-analyzer.svg)](https://badge.fury.io/py/vogel-video-analyzer)
-[![Python Versions](https://img.shields.io/pypi/pyversions/vogel-video-analyzer.svg)](https://pypi.org/project/vogel-video-analyzer/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Downloads](https://pepy.tech/badge/vogel-video-analyzer)](https://pepy.tech/project/vogel-video-analyzer)
+<p align="left">
+  <a href="https://pypi.org/project/vogel-video-analyzer/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/vogel-video-analyzer.svg"></a>
+  <a href="https://pypi.org/project/vogel-video-analyzer/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/vogel-video-analyzer.svg"></a>
+  <a href="https://opensource.org/licenses/MIT"><img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg"></a>
+  <a href="https://pepy.tech/project/vogel-video-analyzer"><img alt="Downloads" src="https://pepy.tech/badge/vogel-video-analyzer"></a>
+</p>
 
 **YOLOv8-based video analysis tool for automated bird content detection and quantification.**
 
