@@ -244,13 +244,15 @@ JSON reports include:
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions are welcome! We appreciate bug reports, feature suggestions, documentation improvements, and code contributions.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
+- How to set up your development environment
+- Our code style and guidelines
+- The pull request process
+- How to report bugs and suggest features
+
+For security vulnerabilities, please see our [Security Policy](SECURITY.md).
 
 ---
 
@@ -272,7 +274,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **Issues:** [GitHub Issues](https://github.com/kamera-linux/vogel-video-analyzer/issues)
 - **Discussions:** [GitHub Discussions](https://github.com/kamera-linux/vogel-video-analyzer/discussions)
-- **Email:** info@vogel-kamera-linux.org
 
 ---
 

@@ -1,38 +1,56 @@
 ---
-name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
+name: Bug Report
+about: Report a bug or unexpected behavior in vogel-video-analyzer
+title: '[BUG] '
+labels: 'bug'
 assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+## 🐛 Bug Description
+<!-- A clear and concise description of what the bug is -->
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+## 📝 Steps to Reproduce
+<!-- Steps to reproduce the behavior -->
+1. 
+2. 
+3. 
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## ✅ Expected Behavior
+<!-- What you expected to happen -->
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+## ❌ Actual Behavior
+<!-- What actually happened -->
 
-**Additional context**
-Add any other context about the problem here.
+
+## 📹 Sample Video Information
+<!-- If applicable, provide information about the video that caused the issue -->
+- **Format:** (e.g., MP4, AVI)
+- **Resolution:** (e.g., 1920x1080)
+- **Duration:** (e.g., 5 minutes)
+- **Codec:** (if known)
+
+
+## 💻 Environment
+<!-- Please complete the following information -->
+- **OS:** [e.g., Ubuntu 22.04, Windows 11, macOS 14]
+- **Python Version:** [e.g., 3.11.5]
+- **vogel-video-analyzer Version:** [e.g., 0.1.0]
+- **Installation Method:** [e.g., pip, pip install from git]
+
+## 📋 Error Output
+<!-- If applicable, paste the full error message or traceback -->
+```
+Paste error output here
+```
+
+## 🔍 Additional Context
+<!-- Add any other context, screenshots, or logs about the problem here -->
+
+
+## ✔️ Checklist
+- [ ] I have searched existing issues to ensure this is not a duplicate
+- [ ] I have included all relevant information above
+- [ ] I can reproduce this issue consistently
