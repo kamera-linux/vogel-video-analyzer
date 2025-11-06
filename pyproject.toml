@@ -10,7 +10,7 @@ readme = "README.md"
 authors = [
     {name = "Vogel-Kamera-Linux Team", email = "info@vogel-kamera-linux.org"}
 ]
-license = {text = "MIT"}
+license = "MIT"
 keywords = [
     "video", 
     "analysis", 
@@ -26,7 +26,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
