@@ -1,0 +1,93 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vogel-video-analyzer"
+version = "0.1.0"
+description = "YOLOv8-based video analysis tool for bird content detection"
+readme = "README.md"
+authors = [
+    {name = "Vogel-Kamera-Linux Team", email = "info@vogel-kamera-linux.org"}
+]
+license = {text = "MIT"}
+keywords = [
+    "video", 
+    "analysis", 
+    "bird", 
+    "detection", 
+    "yolov8", 
+    "opencv",
+    "computer-vision",
+    "wildlife",
+    "ornithology"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Image Recognition",
+]
+requires-python = ">=3.8"
+dependencies = [
+    "opencv-python>=4.8.0",
+    "ultralytics>=8.0.0",
+    "numpy>=1.24.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "flake8>=6.0",
+    "mypy>=1.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/kamera-linux/vogel-video-analyzer"
+Documentation = "https://github.com/kamera-linux/vogel-video-analyzer#readme"
+Repository = "https://github.com/kamera-linux/vogel-video-analyzer"
+Issues = "https://github.com/kamera-linux/vogel-video-analyzer/issues"
+"Parent Project" = "https://github.com/kamera-linux/vogel-kamera-linux"
+
+[project.scripts]
+vogel-analyze = "vogel_video_analyzer.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["vogel_video_analyzer*"]
+
+[tool.setuptools.package-data]
+vogel_video_analyzer = ["py.typed"]
+
+[tool.black]
+line-length = 100
+target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --cov=vogel_video_analyzer --cov-report=term-missing"
+
+[tool.mypy]
+python_version = "3.8"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false

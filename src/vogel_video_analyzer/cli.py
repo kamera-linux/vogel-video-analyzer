@@ -1,0 +1,200 @@
+"""
+Command-line interface for vogel-video-analyzer
+"""
+
+import argparse
+import json
+import sys
+import shutil
+from pathlib import Path
+from datetime import datetime, timedelta
+
+from . import __version__
+from .analyzer import VideoAnalyzer
+
+
+def main():
+    """Main CLI entry point"""
+    parser = argparse.ArgumentParser(
+        description='YOLOv8-based video analysis for bird content detection',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Analyze single video
+  vogel-analyze video.mp4
+  
+  # Multiple videos
+  vogel-analyze video1.mp4 video2.mp4
+  
+  # All MP4s in directory
+  vogel-analyze ~/Videos/Birds/*/*.mp4
+  
+  # Custom threshold and model
+  vogel-analyze --threshold 0.3 --model yolov8n.pt video.mp4
+  
+  # Faster analysis (every 5th frame)
+  vogel-analyze --sample-rate 5 video.mp4
+  
+  # Save report as JSON
+  vogel-analyze --output report.json video.mp4
+  
+  # Auto-delete videos with 0% bird content
+  vogel-analyze --delete --sample-rate 5 *.mp4
+  
+  # Save output to log file
+  vogel-analyze --log *.mp4
+
+For more information: https://github.com/kamera-linux/vogel-video-analyzer
+        """
+    )
+    
+    parser.add_argument('videos', nargs='+', help='Video file(s) to analyze')
+    parser.add_argument('--model', default='yolov8n.pt', help='YOLO model (default: yolov8n.pt)')
+    parser.add_argument('--threshold', type=float, default=0.3, help='Confidence threshold (default: 0.3)')
+    parser.add_argument('--sample-rate', type=int, default=5, help='Analyze every Nth frame (default: 5)')
+    parser.add_argument('--output', '-o', help='Save report as JSON')
+    parser.add_argument('--delete', action='store_true', help='Auto-delete directories with 0%% bird content')
+    parser.add_argument('--log', action='store_true', help='Save console output to log file')
+    parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
+    
+    args = parser.parse_args()
+    
+    # Setup logging if requested
+    log_file = None
+    if args.log:
+        try:
+            now = datetime.now()
+            year = now.strftime('%Y')
+            week = now.strftime('%V')
+            timestamp = now.strftime('%Y%m%d_%H%M%S')
+            
+            log_dir = Path(f'/var/log/vogel-kamera-linux/{year}/KW{week}')
+            log_dir.mkdir(parents=True, exist_ok=True)
+            
+            log_file = log_dir / f'{timestamp}_analyze.log'
+            print(f"📝 Log file: {log_file}\n")
+        except PermissionError:
+            print("⚠️  WARNING: No write permissions for /var/log/vogel-kamera-linux/", file=sys.stderr)
+            print("   Run with sudo or change permissions:", file=sys.stderr)
+            print("   sudo mkdir -p /var/log/vogel-kamera-linux && sudo chown $USER /var/log/vogel-kamera-linux", file=sys.stderr)
+            return 1
+    
+    try:
+        # Initialize analyzer
+        analyzer = VideoAnalyzer(
+            model_path=args.model,
+            threshold=args.threshold
+        )
+        
+        # Analyze videos
+        all_stats = []
+        for video_path in args.videos:
+            try:
+                stats = analyzer.analyze_video(video_path, sample_rate=args.sample_rate)
+                analyzer.print_report(stats)
+                all_stats.append(stats)
+            except Exception as e:
+                print(f"❌ Error analyzing {video_path}: {e}", file=sys.stderr)
+                continue
+        
+        # Summary for multiple videos
+        if len(all_stats) > 1:
+            _print_summary(all_stats)
+        
+        # Auto-delete feature
+        if args.delete and all_stats:
+            _delete_empty_videos(all_stats)
+        
+        # JSON output
+        if args.output:
+            _save_json_output(all_stats, args.output)
+        
+        return 0
+        
+    except KeyboardInterrupt:
+        print("\n\n⚠️  Analysis interrupted")
+        return 1
+    except Exception as e:
+        print(f"\n❌ Error: {e}", file=sys.stderr)
+        return 1
+
+
+def _print_summary(all_stats):
+    """Print summary for multiple videos"""
+    total_videos = len(all_stats)
+    total_duration = sum(s['duration_seconds'] for s in all_stats)
+    avg_bird_percentage = sum(s['bird_percentage'] for s in all_stats) / total_videos
+    total_frames_analyzed = sum(s['frames_analyzed'] for s in all_stats)
+    total_frames_with_birds = sum(s['frames_with_birds'] for s in all_stats)
+    
+    print("\n" + "=" * 70)
+    print(f"📊 SUMMARY ({total_videos} Videos)")
+    print("=" * 70)
+    print(f"   Total Duration: {timedelta(seconds=int(total_duration))}")
+    print(f"   Total Frames Analyzed: {total_frames_analyzed}")
+    print(f"   Total Frames with Birds: {total_frames_with_birds}")
+    print(f"   Average Bird Content: {avg_bird_percentage:.1f}%")
+    
+    print(f"\n📋 Video Overview:")
+    print(f"   {'Nr.':<4} {'Directory':<70} {'Bird':<6} {'Bird%':<8} {'Frames':<12} {'Duration':<8}")
+    print(f"   {'-'*4} {'-'*70} {'-'*6} {'-'*8} {'-'*12} {'-'*8}")
+    
+    for i, stats in enumerate(all_stats, 1):
+        video_path = Path(stats['video_path'])
+        directory_name = video_path.parent.name
+        status = "✅" if stats['frames_with_birds'] > 0 else "❌"
+        bird_pct = f"{stats['bird_percentage']:.1f}%"
+        frames_info = f"{stats['frames_with_birds']}/{stats['frames_analyzed']}"
+        duration = f"{int(stats['duration_seconds'])}s"
+        
+        print(f"   {i:<4} {directory_name:<70} {status:<6} {bird_pct:<8} {frames_info:<12} {duration:<8}")
+    
+    print("=" * 70)
+
+
+def _delete_empty_videos(all_stats):
+    """Delete directories with 0% bird content"""
+    videos_to_delete = [s for s in all_stats if s['bird_percentage'] == 0.0]
+    
+    if videos_to_delete:
+        print("\n" + "=" * 70)
+        print(f"🗑️  DELETING DIRECTORIES WITH 0% BIRD CONTENT ({len(videos_to_delete)} videos)")
+        print("=" * 70)
+        
+        for stats in videos_to_delete:
+            video_path = Path(stats['video_path'])
+            directory = video_path.parent
+            
+            try:
+                print(f"   🗑️  Deleting: {directory.name}")
+                shutil.rmtree(directory)
+                print(f"      ✅ Successfully deleted")
+            except Exception as e:
+                print(f"      ❌ Error deleting: {e}")
+                
+        print(f"\n   Deleted directories: {len(videos_to_delete)}")
+        print(f"   Remaining videos: {len(all_stats) - len(videos_to_delete)}")
+        print("=" * 70)
+    else:
+        print("\n✅ No videos with 0% bird content found")
+
+
+def _save_json_output(all_stats, output_path):
+    """Save report as JSON"""
+    output_data = all_stats[0] if len(all_stats) == 1 else {
+        'videos': all_stats,
+        'summary': {
+            'total_videos': len(all_stats),
+            'total_duration': sum(s['duration_seconds'] for s in all_stats),
+            'average_bird_percentage': sum(s['bird_percentage'] for s in all_stats) / len(all_stats)
+        }
+    }
+    
+    output_path = Path(output_path)
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(output_data, f, indent=2, ensure_ascii=False)
+    print(f"\n💾 Report saved: {output_path}")
+
+
+if __name__ == '__main__':
+    sys.exit(main())
