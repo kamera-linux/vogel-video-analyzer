@@ -152,12 +152,25 @@ vogel-analyze --identify-species bird_video.mp4
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Hinweis:** Artenerkennung benötigt zusätzliche Abhängigkeiten:
+**⚠️ Experimentelle Funktion:** Vortrainierte Modelle können europäische Gartenvögel als exotische Arten fehlidentifizieren. Für präzise Identifizierung lokaler Vogelarten empfiehlt sich das Training eines eigenen Modells (siehe [Eigenes Modell trainieren](#-eigenes-modell-trainieren)).
+
+**Installation:**
 ```bash
 pip install vogel-video-analyzer[species]
 ```
 
 Beim ersten Ausführen der Artenerkennung wird das Modell (~100-300MB) automatisch heruntergeladen und lokal gecacht.
+
+#### Eigene Modelle verwenden
+
+Du kannst lokal trainierte Modelle für bessere Genauigkeit mit deinen spezifischen Vogelarten verwenden:
+
+```bash
+# Eigenes Modell verwenden
+vogel-analyze --identify-species --species-model ~/vogel-models/my-model/ video.mp4
+```
+
+Siehe Abschnitt [Eigenes Modell trainieren](#-eigenes-modell-trainieren) für Details zum Training.
 
 #### Erweiterte Optionen
 ```bash
@@ -361,6 +374,69 @@ JSON-Berichte enthalten:
   ]
 }
 ```
+
+---
+
+## 🎓 Eigenes Modell trainieren
+
+Vortrainierte Vogelarten-Klassifizierer sind auf globalen Datensätzen trainiert und identifizieren europäische Gartenvögel oft als exotische Arten. Für bessere Genauigkeit mit deinen spezifischen Vogelarten kannst du ein eigenes Modell trainieren.
+
+### Warum ein eigenes Modell trainieren?
+
+**Problem mit vortrainierten Modellen:**
+- Identifizieren häufige europäische Vögel (Kohlmeise, Blaumeise) als exotische asiatische Fasane
+- Niedrige Konfidenzwerte (oft <0.1)
+- Trainiert auf Datensätzen mit Fokus auf amerikanische und exotische Vögel
+
+**Vorteile eigener Modelle:**
+- Hohe Genauigkeit für DEINE spezifischen Vogelarten
+- Trainiert auf DEINE Kamera-Konfiguration und Lichtverhältnisse
+- Konfidenzwerte >0.9 für korrekt identifizierte Vögel
+
+### Schnellstart
+
+**1. Vogelbilder aus Videos extrahieren:**
+```bash
+python training/extract_birds.py ~/Videos/kohlmeise.mp4 \
+  -o ~/vogel-training-data/kohlmeise_video1/ \
+  --sample-rate 50
+```
+
+**2. Datensatz organisieren (80/20 Train/Val Split):**
+```bash
+cd ~/vogel-training-data
+python /pfad/zu/vogel-video-analyzer/training/organize_dataset.py
+```
+
+**3. Modell trainieren (benötigt ~3-4 Stunden auf Raspberry Pi 5):**
+```bash
+# Training-Abhängigkeiten installieren
+pip install torch torchvision datasets accelerate
+
+# Training starten
+python /pfad/zu/vogel-video-analyzer/training/train_custom_model.py
+```
+
+**4. Trainiertes Modell verwenden:**
+```bash
+vogel-analyze --identify-species \
+  --species-model ~/vogel-models/bird-classifier-*/final/ \
+  video.mp4
+```
+
+### Empfohlene Datensatz-Größe
+
+- **Minimum:** 30-50 Bilder pro Vogelart
+- **Optimal:** 100+ Bilder pro Vogelart
+- **Balance:** Ähnliche Anzahl Bilder für jede Art
+
+### Vollständige Dokumentation
+
+Siehe [`training/README.md`](training/README.md) für:
+- Detaillierter Training-Workflow
+- Script-Dokumentation
+- Fehlerbehebungs-Leitfaden
+- Tipps zur Verbesserung der Genauigkeit
 
 ---
 
