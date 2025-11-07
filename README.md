@@ -21,7 +21,7 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 - 🎯 **Segment Detection** - Identifies continuous time periods with bird presence
 - ⚡ **Performance Optimized** - Configurable sample rate for faster processing
 - 📄 **JSON Export** - Structured reports for archival and further analysis
-- 🗑️ **Auto-Delete** - Automatically removes videos without bird content
+- 🗑️ **Smart Auto-Delete** - Remove video files or folders without bird content
 - 📝 **Logging Support** - Structured logs for batch processing workflows
 - 🐍 **Library & CLI** - Use as standalone tool or integrate into your Python projects
 
@@ -65,6 +65,12 @@ vogel-analyze --sample-rate 5 video.mp4
 # Export to JSON
 vogel-analyze --output report.json video.mp4
 
+# Delete only video files with 0% bird content
+vogel-analyze --delete-file *.mp4
+
+# Delete entire folders with 0% bird content  
+vogel-analyze --delete-folder ~/Videos/*/*.mp4
+
 # Batch process directory
 vogel-analyze ~/Videos/Birds/**/*.mp4
 ```
@@ -104,8 +110,11 @@ vogel-analyze bird_video.mp4
 # Custom threshold and sample rate
 vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
 
-# Batch processing with auto-delete
-vogel-analyze --sample-rate 5 --delete ~/Videos/Birds/**/*.mp4
+# Delete only video files with 0% bird content
+vogel-analyze --delete-file --sample-rate 5 *.mp4
+
+# Delete entire folders with 0% bird content
+vogel-analyze --delete-folder --sample-rate 5 ~/Videos/*/*.mp4
 
 # Save JSON report and log
 vogel-analyze --output report.json --log video.mp4

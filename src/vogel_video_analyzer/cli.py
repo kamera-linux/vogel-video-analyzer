@@ -38,8 +38,11 @@ Examples:
   # Save report as JSON
   vogel-analyze --output report.json video.mp4
   
-  # Auto-delete videos with 0% bird content
-  vogel-analyze --delete --sample-rate 5 *.mp4
+  # Delete only video files with 0% bird content
+  vogel-analyze --delete-file --sample-rate 5 *.mp4
+  
+  # Delete entire folders with 0% bird content
+  vogel-analyze --delete-folder --sample-rate 5 ~/Videos/*/*.mp4
   
   # Save output to log file
   vogel-analyze --log *.mp4
@@ -53,7 +56,9 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--threshold', type=float, default=0.3, help='Confidence threshold (default: 0.3)')
     parser.add_argument('--sample-rate', type=int, default=5, help='Analyze every Nth frame (default: 5)')
     parser.add_argument('--output', '-o', help='Save report as JSON')
-    parser.add_argument('--delete', action='store_true', help='Auto-delete directories with 0%% bird content')
+    parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
+    parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
+    parser.add_argument('--delete', action='store_true', help='(Deprecated) Use --delete-file or --delete-folder instead')
     parser.add_argument('--log', action='store_true', help='Save console output to log file')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     
@@ -101,9 +106,16 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         if len(all_stats) > 1:
             _print_summary(all_stats)
         
-        # Auto-delete feature
-        if args.delete and all_stats:
-            _delete_empty_videos(all_stats)
+        # Auto-delete feature (with deprecation warning)
+        if args.delete:
+            print("\n⚠️  WARNING: --delete is deprecated. Use --delete-file or --delete-folder instead.", file=sys.stderr)
+            print("   Defaulting to --delete-folder behavior for backward compatibility.\n", file=sys.stderr)
+            args.delete_folder = True
+        
+        if args.delete_file and all_stats:
+            _delete_empty_video_files(all_stats)
+        elif args.delete_folder and all_stats:
+            _delete_empty_video_folders(all_stats)
         
         # JSON output
         if args.output:
@@ -153,12 +165,43 @@ def _print_summary(all_stats):
 
 
 def _delete_empty_videos(all_stats):
-    """Delete directories with 0% bird content"""
+    """Delete directories with 0% bird content (deprecated, kept for compatibility)"""
+    _delete_empty_video_folders(all_stats)
+
+
+def _delete_empty_video_files(all_stats):
+    """Delete video files with 0% bird content"""
     videos_to_delete = [s for s in all_stats if s['bird_percentage'] == 0.0]
     
     if videos_to_delete:
         print("\n" + "=" * 70)
-        print(f"🗑️  DELETING DIRECTORIES WITH 0% BIRD CONTENT ({len(videos_to_delete)} videos)")
+        print(f"🗑️  DELETING VIDEO FILES WITH 0% BIRD CONTENT ({len(videos_to_delete)} files)")
+        print("=" * 70)
+        
+        for stats in videos_to_delete:
+            video_path = Path(stats['video_path'])
+            
+            try:
+                print(f"   🗑️  Deleting: {video_path.name}")
+                video_path.unlink()
+                print(f"      ✅ Successfully deleted")
+            except Exception as e:
+                print(f"      ❌ Error deleting: {e}")
+                
+        print(f"\n   Deleted files: {len(videos_to_delete)}")
+        print(f"   Remaining videos: {len(all_stats) - len(videos_to_delete)}")
+        print("=" * 70)
+    else:
+        print("\n✅ No video files with 0% bird content found")
+
+
+def _delete_empty_video_folders(all_stats):
+    """Delete parent folders with 0% bird content"""
+    videos_to_delete = [s for s in all_stats if s['bird_percentage'] == 0.0]
+    
+    if videos_to_delete:
+        print("\n" + "=" * 70)
+        print(f"🗑️  DELETING FOLDERS WITH 0% BIRD CONTENT ({len(videos_to_delete)} videos)")
         print("=" * 70)
         
         for stats in videos_to_delete:
@@ -166,17 +209,17 @@ def _delete_empty_videos(all_stats):
             directory = video_path.parent
             
             try:
-                print(f"   🗑️  Deleting: {directory.name}")
+                print(f"   🗑️  Deleting folder: {directory.name}")
                 shutil.rmtree(directory)
                 print(f"      ✅ Successfully deleted")
             except Exception as e:
                 print(f"      ❌ Error deleting: {e}")
                 
-        print(f"\n   Deleted directories: {len(videos_to_delete)}")
+        print(f"\n   Deleted folders: {len(videos_to_delete)}")
         print(f"   Remaining videos: {len(all_stats) - len(videos_to_delete)}")
         print("=" * 70)
     else:
-        print("\n✅ No videos with 0% bird content found")
+        print("\n✅ No folders with 0% bird content found")
 
 
 def _save_json_output(all_stats, output_path):
