@@ -156,12 +156,14 @@ pip install --upgrade vogel-video-analyzer
 
 Your existing code will continue to work exactly as before.
 
-### New Users Wanting Species Identification
+### Existing Users - Upgrading to Add Species Support
 ```bash
-pip install vogel-video-analyzer[species]
+pip install --upgrade vogel-video-analyzer[species]
 ```
 
-### Upgrading to Add Species Support
+**Important:** You must include `[species]` when upgrading if you want species identification support. The optional dependencies are not installed automatically.
+
+### New Users Wanting Species Identification
 ```bash
 pip install vogel-video-analyzer[species]
 ```
