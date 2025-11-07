@@ -14,6 +14,55 @@ try:
 except ImportError:
     SPECIES_AVAILABLE = False
 
+from .i18n import t
+
+
+# Translation dictionary for common bird species (English -> German)
+BIRD_NAME_TRANSLATIONS = {
+    'de': {
+        # European garden birds
+        'PARUS MAJOR': 'Kohlmeise',
+        'COMMON STARLING': 'Star',
+        'EUROPEAN GOLDFINCH': 'Stieglitz',
+        'EUROPEAN TURTLE DOVE': 'Turteltaube',
+        'EURASIAN BULLFINCH': 'Gimpel',
+        'EURASIAN GOLDEN ORIOLE': 'Pirol',
+        'EURASIAN MAGPIE': 'Elster',
+        'HOUSE SPARROW': 'Haussperling',
+        'COMMON HOUSE MARTIN': 'Mehlschwalbe',
+        'BARN SWALLOW': 'Rauchschwalbe',
+        'BARN OWL': 'Schleiereule',
+        'CROW': 'Krähe',
+        'COMMON FIRECREST': 'Sommergoldhähnchen',
+        'BEARDED REEDLING': 'Bartmeise',
+        
+        # American birds (often misidentified)
+        'AMERICAN ROBIN': 'Amerikanische Wanderdrossel',
+        'AMERICAN GOLDFINCH': 'Goldzeisig',
+        'BLACK-CAPPED CHICKADEE': 'Schwarzkopfmeise',
+        'NORTHERN CARDINAL': 'Roter Kardinal',
+        'DOWNY WOODPECKER': 'Dunenspecht',
+        'INDIGO BUNTING': 'Indigofink',
+        
+        # Asian/exotic pheasants (common misidentifications)
+        'CABOTS TRAGOPAN': 'Cabot-Tragopan',
+        'BLOOD PHEASANT': 'Blutfasan',
+        'SATYR TRAGOPAN': 'Satyr-Tragopan',
+        
+        # Exotic/tropical (common misidentifications)
+        'AZURE BREASTED PITTA': 'Azurbrustpitta',
+        'BULWERS PHEASANT': 'Bulwerfasan',
+        'BORNEAN PHEASANT': 'Borneo-Fasan',
+        'SAMATRAN THRUSH': 'Sumatra-Drossel',
+        'FAIRY PENGUIN': 'Zwergpinguin',
+        'OILBIRD': 'Fettschwalm',
+        'BLUE DACNIS': 'Blautangare',
+        'FRILL BACK PIGEON': 'Kröpfer-Taube',
+        'JACOBIN PIGEON': 'Jacobiner-Taube',
+        'WHITE THROATED BEE EATER': 'Weißkehlspint',
+    }
+}
+
 
 class BirdSpeciesClassifier:
     """Classifies bird species using a pre-trained model from Hugging Face"""
@@ -24,7 +73,20 @@ class BirdSpeciesClassifier:
         
         Args:
             model_name: Hugging Face model identifier
-            confidence_threshold: Minimum confidence score (0.0-1.0)
+                       Default: "chriamue/bird-species-classifier" (8.5M params, EfficientNet-based)
+                       Alternatives:
+                       - "dima806/bird_species_image_detection" (ViT-based, 86M params, larger but lower confidence)
+                       - "prithivMLmods/Bird-Species-Classifier-526" (SigLIP2-based, 93M params, 526 species)
+            confidence_threshold: Minimum confidence score (0.0-1.0), default 0.3
+        
+        Note:
+            ⚠️  EXPERIMENTAL FEATURE: Species identification accuracy is currently limited,
+            especially for European garden birds. All tested models tend to misidentify
+            common European species (e.g., Great Tit, Robin, Blackbird) as exotic species.
+            Use results with caution and consider them as rough estimates only.
+            
+            For best results with European birds, consider training a custom model on
+            European-specific datasets like iNaturalist Europe or NABU bird photos.
         """
         if not SPECIES_AVAILABLE:
             raise ImportError(
@@ -38,25 +100,32 @@ class BirdSpeciesClassifier:
         self._load_model()
     
     def _load_model(self):
-        """Load the Hugging Face model"""
+        """Load the Hugging Face model (from Hub or local path)"""
         try:
-            print(f"🤖 Loading bird species classification model: {self.model_name}")
-            print(f"   (First run will download ~100-300MB, then cached locally)")
+            # Check if model_name is a local path
+            model_path = Path(self.model_name)
+            if model_path.exists() and model_path.is_dir():
+                print(f"🤖 {t('loading_species_model')} {model_path.name} (lokal)")
+                model_source = str(model_path)
+            else:
+                print(f"🤖 {t('loading_species_model')} {self.model_name}")
+                print(f"   ({t('model_download_info')})")
+                model_source = self.model_name
             
             # Suppress some warnings from transformers
             warnings.filterwarnings('ignore', category=FutureWarning)
             
             self.classifier = pipeline(
                 "image-classification",
-                model=self.model_name,
+                model=model_source,
                 device=0 if torch.cuda.is_available() else -1  # Use GPU if available
             )
             
-            print(f"   ✅ Model loaded successfully")
+            print(f"   ✅ {t('model_loaded_success')}")
             
         except Exception as e:
-            print(f"   ❌ Error loading model: {e}")
-            print(f"   Falling back to basic bird detection only")
+            print(f"   ❌ {t('model_load_error')} {e}")
+            print(f"   {t('fallback_basic_detection')}")
             self.classifier = None
     
     def classify_image(self, image, top_k: int = 3) -> List[Dict[str, any]]:
@@ -86,6 +155,11 @@ class BirdSpeciesClassifier:
                 pred for pred in predictions 
                 if pred['score'] >= self.confidence_threshold
             ]
+            
+            # If nothing passes threshold, return best prediction anyway
+            # (but note: even "best" predictions are often inaccurate for European birds)
+            if not filtered and predictions:
+                filtered = [predictions[0]]
             
             return filtered
             
@@ -132,15 +206,34 @@ class BirdSpeciesClassifier:
         return SPECIES_AVAILABLE
     
     @staticmethod
-    def format_species_name(label: str) -> str:
+    def translate_species_name(species_name: str) -> str:
+        """
+        Translate bird species name to current language
+        
+        Args:
+            species_name: Species name in English (uppercase)
+            
+        Returns:
+            Translated species name or original if no translation available
+        """
+        from .i18n import get_language
+        
+        lang = get_language()
+        if lang == 'de' and species_name in BIRD_NAME_TRANSLATIONS['de']:
+            return BIRD_NAME_TRANSLATIONS['de'][species_name]
+        return species_name
+    
+    @staticmethod
+    def format_species_name(label: str, translate: bool = True) -> str:
         """
         Format species label for display
         
         Args:
             label: Raw label from model
+            translate: Whether to translate species name (default: True)
             
         Returns:
-            Formatted species name
+            Formatted (and optionally translated) species name
         """
         # Remove common prefixes and format
         label = label.replace('_', ' ')
@@ -148,6 +241,10 @@ class BirdSpeciesClassifier:
         # Capitalize each word
         words = label.split()
         formatted = ' '.join(word.capitalize() for word in words)
+        
+        # Translate if requested
+        if translate:
+            formatted = BirdSpeciesClassifier.translate_species_name(formatted.upper())
         
         return formatted
 

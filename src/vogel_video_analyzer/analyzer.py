@@ -21,7 +21,7 @@ except ImportError:
 class VideoAnalyzer:
     """Analyzes videos for bird content using YOLOv8"""
     
-    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14, identify_species=False):
+    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14, identify_species=False, species_model="dima806/bird_species_image_detection"):
         """
         Initialize the analyzer
         
@@ -30,6 +30,7 @@ class VideoAnalyzer:
             threshold: Confidence threshold (0.0-1.0), default 0.3 for bird detection
             target_class: COCO class for bird (14=bird)
             identify_species: Enable bird species classification (requires species dependencies)
+            species_model: Hugging Face model for species classification (default: dima806/bird_species_image_detection)
         """
         model_path = self._find_model(model_path)
         print(f"🤖 {t('loading_model')} {model_path}")
@@ -48,7 +49,7 @@ class VideoAnalyzer:
                 self.identify_species = False
             else:
                 try:
-                    self.species_classifier = BirdSpeciesClassifier()
+                    self.species_classifier = BirdSpeciesClassifier(model_name=species_model)
                 except Exception as e:
                     print(f"   ⚠️  Could not load species classifier: {e}")
                     print(f"   Continuing with basic bird detection only.\n")
@@ -162,21 +163,30 @@ class VideoAnalyzer:
                             try:
                                 # Get bounding box coordinates
                                 xyxy = box.xyxy[0].cpu().numpy()
-                                x1, y1, x2, y2 = map(int, xyxy)
+                                x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                                bbox = (x1, y1, x2, y2)
                                 
                                 # Classify the bird crop
                                 species_predictions = self.species_classifier.classify_crop(
-                                    frame, (x1, y1, x2, y2), top_k=1
+                                    frame, bbox, top_k=1
                                 )
                                 
                                 if species_predictions:
                                     species_info = species_predictions[0]
+                                    # Translate species name to current language
+                                    translated_name = BirdSpeciesClassifier.format_species_name(
+                                        species_info['label'], translate=True
+                                    )
                                     frame_species.append({
-                                        'species': species_info['label'],
+                                        'species': translated_name,
                                         'confidence': species_info['score']
                                     })
                             except Exception as e:
-                                # Silently skip species classification errors
+                                # Log error for debugging
+                                import sys
+                                print(f"   ⚠️  Species classification error (frame {current_frame}): {e}", file=sys.stderr)
+                                import traceback
+                                traceback.print_exc()
                                 pass
                         
             if birds_in_frame > 0:
@@ -226,8 +236,15 @@ class VideoAnalyzer:
         
         # Add species statistics if species identification was enabled
         if self.identify_species and SPECIES_AVAILABLE:
-            species_stats = aggregate_species_detections(bird_detections)
-            stats['species_stats'] = species_stats
+            # Extract all species detections from bird_detections
+            all_species = []
+            for detection in bird_detections:
+                if 'species' in detection:
+                    all_species.extend(detection['species'])
+            
+            if all_species:
+                species_stats = aggregate_species_detections(all_species)
+                stats['species_stats'] = species_stats
         
         print(f"\n   ✅ {t('analysis_complete')}")
         return stats

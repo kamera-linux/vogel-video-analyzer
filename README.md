@@ -152,12 +152,25 @@ vogel-analyze --identify-species bird_video.mp4
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**Note:** Species identification requires additional dependencies:
+**⚠️ Experimental Feature:** Pre-trained models may misidentify European garden birds as exotic species. For accurate identification of local bird species, consider training a custom model (see [Custom Model Training](#-custom-model-training)).
+
+**Installation:**
 ```bash
 pip install vogel-video-analyzer[species]
 ```
 
 The first time you run species identification, the model (~100-300MB) will be downloaded automatically and cached locally for future use.
+
+#### Using Custom Models
+
+You can use locally trained models for better accuracy with your specific bird species:
+
+```bash
+# Use custom model
+vogel-analyze --identify-species --species-model ~/vogel-models/my-model/ video.mp4
+```
+
+See the [Custom Model Training](#-custom-model-training) section for details on training your own model.
 
 #### Advanced Options
 ```bash
@@ -361,6 +374,69 @@ JSON reports include:
   ]
 }
 ```
+
+---
+
+## 🎓 Custom Model Training
+
+Pre-trained bird species classifiers are trained on global datasets and often misidentify European garden birds as exotic species. For better accuracy with your specific bird species, you can train a custom model.
+
+### Why Train a Custom Model?
+
+**Problem with pre-trained models:**
+- Identify common European birds (Kohlmeise, Blaumeise) as exotic Asian pheasants
+- Low confidence scores (often <0.1)
+- Trained on datasets dominated by American and exotic birds
+
+**Benefits of custom models:**
+- High accuracy for YOUR specific bird species
+- Trained on YOUR camera setup and lighting conditions
+- Confidence scores >0.9 for correctly identified birds
+
+### Quick Start
+
+**1. Extract bird images from your videos:**
+```bash
+python training/extract_birds.py ~/Videos/kohlmeise.mp4 \
+  -o ~/vogel-training-data/kohlmeise_video1/ \
+  --sample-rate 50
+```
+
+**2. Organize dataset (80/20 train/val split):**
+```bash
+cd ~/vogel-training-data
+python /path/to/vogel-video-analyzer/training/organize_dataset.py
+```
+
+**3. Train the model (requires ~3-4 hours on Raspberry Pi 5):**
+```bash
+# Install training dependencies
+pip install torch torchvision datasets accelerate
+
+# Start training
+python /path/to/vogel-video-analyzer/training/train_custom_model.py
+```
+
+**4. Use your trained model:**
+```bash
+vogel-analyze --identify-species \
+  --species-model ~/vogel-models/bird-classifier-*/final/ \
+  video.mp4
+```
+
+### Recommended Dataset Size
+
+- **Minimum:** 30-50 images per bird species
+- **Optimal:** 100+ images per bird species
+- **Balance:** Similar number of images for each species
+
+### Complete Documentation
+
+See [`training/README.md`](training/README.md) for:
+- Detailed training workflow
+- Script documentation
+- Troubleshooting guide
+- Tips for improving accuracy
 
 ---
 

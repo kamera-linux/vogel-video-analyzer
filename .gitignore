@@ -138,3 +138,19 @@ models/*.pt
 *.mp4
 *.avi
 test_videos/
+
+# Training data and models (keep scripts, ignore data)
+# User's training data directory
+vogel-training-data/
+vogel-models/
+
+# Training outputs and checkpoints
+training/logs/
+training/checkpoints/
+training/*.log
+training/*.json
+training/organized/
+training/*_video*/
+
+# Hugging Face cache
+.cache/huggingface/

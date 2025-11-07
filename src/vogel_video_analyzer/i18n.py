@@ -87,6 +87,11 @@ TRANSLATIONS = {
         'species_detections': '{detections} detections',
         'species_avg_confidence': 'avg confidence',
         'species_no_detections': 'No species identified',
+        'loading_species_model': 'Loading bird species classification model:',
+        'model_download_info': 'First run will download ~100-300MB, then cached locally',
+        'model_loaded_success': 'Model loaded successfully',
+        'model_load_error': 'Error loading model:',
+        'fallback_basic_detection': 'Falling back to basic bird detection only',
     },
     'de': {
         # Loading and initialization
@@ -166,6 +171,11 @@ TRANSLATIONS = {
         'species_detections': '{detections} Erkennungen',
         'species_avg_confidence': 'Ø Konfidenz',
         'species_no_detections': 'Keine Arten identifiziert',
+        'loading_species_model': 'Lade Vogel-Artenerkennung Modell:',
+        'model_download_info': 'Beim ersten Mal werden ~100-300MB heruntergeladen, dann lokal gecacht',
+        'model_loaded_success': 'Modell erfolgreich geladen',
+        'model_load_error': 'Fehler beim Laden des Modells:',
+        'fallback_basic_detection': 'Verwende nur grundlegende Vogelerkennung',
     }
 }
 
@@ -278,9 +288,19 @@ def t(key, **kwargs):
     
     Args:
         key: Translation key
-        **kwargs: Format parameters
+        **kwargs: Format arguments
         
     Returns:
         Translated string
     """
     return get_i18n().translate(key, **kwargs)
+
+
+def get_language():
+    """
+    Get current language code
+    
+    Returns:
+        Language code ('en' or 'de')
+    """
+    return get_i18n().language

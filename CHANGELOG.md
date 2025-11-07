@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2025-11-07
+
+### Added
+- **German Translations** - Full i18n support for species names and UI messages
+  - 30+ bird species names translated to German (Kohlmeise, Blaumeise, etc.)
+  - All species-related UI messages now available in German
+  - Automatic language detection from system locale
+- **Custom Model Support** - Load locally trained models for species classification
+  - Species classifier now accepts local file paths in addition to Hugging Face model IDs
+  - Enables training custom models on specific bird species
+- **Training Scripts** - New `training/` directory with tools for custom model training
+  - `extract_birds.py` - Extract bird crops from videos for dataset creation
+  - `organize_dataset.py` - Organize images into train/val splits
+  - `train_custom_model.py` - Train custom EfficientNet-based classifier
+  - `test_model.py` - Test trained models on validation data
+  - Complete training documentation in `training/README.md`
+
+### Changed
+- **Default Species Model** - Changed from `dima806/bird_species_image_detection` to `chriamue/bird-species-classifier`
+  - Higher confidence scores (0.3-0.6 vs 0.01-0.06)
+  - Smaller model size (8.5M vs 86M parameters)
+  - Better overall performance in testing
+- **Default Confidence Threshold** - Increased from 0.1 to 0.3
+  - Reduces false positives
+  - Better aligned with chriamue model's confidence distribution
+
+### Fixed
+- **Critical:** Fixed species detection aggregation error ("unhashable type: 'list'")
+- Species statistics are now correctly extracted from bird detections
+- Improved error messages for species classification debugging
+
+### Documentation
+- Added experimental warning in species classifier docstring
+- Noted that pre-trained models may misidentify European garden birds
+- Documented custom model training workflow
+
+### Technical
+- Extract species detections from bird_detections before aggregation
+- Changed bbox coordinate extraction to use individual array indexing
+- Added Path-based detection for local model loading
+- Added `format_species_name()` method with translation support
+- Added `get_language()` function to i18n module
+
+**Note:** Pre-trained models often misidentify European garden birds as exotic species. For best results with local bird species, consider training a custom model using the provided training scripts.
+
 ## [0.2.0] - 2025-11-07
 
 ### Added
