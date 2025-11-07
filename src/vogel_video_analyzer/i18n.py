@@ -10,126 +10,144 @@ import locale
 # Available translations
 TRANSLATIONS = {
     'en': {
-        # Report headers
-        'report_title': '🎬 Video Analysis Report',
-        'file': 'File',
-        'total_frames': 'Total Frames',
-        'analyzed': 'analyzed',
-        'duration': 'Duration',
-        'bird_frames': 'Bird Frames',
-        'bird_segments': 'Bird Segments',
-        'detected_segments': 'Detected Segments',
-        'segment': 'Segment',
-        'bird_frames_lower': 'bird frames',
-        'status': 'Status',
+        # Loading and initialization
+        'loading_model': 'Loading YOLO model:',
+        'model_not_found': "Model '{model_name}' not found locally, will be auto-downloaded...",
+        
+        # Video analysis
+        'analyzing': 'Analyzing:',
+        'video_not_found': 'Video not found: {path}',
+        'cannot_open_video': 'Cannot open video: {path}',
+        'video_info': 'Video info:',
+        'frames': 'frames',
+        'analyzing_every_nth': 'Analyzing every {n}. frame...',
+        'analysis_complete': 'Analysis complete!',
+        'analysis_interrupted': 'Analysis interrupted',
+        
+        # Report
+        'report_title': 'Video Analysis Report',
+        'report_file': 'File:',
+        'report_total_frames': 'Total Frames:',
+        'report_analyzed': 'analyzed:',
+        'report_duration': 'Duration:',
+        'report_seconds': 'seconds',
+        'report_bird_frames': 'Bird Frames:',
+        'report_bird_segments': 'Bird Segments:',
+        'report_detected_segments': 'Detected Segments:',
+        'report_segment': 'Segment',
+        'report_bird_frames_short': 'bird frames',
+        'report_status': 'Status:',
         'status_significant': 'Significant bird activity detected',
-        'status_minimal': 'Minimal bird activity detected',
-        'status_none': 'No bird activity detected',
+        'status_limited': 'Limited bird activity detected',
+        'status_none': 'No bird content detected',
         
         # Summary
-        'summary': 'SUMMARY',
-        'videos': 'Videos',
-        'total_duration': 'Total Duration',
-        'total_frames_analyzed': 'Total Frames Analyzed',
-        'total_frames_with_birds': 'Total Frames with Birds',
-        'average_bird_content': 'Average Bird Content',
-        'video_overview': 'Video Overview',
-        'nr': 'Nr.',
-        'directory': 'Directory',
-        'bird': 'Bird',
-        'bird_pct': 'Bird%',
-        'frames': 'Frames',
+        'summary_title': 'SUMMARY ({count} Videos)',
+        'summary_total_duration': 'Total Duration:',
+        'summary_total_frames': 'Total Frames Analyzed:',
+        'summary_bird_frames': 'Total Frames with Birds:',
+        'summary_avg_bird': 'Average Bird Content:',
+        'summary_overview': 'Video Overview:',
+        'summary_directory': 'Directory',
+        'summary_bird': 'Bird',
+        'summary_bird_pct': 'Bird%',
+        'summary_frames': 'Frames',
+        'summary_duration': 'Duration',
         
         # Deletion
-        'deleting_files': '🗑️  DELETING VIDEO FILES WITH 0% BIRD CONTENT',
-        'deleting_folders': '🗑️  DELETING FOLDERS WITH 0% BIRD CONTENT',
-        'files': 'files',
-        'deleting': 'Deleting',
-        'deleting_folder': 'Deleting folder',
-        'successfully_deleted': 'Successfully deleted',
-        'error_deleting': 'Error deleting',
-        'deleted_files': 'Deleted files',
-        'deleted_folders': 'Deleted folders',
-        'remaining_videos': 'Remaining videos',
-        'no_files_found': 'No video files with 0% bird content found',
-        'no_folders_found': 'No folders with 0% bird content found',
+        'delete_files_title': 'DELETING VIDEO FILES WITH 0% BIRD CONTENT ({count} files)',
+        'delete_folders_title': 'DELETING FOLDERS WITH 0% BIRD CONTENT ({count} videos)',
+        'deleting': 'Deleting:',
+        'deleting_folder': 'Deleting folder:',
+        'delete_success': 'Successfully deleted',
+        'delete_error': 'Error deleting:',
+        'deleted_files': 'Deleted files:',
+        'deleted_folders': 'Deleted folders:',
+        'remaining_videos': 'Remaining videos:',
+        'no_empty_files': 'No video files with 0% bird content found',
+        'no_empty_folders': 'No folders with 0% bird content found',
+        'delete_deprecated': 'WARNING: --delete is deprecated. Use --delete-file or --delete-folder instead.',
+        'delete_deprecated_hint': 'Defaulting to --delete-folder behavior for backward compatibility.',
         
-        # Log messages
-        'log_file': 'Log file',
-        'warning': 'WARNING',
-        'no_write_permissions': 'No write permissions for',
-        'run_with_sudo': 'Run with sudo or change permissions',
-        'analysis_interrupted': 'Analysis interrupted',
+        # Logging
+        'log_file': 'Log file:',
+        'log_permission_denied': 'WARNING: No write permissions for /var/log/vogel-kamera-linux/',
+        'log_permission_hint': 'Run with sudo or change permissions:',
+        
+        # Errors
         'error': 'Error',
         'error_analyzing': 'Error analyzing',
-        
-        # Deprecation
-        'deprecation_warning': 'WARNING: --delete is deprecated. Use --delete-file or --delete-folder instead.',
-        'defaulting_to': 'Defaulting to --delete-folder behavior for backward compatibility.',
-        
-        # Report saving
-        'report_saved': 'Report saved',
+        'report_saved': 'Report saved:',
     },
     'de': {
-        # Report headers
-        'report_title': '🎬 Video-Analyse-Bericht',
-        'file': 'Datei',
-        'total_frames': 'Gesamt-Frames',
-        'analyzed': 'analysiert',
-        'duration': 'Dauer',
-        'bird_frames': 'Vogel-Frames',
-        'bird_segments': 'Vogel-Segmente',
-        'detected_segments': 'Erkannte Segmente',
-        'segment': 'Segment',
-        'bird_frames_lower': 'Vogel-Frames',
-        'status': 'Status',
+        # Loading and initialization
+        'loading_model': 'Lade YOLO-Modell:',
+        'model_not_found': "Modell '{model_name}' lokal nicht gefunden, wird automatisch heruntergeladen...",
+        
+        # Video analysis
+        'analyzing': 'Analysiere:',
+        'video_not_found': 'Video nicht gefunden: {path}',
+        'cannot_open_video': 'Kann Video nicht öffnen: {path}',
+        'video_info': 'Video-Info:',
+        'frames': 'Frames',
+        'analyzing_every_nth': 'Analysiere jeden {n}. Frame...',
+        'analysis_complete': 'Analyse abgeschlossen!',
+        'analysis_interrupted': 'Analyse unterbrochen',
+        
+        # Report
+        'report_title': 'Videoanalyse-Bericht',
+        'report_file': 'Datei:',
+        'report_total_frames': 'Gesamt-Frames:',
+        'report_analyzed': 'analysiert:',
+        'report_duration': 'Dauer:',
+        'report_seconds': 'Sekunden',
+        'report_bird_frames': 'Vogel-Frames:',
+        'report_bird_segments': 'Vogel-Segmente:',
+        'report_detected_segments': 'Erkannte Segmente:',
+        'report_segment': 'Segment',
+        'report_bird_frames_short': 'Vogel-Frames',
+        'report_status': 'Status:',
         'status_significant': 'Signifikante Vogelaktivität erkannt',
-        'status_minimal': 'Minimale Vogelaktivität erkannt',
-        'status_none': 'Keine Vogelaktivität erkannt',
+        'status_limited': 'Eingeschränkte Vogelaktivität erkannt',
+        'status_none': 'Kein Vogelinhalt erkannt',
         
         # Summary
-        'summary': 'ZUSAMMENFASSUNG',
-        'videos': 'Videos',
-        'total_duration': 'Gesamtdauer',
-        'total_frames_analyzed': 'Gesamt analysierte Frames',
-        'total_frames_with_birds': 'Gesamt Frames mit Vögeln',
-        'average_bird_content': 'Durchschnittlicher Vogelinhalt',
-        'video_overview': 'Video-Übersicht',
-        'nr': 'Nr.',
-        'directory': 'Verzeichnis',
-        'bird': 'Vogel',
-        'bird_pct': 'Vogel%',
-        'frames': 'Frames',
+        'summary_title': 'ZUSAMMENFASSUNG ({count} Videos)',
+        'summary_total_duration': 'Gesamtdauer:',
+        'summary_total_frames': 'Gesamt analysierte Frames:',
+        'summary_bird_frames': 'Gesamt Frames mit Vögeln:',
+        'summary_avg_bird': 'Durchschnittlicher Vogelinhalt:',
+        'summary_overview': 'Videoübersicht:',
+        'summary_directory': 'Verzeichnis',
+        'summary_bird': 'Vogel',
+        'summary_bird_pct': 'Vogel%',
+        'summary_frames': 'Frames',
+        'summary_duration': 'Dauer',
         
         # Deletion
-        'deleting_files': '🗑️  LÖSCHE VIDEODATEIEN MIT 0% VOGELINHALT',
-        'deleting_folders': '🗑️  LÖSCHE ORDNER MIT 0% VOGELINHALT',
-        'files': 'Dateien',
-        'deleting': 'Lösche',
-        'deleting_folder': 'Lösche Ordner',
-        'successfully_deleted': 'Erfolgreich gelöscht',
-        'error_deleting': 'Fehler beim Löschen',
-        'deleted_files': 'Gelöschte Dateien',
-        'deleted_folders': 'Gelöschte Ordner',
-        'remaining_videos': 'Verbleibende Videos',
-        'no_files_found': 'Keine Videodateien mit 0% Vogelinhalt gefunden',
-        'no_folders_found': 'Keine Ordner mit 0% Vogelinhalt gefunden',
+        'delete_files_title': 'LÖSCHE VIDEODATEIEN MIT 0% VOGELINHALT ({count} Dateien)',
+        'delete_folders_title': 'LÖSCHE ORDNER MIT 0% VOGELINHALT ({count} Videos)',
+        'deleting': 'Lösche:',
+        'deleting_folder': 'Lösche Ordner:',
+        'delete_success': 'Erfolgreich gelöscht',
+        'delete_error': 'Fehler beim Löschen:',
+        'deleted_files': 'Gelöschte Dateien:',
+        'deleted_folders': 'Gelöschte Ordner:',
+        'remaining_videos': 'Verbleibende Videos:',
+        'no_empty_files': 'Keine Videodateien mit 0% Vogelinhalt gefunden',
+        'no_empty_folders': 'Keine Ordner mit 0% Vogelinhalt gefunden',
+        'delete_deprecated': 'WARNUNG: --delete ist veraltet. Verwenden Sie --delete-file oder --delete-folder.',
+        'delete_deprecated_hint': 'Verwende --delete-folder-Verhalten für Rückwärtskompatibilität.',
         
-        # Log messages
-        'log_file': 'Log-Datei',
-        'warning': 'WARNUNG',
-        'no_write_permissions': 'Keine Schreibrechte für',
-        'run_with_sudo': 'Mit sudo ausführen oder Berechtigungen ändern',
-        'analysis_interrupted': 'Analyse unterbrochen',
+        # Logging
+        'log_file': 'Log-Datei:',
+        'log_permission_denied': 'WARNUNG: Keine Schreibrechte für /var/log/vogel-kamera-linux/',
+        'log_permission_hint': 'Mit sudo ausführen oder Berechtigungen ändern:',
+        
+        # Errors
         'error': 'Fehler',
         'error_analyzing': 'Fehler beim Analysieren',
-        
-        # Deprecation
-        'deprecation_warning': 'WARNUNG: --delete ist veraltet. Verwenden Sie --delete-file oder --delete-folder.',
-        'defaulting_to': 'Standardmäßig wird --delete-folder Verhalten für Rückwärtskompatibilität verwendet.',
-        
-        # Report saving
-        'report_saved': 'Bericht gespeichert',
+        'report_saved': 'Bericht gespeichert:',
     }
 }
 
@@ -139,79 +157,112 @@ class I18n:
     
     def __init__(self, language=None):
         """
-        Initialize i18n handler
+        Initialize i18n with specified language or auto-detect
         
         Args:
-            language: Language code ('en', 'de', etc.) or None for auto-detection
+            language: Language code ('en', 'de') or None for auto-detection
         """
-        if language:
-            self.language = language
-        else:
-            self.language = self._detect_language()
+        self.language = language or self._detect_language()
         
-        # Fallback to English if language not supported
-        if self.language not in TRANSLATIONS:
-            self.language = 'en'
-    
     def _detect_language(self):
-        """Auto-detect system language"""
-        # Try VOGEL_LANG environment variable first
-        vogel_lang = os.getenv('VOGEL_LANG')
-        if vogel_lang:
-            return vogel_lang.split('_')[0].lower()
+        """
+        Auto-detect system language
         
-        # Try LANG environment variable
-        lang_env = os.getenv('LANG', '')
-        if lang_env:
-            return lang_env.split('_')[0].lower()
+        Priority:
+        1. VOGEL_LANG environment variable
+        2. LANG environment variable
+        3. locale.getdefaultlocale()
+        4. Fallback to 'en'
+        
+        Returns:
+            Language code ('en' or 'de')
+        """
+        # Check VOGEL_LANG first
+        vogel_lang = os.environ.get('VOGEL_LANG', '').lower()
+        if vogel_lang in TRANSLATIONS:
+            return vogel_lang
+        
+        # Check LANG environment variable
+        lang = os.environ.get('LANG', '').lower()
+        if 'de' in lang:
+            return 'de'
+        elif 'en' in lang:
+            return 'en'
         
         # Try locale
         try:
-            system_locale = locale.getdefaultlocale()[0]
-            if system_locale:
-                return system_locale.split('_')[0].lower()
+            default_locale = locale.getdefaultlocale()[0]
+            if default_locale:
+                if default_locale.lower().startswith('de'):
+                    return 'de'
+                elif default_locale.lower().startswith('en'):
+                    return 'en'
         except:
             pass
         
-        # Default to English
+        # Fallback to English
         return 'en'
     
-    def t(self, key):
+    def translate(self, key, **kwargs):
         """
-        Translate a key
+        Get translation for key
         
         Args:
             key: Translation key
+            **kwargs: Format parameters for translation string
             
         Returns:
             Translated string
         """
-        return TRANSLATIONS[self.language].get(key, TRANSLATIONS['en'].get(key, key))
-    
-    def get_language(self):
-        """Get current language code"""
-        return self.language
+        translation = TRANSLATIONS.get(self.language, {}).get(key, key)
+        
+        # Apply formatting if kwargs provided
+        if kwargs:
+            try:
+                translation = translation.format(**kwargs)
+            except KeyError:
+                pass
+        
+        return translation
 
 
-# Global instance (will be initialized in CLI)
+# Global instance
 _i18n_instance = None
 
 
 def init_i18n(language=None):
-    """Initialize global i18n instance"""
+    """
+    Initialize global i18n instance
+    
+    Args:
+        language: Language code or None for auto-detection
+    """
     global _i18n_instance
     _i18n_instance = I18n(language)
-    return _i18n_instance
 
 
 def get_i18n():
-    """Get global i18n instance"""
+    """
+    Get global i18n instance
+    
+    Returns:
+        I18n instance
+    """
     global _i18n_instance
     if _i18n_instance is None:
-        _i18n_instance = I18n()
+        init_i18n()
     return _i18n_instance
 
 
-def t(key):
-    """Convenience function for translation"""
-    return get_i18n().t(key)
+def t(key, **kwargs):
+    """
+    Convenience function for translation
+    
+    Args:
+        key: Translation key
+        **kwargs: Format parameters
+        
+    Returns:
+        Translated string
+    """
+    return get_i18n().translate(key, **kwargs)

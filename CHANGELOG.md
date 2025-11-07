@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.3] - 2025-11-07
+
+### Fixed
+- **Critical:** Fixed missing translation keys in i18n module
+- All CLI output and reports now properly translated in English and German
+- Completed TRANSLATIONS dictionary with all required keys
+- Fixed `model_not_found`, `video_not_found`, `cannot_open_video` translations
+- Fixed all analyzer and CLI translation keys
+
+### Technical
+- Complete rewrite of i18n.py with comprehensive translation coverage
+- All 55+ translation keys now properly defined for both languages
+
+**Note:** v0.1.2 had incomplete translations and is superseded by this hotfix.
+
 ## [0.1.2] - 2025-11-07
 
 ### Added
