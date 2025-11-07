@@ -5,9 +5,19 @@ Fine-tunes an EfficientNet model on the extracted bird images.
 """
 
 import os
+import warnings
 import torch
 from pathlib import Path
 from datetime import datetime
+import logging
+
+# Suppress specific warnings
+warnings.filterwarnings('ignore', category=UserWarning, message='.*pin_memory.*')
+warnings.filterwarnings('ignore', category=FutureWarning)
+
+# Reduce transformers logging verbosity
+logging.getLogger("transformers").setLevel(logging.ERROR)
+os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 from transformers import (
     AutoImageProcessor,
     AutoModelForImageClassification,
@@ -18,6 +28,9 @@ from transformers import (
 from datasets import load_dataset
 from torchvision.transforms import (
     Compose,
+    RandomRotation,
+    RandomAffine,
+    GaussianBlur,
     RandomResizedCrop,
     RandomHorizontalFlip,
     ColorJitter,
@@ -60,12 +73,15 @@ def prepare_model_and_processor():
     return model, processor
 
 def get_transforms(processor, is_training=True):
-    """Create image transforms for data augmentation."""
+    """Create image transforms with enhanced data augmentation."""
     if is_training:
         return Compose([
-            RandomResizedCrop(IMAGE_SIZE, scale=(0.8, 1.0)),
+            RandomResizedCrop(IMAGE_SIZE, scale=(0.7, 1.0)),  # More scale variation
             RandomHorizontalFlip(p=0.5),
-            ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1),
+            RandomRotation(degrees=15),  # Birds can appear at different angles
+            RandomAffine(degrees=0, translate=(0.1, 0.1)),  # Slight position shifts
+            ColorJitter(brightness=0.3, contrast=0.3, saturation=0.3, hue=0.1),  # Stronger color augmentation
+            GaussianBlur(kernel_size=3, sigma=(0.1, 2.0)),  # Simulate focus variations
             ToTensor(),
             Normalize(mean=processor.image_mean, std=processor.image_std)
         ])
@@ -153,7 +169,7 @@ def main():
     dataset["train"].set_format(type="torch", columns=["pixel_values", "label"])
     dataset["validation"].set_format(type="torch", columns=["pixel_values", "label"])
     
-    # Training arguments
+    # Training arguments with optimized hyperparameters
     training_args = TrainingArguments(
         output_dir=str(output_dir),
         num_train_epochs=NUM_EPOCHS,
@@ -161,8 +177,11 @@ def main():
         per_device_eval_batch_size=BATCH_SIZE,
         learning_rate=LEARNING_RATE,
         warmup_ratio=0.1,
+        lr_scheduler_type="cosine",  # Cosine annealing for better convergence
+        weight_decay=0.01,  # L2 regularization to prevent overfitting
         logging_dir=str(output_dir / "logs"),
         logging_steps=10,
+        logging_strategy="epoch",  # Nur Epochen-Logs anzeigen
         eval_strategy="epoch",
         save_strategy="epoch",
         save_total_limit=3,
@@ -172,6 +191,9 @@ def main():
         push_to_hub=False,
         remove_unused_columns=False,
         dataloader_num_workers=4,
+        label_smoothing_factor=0.1,  # Label smoothing for better generalization
+        report_to="none",  # Keine Berichte an externe Tools
+        disable_tqdm=False,  # Progress bar behalten
     )
     
     # Create trainer
@@ -182,7 +204,7 @@ def main():
         eval_dataset=dataset["validation"],
         compute_metrics=compute_metrics,
         data_collator=collate_fn,
-        callbacks=[EarlyStoppingCallback(early_stopping_patience=5)]
+        callbacks=[EarlyStoppingCallback(early_stopping_patience=7)]  # Etwas mehr Geduld für bessere Konvergenz
     )
     
     # Train
