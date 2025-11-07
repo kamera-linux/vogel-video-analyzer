@@ -71,6 +71,9 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     
     # Setup logging if requested
     log_file = None
+    original_stdout = sys.stdout
+    original_stderr = sys.stderr
+    
     if args.log:
         try:
             now = datetime.now()
@@ -81,8 +84,28 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             log_dir = Path(f'/var/log/vogel-kamera-linux/{year}/KW{week}')
             log_dir.mkdir(parents=True, exist_ok=True)
             
-            log_file = log_dir / f'{timestamp}_analyze.log'
-            print(f"📝 {t('log_file')} {log_file}\n")
+            log_file_path = log_dir / f'{timestamp}_analyze.log'
+            print(f"📝 {t('log_file')} {log_file_path}\n")
+            
+            # Open log file and redirect stdout/stderr
+            log_file = open(log_file_path, 'w', encoding='utf-8')
+            
+            # Create a Tee class to write to both console and file
+            class Tee:
+                def __init__(self, *files):
+                    self.files = files
+                def write(self, data):
+                    for f in self.files:
+                        f.write(data)
+                        f.flush()
+                def flush(self):
+                    for f in self.files:
+                        f.flush()
+            
+            # Redirect to both console and file
+            sys.stdout = Tee(original_stdout, log_file)
+            sys.stderr = Tee(original_stderr, log_file)
+            
         except PermissionError:
             print(f"⚠️  {t('log_permission_denied')}", file=sys.stderr)
             print(f"   {t('log_permission_hint')}", file=sys.stderr)
@@ -134,6 +157,12 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     except Exception as e:
         print(f"\n❌ {t('error')}: {e}", file=sys.stderr)
         return 1
+    finally:
+        # Restore stdout/stderr and close log file
+        if log_file:
+            sys.stdout = original_stdout
+            sys.stderr = original_stderr
+            log_file.close()
 
 
 def _print_summary(all_stats):
