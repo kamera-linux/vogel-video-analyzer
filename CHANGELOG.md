@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2025-11-07
+
+### Added
+- Multilingual output support (English and German)
+- `--language` parameter to manually set output language (en/de)
+- Auto-detection of system language via LANG and VOGEL_LANG environment variables
+- German README (`README.de.md`) for local community
+- Language switcher in README files
+- Internationalization (i18n) module for translations
+
+### Changed
+- All CLI output now respects system language settings
+- Analysis reports translated to English/German
+- Error messages and status updates localized
+- Summary tables with translated headers
+
 ## [0.1.1] - 2025-11-07
 
 ### Added

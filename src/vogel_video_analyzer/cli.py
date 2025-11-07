@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 
 from . import __version__
 from .analyzer import VideoAnalyzer
+from .i18n import init_i18n, t
 
 
 def main():
@@ -60,9 +61,13 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
     parser.add_argument('--delete', action='store_true', help='(Deprecated) Use --delete-file or --delete-folder instead')
     parser.add_argument('--log', action='store_true', help='Save console output to log file')
+    parser.add_argument('--language', choices=['en', 'de'], help='Set output language (default: auto-detect from system)')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     
     args = parser.parse_args()
+    
+    # Initialize i18n with user's language choice or auto-detect
+    init_i18n(args.language)
     
     # Setup logging if requested
     log_file = None
@@ -77,10 +82,10 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             log_dir.mkdir(parents=True, exist_ok=True)
             
             log_file = log_dir / f'{timestamp}_analyze.log'
-            print(f"📝 Log file: {log_file}\n")
+            print(f"📝 {t('log_file')} {log_file}\n")
         except PermissionError:
-            print("⚠️  WARNING: No write permissions for /var/log/vogel-kamera-linux/", file=sys.stderr)
-            print("   Run with sudo or change permissions:", file=sys.stderr)
+            print(f"⚠️  {t('log_permission_denied')}", file=sys.stderr)
+            print(f"   {t('log_permission_hint')}", file=sys.stderr)
             print("   sudo mkdir -p /var/log/vogel-kamera-linux && sudo chown $USER /var/log/vogel-kamera-linux", file=sys.stderr)
             return 1
     
@@ -99,7 +104,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                 analyzer.print_report(stats)
                 all_stats.append(stats)
             except Exception as e:
-                print(f"❌ Error analyzing {video_path}: {e}", file=sys.stderr)
+                print(f"❌ {t('error_analyzing')} {video_path}: {e}", file=sys.stderr)
                 continue
         
         # Summary for multiple videos
@@ -108,8 +113,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         
         # Auto-delete feature (with deprecation warning)
         if args.delete:
-            print("\n⚠️  WARNING: --delete is deprecated. Use --delete-file or --delete-folder instead.", file=sys.stderr)
-            print("   Defaulting to --delete-folder behavior for backward compatibility.\n", file=sys.stderr)
+            print(f"\n⚠️  {t('delete_deprecated')}", file=sys.stderr)
+            print(f"   {t('delete_deprecated_hint')}\n", file=sys.stderr)
             args.delete_folder = True
         
         if args.delete_file and all_stats:
@@ -124,10 +129,10 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         return 0
         
     except KeyboardInterrupt:
-        print("\n\n⚠️  Analysis interrupted")
+        print(f"\n\n⚠️  {t('analysis_interrupted')}")
         return 1
     except Exception as e:
-        print(f"\n❌ Error: {e}", file=sys.stderr)
+        print(f"\n❌ {t('error')}: {e}", file=sys.stderr)
         return 1
 
 
@@ -140,15 +145,15 @@ def _print_summary(all_stats):
     total_frames_with_birds = sum(s['frames_with_birds'] for s in all_stats)
     
     print("\n" + "=" * 70)
-    print(f"📊 SUMMARY ({total_videos} Videos)")
+    print(f"📊 {t('summary_title').format(count=total_videos)}")
     print("=" * 70)
-    print(f"   Total Duration: {timedelta(seconds=int(total_duration))}")
-    print(f"   Total Frames Analyzed: {total_frames_analyzed}")
-    print(f"   Total Frames with Birds: {total_frames_with_birds}")
-    print(f"   Average Bird Content: {avg_bird_percentage:.1f}%")
+    print(f"   {t('summary_total_duration')} {timedelta(seconds=int(total_duration))}")
+    print(f"   {t('summary_total_frames')} {total_frames_analyzed}")
+    print(f"   {t('summary_bird_frames')} {total_frames_with_birds}")
+    print(f"   {t('summary_avg_bird')} {avg_bird_percentage:.1f}%")
     
-    print(f"\n📋 Video Overview:")
-    print(f"   {'Nr.':<4} {'Directory':<70} {'Bird':<6} {'Bird%':<8} {'Frames':<12} {'Duration':<8}")
+    print(f"\n📋 {t('summary_overview')}")
+    print(f"   {'Nr.':<4} {t('summary_directory'):<70} {t('summary_bird'):<6} {t('summary_bird_pct'):<8} {t('summary_frames'):<12} {t('summary_duration'):<8}")
     print(f"   {'-'*4} {'-'*70} {'-'*6} {'-'*8} {'-'*12} {'-'*8}")
     
     for i, stats in enumerate(all_stats, 1):
@@ -175,24 +180,24 @@ def _delete_empty_video_files(all_stats):
     
     if videos_to_delete:
         print("\n" + "=" * 70)
-        print(f"🗑️  DELETING VIDEO FILES WITH 0% BIRD CONTENT ({len(videos_to_delete)} files)")
+        print(f"🗑️  {t('delete_files_title').format(count=len(videos_to_delete))}")
         print("=" * 70)
         
         for stats in videos_to_delete:
             video_path = Path(stats['video_path'])
             
             try:
-                print(f"   🗑️  Deleting: {video_path.name}")
+                print(f"   🗑️  {t('deleting')} {video_path.name}")
                 video_path.unlink()
-                print(f"      ✅ Successfully deleted")
+                print(f"      ✅ {t('delete_success')}")
             except Exception as e:
-                print(f"      ❌ Error deleting: {e}")
+                print(f"      ❌ {t('delete_error')} {e}")
                 
-        print(f"\n   Deleted files: {len(videos_to_delete)}")
-        print(f"   Remaining videos: {len(all_stats) - len(videos_to_delete)}")
+        print(f"\n   {t('deleted_files')} {len(videos_to_delete)}")
+        print(f"   {t('remaining_videos')} {len(all_stats) - len(videos_to_delete)}")
         print("=" * 70)
     else:
-        print("\n✅ No video files with 0% bird content found")
+        print(f"\n✅ {t('no_empty_files')}")
 
 
 def _delete_empty_video_folders(all_stats):
@@ -201,7 +206,7 @@ def _delete_empty_video_folders(all_stats):
     
     if videos_to_delete:
         print("\n" + "=" * 70)
-        print(f"🗑️  DELETING FOLDERS WITH 0% BIRD CONTENT ({len(videos_to_delete)} videos)")
+        print(f"🗑️  {t('delete_folders_title').format(count=len(videos_to_delete))}")
         print("=" * 70)
         
         for stats in videos_to_delete:
@@ -209,17 +214,17 @@ def _delete_empty_video_folders(all_stats):
             directory = video_path.parent
             
             try:
-                print(f"   🗑️  Deleting folder: {directory.name}")
+                print(f"   🗑️  {t('deleting_folder')} {directory.name}")
                 shutil.rmtree(directory)
-                print(f"      ✅ Successfully deleted")
+                print(f"      ✅ {t('delete_success')}")
             except Exception as e:
-                print(f"      ❌ Error deleting: {e}")
+                print(f"      ❌ {t('delete_error')} {e}")
                 
-        print(f"\n   Deleted folders: {len(videos_to_delete)}")
-        print(f"   Remaining videos: {len(all_stats) - len(videos_to_delete)}")
+        print(f"\n   {t('deleted_folders')} {len(videos_to_delete)}")
+        print(f"   {t('remaining_videos')} {len(all_stats) - len(videos_to_delete)}")
         print("=" * 70)
     else:
-        print("\n✅ No folders with 0% bird content found")
+        print(f"\n✅ {t('no_empty_folders')}")
 
 
 def _save_json_output(all_stats, output_path):
@@ -236,7 +241,7 @@ def _save_json_output(all_stats, output_path):
     output_path = Path(output_path)
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
-    print(f"\n💾 Report saved: {output_path}")
+    print(f"\n💾 {t('report_saved')} {output_path}")
 
 
 if __name__ == '__main__':

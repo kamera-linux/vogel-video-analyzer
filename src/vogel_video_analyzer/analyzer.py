@@ -6,6 +6,7 @@ import cv2
 from pathlib import Path
 from datetime import timedelta
 from ultralytics import YOLO
+from .i18n import t
 
 
 class VideoAnalyzer:
@@ -21,7 +22,7 @@ class VideoAnalyzer:
             target_class: COCO class for bird (14=bird)
         """
         model_path = self._find_model(model_path)
-        print(f"🤖 Loading YOLO model: {model_path}")
+        print(f"🤖 {t('loading_model')} {model_path}")
         self.model = YOLO(model_path)
         self.threshold = threshold
         self.target_class = target_class
@@ -59,7 +60,7 @@ class VideoAnalyzer:
                 return str(path)
         
         # Not found → Ultralytics downloads automatically
-        print(f"   ℹ️  Model '{model_name}' not found locally, will be auto-downloaded...")
+        print(f"   ℹ️  {t('model_not_found').format(model_name=model_name)}")
         return model_name
         
     def analyze_video(self, video_path, sample_rate=5):
@@ -75,13 +76,13 @@ class VideoAnalyzer:
         """
         video_path = Path(video_path)
         if not video_path.exists():
-            raise FileNotFoundError(f"Video not found: {video_path}")
+            raise FileNotFoundError(t('video_not_found').format(path=str(video_path)))
             
-        print(f"\n📹 Analyzing: {video_path.name}")
+        print(f"\n📹 {t('analyzing')} {video_path.name}")
         
         cap = cv2.VideoCapture(str(video_path))
         if not cap.isOpened():
-            raise RuntimeError(f"Cannot open video: {video_path}")
+            raise RuntimeError(t('cannot_open_video').format(path=str(video_path)))
             
         # Video properties
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -90,7 +91,7 @@ class VideoAnalyzer:
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
-        print(f"   📊 Video info: {width}x{height}, {fps:.1f} FPS, {duration:.1f}s, {total_frames} frames")
+        print(f"   📊 {t('video_info')} {width}x{height}, {fps:.1f} FPS, {duration:.1f}s, {total_frames} {t('frames')}")
         
         # Analysis variables
         frames_analyzed = 0
@@ -98,7 +99,7 @@ class VideoAnalyzer:
         bird_detections = []
         current_frame = 0
         
-        print(f"   🔍 Analyzing every {sample_rate}. frame...")
+        print(f"   🔍 {t('analyzing_every_nth').format(n=sample_rate)}")
         
         while True:
             ret, frame = cap.read()
@@ -139,7 +140,7 @@ class VideoAnalyzer:
             # Progress every 30 analyzed frames
             if frames_analyzed % 30 == 0:
                 progress = (frames_analyzed * sample_rate / total_frames) * 100
-                print(f"   ⏳ {progress:.1f}% ({frames_analyzed}/{total_frames//sample_rate} frames)", end='\r')
+                print(f"   ⏳ {progress:.1f}% ({frames_analyzed}/{total_frames//sample_rate} {t('frames')})", end='\r')
                 
         cap.release()
         
@@ -166,7 +167,7 @@ class VideoAnalyzer:
             'model': str(self.model.ckpt_path if hasattr(self.model, 'ckpt_path') else 'unknown')
         }
         
-        print(f"\n   ✅ Analysis complete!")
+        print(f"\n   ✅ {t('analysis_complete')}")
         return stats
         
     def _find_bird_segments(self, detections, fps, sample_rate):
@@ -224,32 +225,32 @@ class VideoAnalyzer:
         Args:
             stats: Statistics dictionary
         """
-        print("\n🎬 Video Analysis Report")
+        print(f"\n🎬 {t('report_title')}")
         print("━" * 70)
         
-        print(f"\n📁 File: {stats['video_path']}")
-        print(f"📊 Total Frames: {stats['total_frames']} (analyzed: {stats['frames_analyzed']})")
-        print(f"⏱️  Duration: {stats['duration_seconds']:.1f} seconds")
-        print(f"🐦 Bird Frames: {stats['frames_with_birds']} ({stats['bird_percentage']:.1f}%)")
-        print(f"🎯 Bird Segments: {len(stats['bird_segments'])}")
+        print(f"\n📁 {t('report_file')} {stats['video_path']}")
+        print(f"📊 {t('report_total_frames')} {stats['total_frames']} ({t('report_analyzed')} {stats['frames_analyzed']})")
+        print(f"⏱️  {t('report_duration')} {stats['duration_seconds']:.1f} {t('report_seconds')}")
+        print(f"🐦 {t('report_bird_frames')} {stats['frames_with_birds']} ({stats['bird_percentage']:.1f}%)")
+        print(f"🎯 {t('report_bird_segments')} {len(stats['bird_segments'])}")
         
         if stats['bird_segments']:
-            print(f"\n📍 Detected Segments:")
+            print(f"\n📍 {t('report_detected_segments')}")
             for i, segment in enumerate(stats['bird_segments'], 1):
                 start = timedelta(seconds=int(segment['start']))
                 end = timedelta(seconds=int(segment['end']))
                 duration = segment['end'] - segment['start']
                 bird_pct = (segment['detections'] / stats['frames_analyzed']) * 100
-                print(f"  {'┌' if i == 1 else '├'} Segment {i}: {start} - {end} ({bird_pct:.0f}% bird frames)")
+                print(f"  {'┌' if i == 1 else '├'} {t('report_segment')} {i}: {start} - {end} ({bird_pct:.0f}% {t('report_bird_frames_short')})")
                 if i == len(stats['bird_segments']):
                     print(f"  └")
         
         # Status
         if stats['bird_percentage'] >= 50:
-            print(f"\n✅ Status: Significant bird activity detected")
+            print(f"\n✅ {t('report_status')} {t('status_significant')}")
         elif stats['bird_percentage'] > 0:
-            print(f"\n⚠️  Status: Limited bird activity detected")
+            print(f"\n⚠️  {t('report_status')} {t('status_limited')}")
         else:
-            print(f"\n❌ Status: No bird content detected")
+            print(f"\n❌ {t('report_status')} {t('status_none')}")
         
         print("━" * 70)

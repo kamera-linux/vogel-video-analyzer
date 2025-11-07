@@ -1,5 +1,7 @@
 # 🐦 Vogel Video Analyzer
 
+**Languages:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md)
+
 <p align="left">
   <a href="https://pypi.org/project/vogel-video-analyzer/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/vogel-video-analyzer.svg"></a>
   <a href="https://pypi.org/project/vogel-video-analyzer/"><img alt="Python Versions" src="https://img.shields.io/pypi/pyversions/vogel-video-analyzer.svg"></a>
@@ -109,6 +111,9 @@ vogel-analyze bird_video.mp4
 ```bash
 # Custom threshold and sample rate
 vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
+
+# Set output language (en/de, auto-detected by default)
+vogel-analyze --language de video.mp4
 
 # Delete only video files with 0% bird content
 vogel-analyze --delete-file --sample-rate 5 *.mp4
