@@ -56,6 +56,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--model', default='yolov8n.pt', help='YOLO model (default: yolov8n.pt)')
     parser.add_argument('--threshold', type=float, default=0.3, help='Confidence threshold (default: 0.3)')
     parser.add_argument('--sample-rate', type=int, default=5, help='Analyze every Nth frame (default: 5)')
+    parser.add_argument('--identify-species', action='store_true', help='Identify bird species (requires: pip install vogel-video-analyzer[species])')
     parser.add_argument('--output', '-o', help='Save report as JSON')
     parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
@@ -112,11 +113,25 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             print("   sudo mkdir -p /var/log/vogel-kamera-linux && sudo chown $USER /var/log/vogel-kamera-linux", file=sys.stderr)
             return 1
     
+    # Check species dependencies if requested
+    if args.identify_species:
+        try:
+            from .species_classifier import SPECIES_AVAILABLE
+            if not SPECIES_AVAILABLE:
+                print(f"❌ {t('species_dependencies_missing')}", file=sys.stderr)
+                print(f"   pip install vogel-video-analyzer[species]", file=sys.stderr)
+                return 1
+        except ImportError:
+            print(f"❌ {t('species_dependencies_missing')}", file=sys.stderr)
+            print(f"   pip install vogel-video-analyzer[species]", file=sys.stderr)
+            return 1
+    
     try:
         # Initialize analyzer
         analyzer = VideoAnalyzer(
             model_path=args.model,
-            threshold=args.threshold
+            threshold=args.threshold,
+            identify_species=args.identify_species
         )
         
         # Analyze videos

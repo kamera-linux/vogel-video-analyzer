@@ -78,6 +78,15 @@ TRANSLATIONS = {
         'error': 'Error',
         'error_analyzing': 'Error analyzing',
         'report_saved': 'Report saved:',
+        
+        # Species identification
+        'species_dependencies_missing': 'Species identification requires additional dependencies.',
+        'identifying_species': 'Identifying bird species...',
+        'species_title': 'Detected Species:',
+        'species_count': '{count} species detected',
+        'species_detections': '{detections} detections',
+        'species_avg_confidence': 'avg confidence',
+        'species_no_detections': 'No species identified',
     },
     'de': {
         # Loading and initialization
@@ -148,6 +157,15 @@ TRANSLATIONS = {
         'error': 'Fehler',
         'error_analyzing': 'Fehler beim Analysieren',
         'report_saved': 'Bericht gespeichert:',
+        
+        # Species identification
+        'species_dependencies_missing': 'Artenerkennung erfordert zusätzliche Abhängigkeiten.',
+        'identifying_species': 'Identifiziere Vogelarten...',
+        'species_title': 'Erkannte Arten:',
+        'species_count': '{count} Arten erkannt',
+        'species_detections': '{detections} Erkennungen',
+        'species_avg_confidence': 'Ø Konfidenz',
+        'species_no_detections': 'Keine Arten identifiziert',
     }
 }
 

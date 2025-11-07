@@ -19,6 +19,7 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 ## ✨ Features
 
 - 🤖 **YOLOv8-powered Detection** - Accurate bird detection using pre-trained models
+- 🦜 **Species Identification** - Identify bird species using Hugging Face models (optional)
 - 📊 **Detailed Statistics** - Frame-by-frame analysis with bird content percentage
 - 🎯 **Segment Detection** - Identifies continuous time periods with bird presence
 - ⚡ **Performance Optimized** - Configurable sample rate for faster processing
@@ -45,14 +46,21 @@ python3 -m venv ~/venv-vogel
 # Activate it
 source ~/venv-vogel/bin/activate  # On Windows: ~/venv-vogel\Scripts\activate
 
-# Install package
+# Install package (basic)
 pip install vogel-video-analyzer
+
+# Install with species identification support (optional)
+pip install vogel-video-analyzer[species]
 ```
 
 #### Direct Installation
 
 ```bash
+# Basic installation
 pip install vogel-video-analyzer
+
+# With species identification support
+pip install vogel-video-analyzer[species]
 ```
 
 ### Basic Usage
@@ -60,6 +68,9 @@ pip install vogel-video-analyzer
 ```bash
 # Analyze a single video
 vogel-analyze video.mp4
+
+# Identify bird species
+vogel-analyze --identify-species video.mp4
 
 # Faster analysis (every 5th frame)
 vogel-analyze --sample-rate 5 video.mp4
@@ -105,6 +116,90 @@ vogel-analyze bird_video.mp4
 
 ✅ Status: Significant bird activity detected
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### Species Identification (Optional)
+```bash
+# Identify bird species in video
+vogel-analyze --identify-species bird_video.mp4
+```
+
+**Output:**
+```
+🎬 Video Analysis Report
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 File: /path/to/bird_video.mp4
+📊 Total Frames: 450 (analyzed: 90)
+⏱️  Duration: 15.0 seconds
+🐦 Bird Frames: 72 (80.0%)
+🎯 Bird Segments: 2
+
+📍 Detected Segments:
+  ┌ Segment 1: 00:00:02 - 00:00:08 (72% bird frames)
+  └ Segment 2: 00:00:11 - 00:00:14 (89% bird frames)
+
+✅ Status: Significant bird activity detected
+
+🦜 Detected Species:
+   3 species detected
+
+  • Parus major (Great Tit)
+    45 detections (avg confidence: 0.89)
+  • Turdus merula (Blackbird)
+    18 detections (avg confidence: 0.85)
+  • Erithacus rubecula (European Robin)
+    9 detections (avg confidence: 0.82)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Note:** Species identification requires additional dependencies:
+```bash
+pip install vogel-video-analyzer[species]
+```
+
+The first time you run species identification, the model (~100-300MB) will be downloaded automatically and cached locally for future use.
+
+#### Advanced Options
+```bash
+# Custom threshold and sample rate
+vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
+
+# Species identification with faster analysis
+vogel-analyze --identify-species --sample-rate 10 video.mp4
+
+# Set output language (en/de, auto-detected by default)
+vogel-analyze --language de video.mp4
+
+# Delete only video files with 0% bird content
+vogel-analyze --delete-file --sample-rate 5 *.mp4
+
+# Delete entire folders with 0% bird content
+vogel-analyze --delete-folder --sample-rate 5 ~/Videos/*/*.mp4
+
+# Save JSON report and log
+vogel-analyze --output report.json --log video.mp4
+```
+
+### Python Library
+
+```python
+from vogel_video_analyzer import VideoAnalyzer
+
+# Initialize analyzer (basic)
+analyzer = VideoAnalyzer(
+    model_path="yolov8n.pt",
+    threshold=0.3
+)
+
+# Initialize analyzer with species identification
+analyzer = VideoAnalyzer(
+    model_path="yolov8n.pt",
+    threshold=0.3,
+    identify_species=True
+)
+
+# Analyze video
+```
 ```
 
 #### Advanced Options

@@ -19,6 +19,7 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
 ## ✨ Funktionen
 
 - 🤖 **YOLOv8-basierte Erkennung** - Präzise Vogelerkennung mit vortrainierten Modellen
+- 🦜 **Artenerkennung** - Identifiziert Vogelarten mit Hugging Face Modellen (optional)
 - 📊 **Detaillierte Statistiken** - Frame-für-Frame-Analyse mit Vogelinhalt in Prozent
 - 🎯 **Segment-Erkennung** - Identifiziert zusammenhängende Zeitperioden mit Vogelvorkommen
 - ⚡ **Performance-Optimiert** - Konfigurierbare Sample-Rate für schnellere Verarbeitung
@@ -45,14 +46,21 @@ python3 -m venv ~/venv-vogel
 # Aktivieren
 source ~/venv-vogel/bin/activate  # Unter Windows: ~/venv-vogel\Scripts\activate
 
-# Paket installieren
+# Paket installieren (Basis)
 pip install vogel-video-analyzer
+
+# Mit Artenerkennung (optional)
+pip install vogel-video-analyzer[species]
 ```
 
 #### Direkte Installation
 
 ```bash
+# Basis-Installation
 pip install vogel-video-analyzer
+
+# Mit Artenerkennung
+pip install vogel-video-analyzer[species]
 ```
 
 ### Grundlegende Verwendung
@@ -60,6 +68,9 @@ pip install vogel-video-analyzer
 ```bash
 # Einzelnes Video analysieren
 vogel-analyze video.mp4
+
+# Vogelarten identifizieren
+vogel-analyze --identify-species video.mp4
 
 # Schnellere Analyse (jedes 5. Frame)
 vogel-analyze --sample-rate 5 video.mp4
@@ -105,6 +116,90 @@ vogel-analyze bird_video.mp4
 
 ✅ Status: Signifikante Vogelaktivität erkannt
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+#### Artenerkennung (Optional)
+```bash
+# Vogelarten im Video identifizieren
+vogel-analyze --identify-species bird_video.mp4
+```
+
+**Ausgabe:**
+```
+🎬 Videoanalyse-Bericht
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+📁 Datei: /path/to/bird_video.mp4
+📊 Gesamt-Frames: 450 (analysiert: 90)
+⏱️  Dauer: 15.0 Sekunden
+🐦 Vogel-Frames: 72 (80.0%)
+🎯 Vogel-Segmente: 2
+
+📍 Erkannte Segmente:
+  ┌ Segment 1: 00:00:02 - 00:00:08 (72% Vogel-Frames)
+  └ Segment 2: 00:00:11 - 00:00:14 (89% Vogel-Frames)
+
+✅ Status: Signifikante Vogelaktivität erkannt
+
+🦜 Erkannte Arten:
+   3 Arten erkannt
+
+  • Parus major (Kohlmeise)
+    45 Erkennungen (Ø Konfidenz: 0.89)
+  • Turdus merula (Amsel)
+    18 Erkennungen (Ø Konfidenz: 0.85)
+  • Erithacus rubecula (Rotkehlchen)
+    9 Erkennungen (Ø Konfidenz: 0.82)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**Hinweis:** Artenerkennung benötigt zusätzliche Abhängigkeiten:
+```bash
+pip install vogel-video-analyzer[species]
+```
+
+Beim ersten Ausführen der Artenerkennung wird das Modell (~100-300MB) automatisch heruntergeladen und lokal gecacht.
+
+#### Erweiterte Optionen
+```bash
+# Benutzerdefinierter Schwellenwert und Sample-Rate
+vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
+
+# Artenerkennung mit schnellerer Analyse
+vogel-analyze --identify-species --sample-rate 10 video.mp4
+
+# Ausgabesprache festlegen (en/de, standardmäßig automatisch erkannt)
+vogel-analyze --language de video.mp4
+
+# Nur Videodateien mit 0% Vogelinhalt löschen
+vogel-analyze --delete-file --sample-rate 5 *.mp4
+
+# Ganze Ordner mit 0% Vogelinhalt löschen
+vogel-analyze --delete-folder --sample-rate 5 ~/Videos/*/*.mp4
+
+# JSON-Bericht und Log speichern
+vogel-analyze --output report.json --log video.mp4
+```
+
+### Python-Bibliothek
+
+```python
+from vogel_video_analyzer import VideoAnalyzer
+
+# Analyzer initialisieren (Basis)
+analyzer = VideoAnalyzer(
+    model_path="yolov8n.pt",
+    threshold=0.3
+)
+
+# Analyzer mit Artenerkennung initialisieren
+analyzer = VideoAnalyzer(
+    model_path="yolov8n.pt",
+    threshold=0.3,
+    identify_species=True
+)
+
+# Video analysieren
+```
 ```
 
 #### Erweiterte Optionen

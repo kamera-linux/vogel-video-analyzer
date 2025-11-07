@@ -5,6 +5,46 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2025-11-07
+
+### Added
+- **Bird Species Identification** - New optional feature to identify bird species using Hugging Face models
+- `--identify-species` CLI flag to enable species classification
+- `BirdSpeciesClassifier` class using transformers library and pre-trained models
+- Species statistics in analysis reports showing detected species with counts and confidence
+- Optional dependencies group `[species]` for machine learning packages (transformers, torch, torchvision, pillow)
+- Species-related translations in i18n module (en/de)
+- Species detection examples in README.md and README.de.md
+- Automatic model download and caching (~100-300MB on first use)
+
+### Changed
+- `VideoAnalyzer.__init__()` now accepts optional `identify_species` parameter
+- Analysis reports now include detected species section when species identification is enabled
+- Documentation updated with species identification installation and usage examples
+- Package description updated to mention species identification capability
+
+### Technical
+- Species classifier uses chriamue/bird-species-classifier model from Hugging Face
+- Graceful degradation when species dependencies are not installed
+- Import guards prevent errors when optional dependencies missing
+- Species classification integrated into YOLO bird detection pipeline
+- Bounding box crops extracted and classified for each detected bird
+- Aggregated species statistics with average confidence scores
+
+**Installation:**
+```bash
+# Basic installation (bird detection only)
+pip install vogel-video-analyzer
+
+# With species identification support
+pip install vogel-video-analyzer[species]
+```
+
+**Usage:**
+```bash
+vogel-analyze --identify-species video.mp4
+```
+
 ## [0.1.4] - 2025-11-07
 
 ### Fixed

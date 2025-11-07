@@ -8,11 +8,20 @@ from datetime import timedelta
 from ultralytics import YOLO
 from .i18n import t
 
+# Optional species classification
+try:
+    from .species_classifier import BirdSpeciesClassifier, aggregate_species_detections
+    SPECIES_AVAILABLE = True
+except ImportError:
+    SPECIES_AVAILABLE = False
+    BirdSpeciesClassifier = None
+    aggregate_species_detections = None
+
 
 class VideoAnalyzer:
     """Analyzes videos for bird content using YOLOv8"""
     
-    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14):
+    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14, identify_species=False):
         """
         Initialize the analyzer
         
@@ -20,12 +29,30 @@ class VideoAnalyzer:
             model_path: Path to YOLO model (searches: models/, config/models/, current dir, auto-download)
             threshold: Confidence threshold (0.0-1.0), default 0.3 for bird detection
             target_class: COCO class for bird (14=bird)
+            identify_species: Enable bird species classification (requires species dependencies)
         """
         model_path = self._find_model(model_path)
         print(f"🤖 {t('loading_model')} {model_path}")
         self.model = YOLO(model_path)
         self.threshold = threshold
         self.target_class = target_class
+        self.identify_species = identify_species
+        self.species_classifier = None
+        
+        # Initialize species classifier if requested
+        if self.identify_species:
+            if not SPECIES_AVAILABLE:
+                print(f"   ⚠️  Species identification requires additional dependencies.")
+                print(f"   Install with: pip install vogel-video-analyzer[species]")
+                print(f"   Continuing with basic bird detection only.\n")
+                self.identify_species = False
+            else:
+                try:
+                    self.species_classifier = BirdSpeciesClassifier()
+                except Exception as e:
+                    print(f"   ⚠️  Could not load species classifier: {e}")
+                    print(f"   Continuing with basic bird detection only.\n")
+                    self.identify_species = False
     
     def _find_model(self, model_name):
         """
@@ -119,6 +146,8 @@ class VideoAnalyzer:
             
             # Check bird detection
             birds_in_frame = 0
+            frame_species = []
+            
             for result in results:
                 boxes = result.boxes
                 for box in boxes:
@@ -128,14 +157,42 @@ class VideoAnalyzer:
                     if cls == self.target_class and conf >= self.threshold:
                         birds_in_frame += 1
                         
+                        # Species identification if enabled
+                        if self.identify_species and self.species_classifier:
+                            try:
+                                # Get bounding box coordinates
+                                xyxy = box.xyxy[0].cpu().numpy()
+                                x1, y1, x2, y2 = map(int, xyxy)
+                                
+                                # Classify the bird crop
+                                species_predictions = self.species_classifier.classify_crop(
+                                    frame, (x1, y1, x2, y2), top_k=1
+                                )
+                                
+                                if species_predictions:
+                                    species_info = species_predictions[0]
+                                    frame_species.append({
+                                        'species': species_info['label'],
+                                        'confidence': species_info['score']
+                                    })
+                            except Exception as e:
+                                # Silently skip species classification errors
+                                pass
+                        
             if birds_in_frame > 0:
                 frames_with_birds += 1
                 timestamp = current_frame / fps if fps > 0 else 0
-                bird_detections.append({
+                detection_entry = {
                     'frame': current_frame,
                     'timestamp': timestamp,
                     'birds': birds_in_frame
-                })
+                }
+                
+                # Add species information if available
+                if frame_species:
+                    detection_entry['species'] = frame_species
+                
+                bird_detections.append(detection_entry)
                 
             # Progress every 30 analyzed frames
             if frames_analyzed % 30 == 0:
@@ -166,6 +223,11 @@ class VideoAnalyzer:
             'threshold': self.threshold,
             'model': str(self.model.ckpt_path if hasattr(self.model, 'ckpt_path') else 'unknown')
         }
+        
+        # Add species statistics if species identification was enabled
+        if self.identify_species and SPECIES_AVAILABLE:
+            species_stats = aggregate_species_detections(bird_detections)
+            stats['species_stats'] = species_stats
         
         print(f"\n   ✅ {t('analysis_complete')}")
         return stats
@@ -252,5 +314,22 @@ class VideoAnalyzer:
             print(f"\n⚠️  {t('report_status')} {t('status_limited')}")
         else:
             print(f"\n❌ {t('report_status')} {t('status_none')}")
+        
+        # Species identification results
+        if 'species_stats' in stats and stats['species_stats']:
+            species_stats = stats['species_stats']
+            print(f"\n🦜 {t('species_title')}")
+            if species_stats:
+                print(f"   {t('species_count').format(count=len(species_stats))}")
+                print()
+                for species_name, data in sorted(species_stats.items(), 
+                                                  key=lambda x: x[1]['count'], 
+                                                  reverse=True):
+                    count = data['count']
+                    avg_conf = data['avg_confidence']
+                    print(f"  • {species_name}")
+                    print(f"    {t('species_detections').format(detections=count)} ({t('species_avg_confidence')}: {avg_conf:.2f})")
+            else:
+                print(f"   {t('species_no_detections')}")
         
         print("━" * 70)

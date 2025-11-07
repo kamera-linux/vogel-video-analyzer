@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vogel-video-analyzer"
-version = "0.1.4"
-description = "YOLOv8-based video analysis tool for bird content detection"
+version = "0.2.0"
+description = "YOLOv8-based video analysis tool for bird content detection and species identification"
 readme = "README.md"
 authors = [
     {name = "Vogel-Kamera-Linux Team", email = "info@vogel-kamera-linux.org"}
@@ -52,6 +52,12 @@ dev = [
     "black>=23.0",
     "flake8>=6.0",
     "mypy>=1.0",
+]
+species = [
+    "transformers>=4.30.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "pillow>=10.0.0",
 ]
 
 [project.urls]
