@@ -395,29 +395,34 @@ Pre-trained bird species classifiers are trained on global datasets and often mi
 
 ### Quick Start
 
-**1. Extract bird images from your videos:**
+The training tools are now available as a standalone package: **[vogel-model-trainer](https://github.com/kamera-linux/vogel-model-trainer)**
+
+**1. Install the training package:**
 ```bash
-python training/extract_birds.py ~/Videos/kohlmeise.mp4 \
-  -o ~/vogel-training-data/kohlmeise_video1/ \
-  --sample-rate 50
+pip install vogel-model-trainer
 ```
 
-**2. Organize dataset (80/20 train/val split):**
+**2. Extract bird images from your videos:**
 ```bash
-cd ~/vogel-training-data
-python /path/to/vogel-video-analyzer/training/organize_dataset.py
+vogel-trainer extract ~/Videos/kohlmeise.mp4 \
+  --folder ~/vogel-training-data/ \
+  --bird kohlmeise \
+  --sample-rate 3
 ```
 
-**3. Train the model (requires ~3-4 hours on Raspberry Pi 5):**
+**3. Organize dataset (80/20 train/val split):**
 ```bash
-# Install training dependencies
-pip install torch torchvision datasets accelerate
-
-# Start training
-python /path/to/vogel-video-analyzer/training/train_custom_model.py
+vogel-trainer organize \
+  --source ~/vogel-training-data/ \
+  --output ~/vogel-training-data/organized/
 ```
 
-**4. Use your trained model:**
+**4. Train the model (requires ~3-4 hours on Raspberry Pi 5):**
+```bash
+vogel-trainer train
+```
+
+**5. Use your trained model:**
 ```bash
 vogel-analyze --identify-species \
   --species-model ~/vogel-models/bird-classifier-*/final/ \
@@ -432,11 +437,11 @@ vogel-analyze --identify-species \
 
 ### Complete Documentation
 
-See [`training/README.md`](training/README.md) for:
-- Detailed training workflow
-- Script documentation
-- Troubleshooting guide
-- Tips for improving accuracy
+See the **[vogel-model-trainer documentation](https://github.com/kamera-linux/vogel-model-trainer)** for:
+- Complete training workflow
+- Iterative training for better accuracy
+- Advanced usage and troubleshooting
+- Performance tips and best practices
 
 ---
 

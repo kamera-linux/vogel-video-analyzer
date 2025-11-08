@@ -1,0 +1,3 @@
+[submodule "training"]
+	path = training
+	url = https://github.com/kamera-linux/vogel-model-trainer.git

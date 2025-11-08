@@ -395,29 +395,34 @@ Vortrainierte Vogelarten-Klassifizierer sind auf globalen Datensätzen trainiert
 
 ### Schnellstart
 
-**1. Vogelbilder aus Videos extrahieren:**
+Die Training-Tools sind jetzt als eigenständiges Paket verfügbar: **[vogel-model-trainer](https://github.com/kamera-linux/vogel-model-trainer)**
+
+**1. Training-Paket installieren:**
 ```bash
-python training/extract_birds.py ~/Videos/kohlmeise.mp4 \
-  -o ~/vogel-training-data/kohlmeise_video1/ \
-  --sample-rate 50
+pip install vogel-model-trainer
 ```
 
-**2. Datensatz organisieren (80/20 Train/Val Split):**
+**2. Vogelbilder aus Videos extrahieren:**
 ```bash
-cd ~/vogel-training-data
-python /pfad/zu/vogel-video-analyzer/training/organize_dataset.py
+vogel-trainer extract ~/Videos/kohlmeise.mp4 \
+  --folder ~/vogel-training-data/ \
+  --bird kohlmeise \
+  --sample-rate 3
 ```
 
-**3. Modell trainieren (benötigt ~3-4 Stunden auf Raspberry Pi 5):**
+**3. Datensatz organisieren (80/20 Train/Val Split):**
 ```bash
-# Training-Abhängigkeiten installieren
-pip install torch torchvision datasets accelerate
-
-# Training starten
-python /pfad/zu/vogel-video-analyzer/training/train_custom_model.py
+vogel-trainer organize \
+  --source ~/vogel-training-data/ \
+  --output ~/vogel-training-data/organized/
 ```
 
-**4. Trainiertes Modell verwenden:**
+**4. Modell trainieren (benötigt ~3-4 Stunden auf Raspberry Pi 5):**
+```bash
+vogel-trainer train
+```
+
+**5. Trainiertes Modell verwenden:**
 ```bash
 vogel-analyze --identify-species \
   --species-model ~/vogel-models/bird-classifier-*/final/ \
@@ -432,11 +437,11 @@ vogel-analyze --identify-species \
 
 ### Vollständige Dokumentation
 
-Siehe [`training/README.md`](training/README.md) für:
-- Detaillierter Training-Workflow
-- Script-Dokumentation
-- Fehlerbehebungs-Leitfaden
-- Tipps zur Verbesserung der Genauigkeit
+Siehe die **[vogel-model-trainer Dokumentation](https://github.com/kamera-linux/vogel-model-trainer)** für:
+- Kompletter Training-Workflow
+- Iteratives Training für bessere Genauigkeit
+- Erweiterte Nutzung und Fehlerbehebung
+- Performance-Tipps und Best Practices
 
 ---
 
