@@ -59,6 +59,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--identify-species', action='store_true', help='Identify bird species (requires: pip install vogel-video-analyzer[species])')
     parser.add_argument('--species-model', default='chriamue/bird-species-classifier', 
                         help='Species classification model: Hugging Face model ID or local path (default: chriamue/bird-species-classifier)')
+    parser.add_argument('--species-threshold', type=float, default=0.3,
+                        help='Minimum confidence threshold for species classification (default: 0.3)')
     parser.add_argument('--output', '-o', help='Save report as JSON')
     parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
@@ -134,7 +136,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             model_path=args.model,
             threshold=args.threshold,
             identify_species=args.identify_species,
-            species_model=args.species_model
+            species_model=args.species_model,
+            species_threshold=args.species_threshold
         )
         
         # Analyze videos

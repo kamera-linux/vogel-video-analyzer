@@ -21,7 +21,7 @@ except ImportError:
 class VideoAnalyzer:
     """Analyzes videos for bird content using YOLOv8"""
     
-    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14, identify_species=False, species_model="dima806/bird_species_image_detection"):
+    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=0.3):
         """
         Initialize the analyzer
         
@@ -31,6 +31,7 @@ class VideoAnalyzer:
             target_class: COCO class for bird (14=bird)
             identify_species: Enable bird species classification (requires species dependencies)
             species_model: Hugging Face model for species classification (default: dima806/bird_species_image_detection)
+            species_threshold: Minimum confidence threshold for species classification (default: 0.3)
         """
         model_path = self._find_model(model_path)
         print(f"🤖 {t('loading_model')} {model_path}")
@@ -49,7 +50,7 @@ class VideoAnalyzer:
                 self.identify_species = False
             else:
                 try:
-                    self.species_classifier = BirdSpeciesClassifier(model_name=species_model)
+                    self.species_classifier = BirdSpeciesClassifier(model_name=species_model, confidence_threshold=species_threshold)
                 except Exception as e:
                     print(f"   ⚠️  Could not load species classifier: {e}")
                     print(f"   Continuing with basic bird detection only.\n")

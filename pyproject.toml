@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vogel-video-analyzer"
-version = "0.2.1"
+version = "0.2.2"
 description = "YOLOv8-based video analysis tool for automated bird content detection, quantification, and species identification"
 readme = "README.md"
 authors = [

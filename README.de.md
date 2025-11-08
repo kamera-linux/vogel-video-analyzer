@@ -168,7 +168,18 @@ Du kannst lokal trainierte Modelle für bessere Genauigkeit mit deinen spezifisc
 ```bash
 # Eigenes Modell verwenden
 vogel-analyze --identify-species --species-model ~/vogel-models/my-model/ video.mp4
+
+# Mit angepasstem Konfidenz-Schwellenwert (Standard: 0.3)
+vogel-analyze --identify-species \
+  --species-model ~/vogel-models/my-model/ \
+  --species-threshold 0.5 \
+  video.mp4
 ```
+
+**Schwellenwert-Richtlinien:**
+- `0.1-0.2` - Maximale Erkennungen (explorative Analyse)
+- `0.3-0.5` - Ausgewogen (empfohlen)
+- `0.6-0.9` - Nur hohe Konfidenz
 
 Siehe Abschnitt [Eigenes Modell trainieren](#-eigenes-modell-trainieren) für Details zum Training.
 
@@ -177,7 +188,8 @@ Siehe Abschnitt [Eigenes Modell trainieren](#-eigenes-modell-trainieren) für De
 # Benutzerdefinierter Schwellenwert und Sample-Rate
 vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
 
-# Artenerkennung mit schnellerer Analyse
+# Artenerkennung mit Konfidenz-Anpassung
+vogel-analyze --identify-species --species-threshold 0.4 video.mp4
 vogel-analyze --identify-species --sample-rate 10 video.mp4
 
 # Ausgabesprache festlegen (en/de, standardmäßig automatisch erkannt)

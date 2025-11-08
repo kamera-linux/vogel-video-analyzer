@@ -1,4 +1,8 @@
 include README.md
+include README.de.md
 include LICENSE
 include CHANGELOG.md
+include CONTRIBUTING.md
+include SECURITY.md
 recursive-include src *.py
+recursive-include src *.typed

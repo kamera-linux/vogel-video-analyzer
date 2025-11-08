@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2025-11-08
+
+### Changed
+- **Training Scripts Moved to Standalone Package** - Replaced `training/` directory with `vogel-model-trainer` package
+  - Training tools now available via `pip install vogel-model-trainer`
+  - Added `vogel-model-trainer` as Git submodule for development
+  - Updated README to reference new training package
+  - Cleaner separation of concerns between analysis and training
+
+### Added
+- **New CLI Parameter** - `--species-threshold` for fine-tuning species classification confidence
+  - Default: 0.3 (balanced)
+  - Range: 0.0-1.0 (lower = more detections, higher = more certain)
+  - Example: `vogel-analyze --identify-species --species-threshold 0.5 video.mp4`
+- **GitHub Actions Workflow** - Automated PyPI publishing
+  - Automatic PyPI release on GitHub release creation
+  - Manual TestPyPI deployment via workflow_dispatch
+  - Automatic creation of GitHub release assets (wheel + tar.gz)
+- **Improved Documentation** - Added threshold guidelines and usage examples
+
+### Fixed
+- **Critical Training Bug** - Fixed preprocessing inconsistency between training and inference
+  - Training now uses `AutoImageProcessor` directly instead of manual transforms
+  - Ensures consistent preprocessing between training and test/production
+  - Resolves issue where trained models gave incorrect predictions
+  - Mean pixel value difference reduced from 0.83 to 0.0
+
 ## [0.2.1] - 2025-11-07
 
 ### Added

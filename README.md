@@ -168,7 +168,18 @@ You can use locally trained models for better accuracy with your specific bird s
 ```bash
 # Use custom model
 vogel-analyze --identify-species --species-model ~/vogel-models/my-model/ video.mp4
+
+# With custom confidence threshold (default: 0.3)
+vogel-analyze --identify-species \
+  --species-model ~/vogel-models/my-model/ \
+  --species-threshold 0.5 \
+  video.mp4
 ```
+
+**Threshold Guidelines:**
+- `0.1-0.2` - Maximize detections (exploratory)
+- `0.3-0.5` - Balanced (recommended)
+- `0.6-0.9` - High confidence only
 
 See the [Custom Model Training](#-custom-model-training) section for details on training your own model.
 
@@ -177,7 +188,8 @@ See the [Custom Model Training](#-custom-model-training) section for details on 
 # Custom threshold and sample rate
 vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
 
-# Species identification with faster analysis
+# Species identification with confidence tuning
+vogel-analyze --identify-species --species-threshold 0.4 video.mp4
 vogel-analyze --identify-species --sample-rate 10 video.mp4
 
 # Set output language (en/de, auto-detected by default)
