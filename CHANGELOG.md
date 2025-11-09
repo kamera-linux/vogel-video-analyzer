@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.3] - 2025-11-09
+
+### Added
+- **Japanese Language Support** - Full i18n support for Japanese users
+  - Complete Japanese translations in i18n module
+  - New `--language ja` CLI option
+  - Japanese README (README.ja.md) with full documentation
+  - Auto-detection of Japanese system locale
+
+### Changed
+- **Documentation Improvements** - Updated all README files
+  - Fixed deprecated `--delete` parameter usage in archive examples
+  - Updated to use `--delete-file` and `--delete-folder` parameters
+  - Added language selector for Japanese in all READMEs
+  - Clarified deletion options in use case examples
+
+### Fixed
+- **CLI Help Text** - Language choices now include Japanese (`en`, `de`, `ja`)
+- **MANIFEST.in** - Now includes README.ja.md for PyPI distribution
+
 ## [0.2.2] - 2025-11-08
 
 ### Changed

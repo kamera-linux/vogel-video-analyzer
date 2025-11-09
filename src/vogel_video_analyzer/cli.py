@@ -66,7 +66,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
     parser.add_argument('--delete', action='store_true', help='(Deprecated) Use --delete-file or --delete-folder instead')
     parser.add_argument('--log', action='store_true', help='Save console output to log file')
-    parser.add_argument('--language', choices=['en', 'de'], help='Set output language (default: auto-detect from system)')
+    parser.add_argument('--language', choices=['en', 'de', 'ja'], help='Set output language (default: auto-detect from system)')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     
     args = parser.parse_args()

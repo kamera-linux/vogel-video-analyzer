@@ -1,6 +1,6 @@
 # 🐦 Vogel Video Analyzer
 
-**Languages:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md)
+**Languages:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md) | [🇯🇵 日本語](README.ja.md)
 
 <p align="left">
   <a href="https://pypi.org/project/vogel-video-analyzer/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/vogel-video-analyzer.svg"></a>
@@ -275,7 +275,7 @@ print(f"Segments found: {len(stats['bird_segments'])}")
 Automatically verify that recorded videos actually contain birds:
 
 ```bash
-vogel-analyze --threshold 0.5 --delete recordings/**/*.mp4
+vogel-analyze --threshold 0.5 --delete-file recordings/**/*.mp4
 ```
 
 ### 2. Archive Management
@@ -285,8 +285,11 @@ Identify and remove videos without bird content to save storage:
 # Find videos with 0% bird content
 vogel-analyze --output stats.json archive/**/*.mp4
 
-# Delete empty videos
-vogel-analyze --delete archive/**/*.mp4
+# Delete empty video files only
+vogel-analyze --delete-file archive/**/*.mp4
+
+# Delete entire folders with 0% bird content
+vogel-analyze --delete-folder archive/**/*.mp4
 ```
 
 ### 3. Batch Analysis for Research

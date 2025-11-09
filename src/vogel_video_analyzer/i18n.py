@@ -176,6 +176,90 @@ TRANSLATIONS = {
         'model_loaded_success': 'Modell erfolgreich geladen',
         'model_load_error': 'Fehler beim Laden des Modells:',
         'fallback_basic_detection': 'Verwende nur grundlegende Vogelerkennung',
+    },
+    'ja': {
+        # Loading and initialization
+        'loading_model': 'YOLOモデルを読み込んでいます：',
+        'model_not_found': "モデル '{model_name}' がローカルで見つかりません。自動的にダウンロードします...",
+        
+        # Video analysis
+        'analyzing': '分析中：',
+        'video_not_found': 'ビデオが見つかりません：{path}',
+        'cannot_open_video': 'ビデオを開けません：{path}',
+        'video_info': 'ビデオ情報：',
+        'frames': 'フレーム',
+        'analyzing_every_nth': '{n}フレームごとに分析しています...',
+        'analysis_complete': '分析完了！',
+        'analysis_interrupted': '分析が中断されました',
+        
+        # Report
+        'report_title': 'ビデオ分析レポート',
+        'report_file': 'ファイル：',
+        'report_total_frames': '総フレーム数：',
+        'report_analyzed': '分析済み：',
+        'report_duration': '再生時間：',
+        'report_seconds': '秒',
+        'report_bird_frames': '鳥検出フレーム：',
+        'report_bird_segments': '鳥検出セグメント：',
+        'report_detected_segments': '検出されたセグメント：',
+        'report_segment': 'セグメント',
+        'report_bird_frames_short': '鳥フレーム',
+        'report_status': 'ステータス：',
+        'status_significant': '顕著な鳥の活動を検出',
+        'status_limited': '限定的な鳥の活動を検出',
+        'status_none': '鳥のコンテンツが検出されませんでした',
+        
+        # Summary
+        'summary_title': 'サマリー（{count}本の動画）',
+        'summary_total_duration': '総再生時間：',
+        'summary_total_frames': '総分析フレーム数：',
+        'summary_bird_frames': '鳥検出フレーム総数：',
+        'summary_avg_bird': '平均鳥コンテンツ：',
+        'summary_overview': 'ビデオ概要：',
+        'summary_directory': 'ディレクトリ',
+        'summary_bird': '鳥',
+        'summary_bird_pct': '鳥%',
+        'summary_frames': 'フレーム',
+        'summary_duration': '再生時間',
+        
+        # Deletion
+        'delete_files_title': '鳥コンテンツ0%のビデオファイルを削除（{count}ファイル）',
+        'delete_folders_title': '鳥コンテンツ0%のフォルダを削除（{count}本の動画）',
+        'deleting': '削除中：',
+        'deleting_folder': 'フォルダを削除中：',
+        'delete_success': '正常に削除されました',
+        'delete_error': '削除エラー：',
+        'deleted_files': '削除されたファイル：',
+        'deleted_folders': '削除されたフォルダ：',
+        'remaining_videos': '残りの動画：',
+        'no_empty_files': '鳥コンテンツ0%のビデオファイルが見つかりません',
+        'no_empty_folders': '鳥コンテンツ0%のフォルダが見つかりません',
+        'delete_deprecated': '警告：--deleteは非推奨です。--delete-fileまたは--delete-folderを使用してください。',
+        'delete_deprecated_hint': '後方互換性のため、--delete-folderの動作をデフォルトとします。',
+        
+        # Logging
+        'log_file': 'ログファイル：',
+        'log_permission_denied': '警告：/var/log/vogel-kamera-linux/への書き込み権限がありません',
+        'log_permission_hint': 'sudoで実行するか、権限を変更してください：',
+        
+        # Errors
+        'error': 'エラー',
+        'error_analyzing': '分析エラー',
+        'report_saved': 'レポートを保存しました：',
+        
+        # Species identification
+        'species_dependencies_missing': '種の識別には追加の依存関係が必要です。',
+        'identifying_species': '鳥の種を識別しています...',
+        'species_title': '検出された種：',
+        'species_count': '{count}種を検出',
+        'species_detections': '{detections}回の検出',
+        'species_avg_confidence': '平均信頼度',
+        'species_no_detections': '種が識別されませんでした',
+        'loading_species_model': '鳥の種分類モデルを読み込んでいます：',
+        'model_download_info': '初回実行時に約100-300MBをダウンロードし、その後ローカルにキャッシュされます',
+        'model_loaded_success': 'モデルの読み込みに成功しました',
+        'model_load_error': 'モデルの読み込みエラー：',
+        'fallback_basic_detection': '基本的な鳥検出のみにフォールバック',
     }
 }
 

@@ -1,6 +1,6 @@
 # 🐦 Vogel Video Analyzer
 
-**Sprachen:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md)
+**Sprachen:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md) | [🇯🇵 日本語](README.ja.md)
 
 <p align="left">
   <a href="https://pypi.org/project/vogel-video-analyzer/"><img alt="PyPI version" src="https://img.shields.io/pypi/v/vogel-video-analyzer.svg"></a>
@@ -275,7 +275,7 @@ print(f"Gefundene Segmente: {len(stats['bird_segments'])}")
 Automatisch überprüfen, ob aufgenommene Videos tatsächlich Vögel enthalten:
 
 ```bash
-vogel-analyze --threshold 0.5 --delete recordings/**/*.mp4
+vogel-analyze --threshold 0.5 --delete-file recordings/**/*.mp4
 ```
 
 ### 2. Archivverwaltung
@@ -285,8 +285,11 @@ Videos ohne Vogelinhalt identifizieren und entfernen, um Speicherplatz zu sparen
 # Videos mit 0% Vogelinhalt finden
 vogel-analyze --output stats.json archive/**/*.mp4
 
-# Leere Videos löschen
-vogel-analyze --delete archive/**/*.mp4
+# Nur leere Videodateien löschen
+vogel-analyze --delete-file archive/**/*.mp4
+
+# Gesamte Ordner mit 0% Vogelinhalt löschen
+vogel-analyze --delete-folder archive/**/*.mp4
 ```
 
 ### 3. Batch-Analyse für Forschung
