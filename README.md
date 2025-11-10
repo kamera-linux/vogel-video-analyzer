@@ -30,6 +30,19 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 
 ---
 
+## 🎓 Want to Train Your Own Species Classifier?
+
+Check out **[vogel-model-trainer](https://github.com/kamera-linux/vogel-model-trainer)** to extract training data from your videos and build custom models for your local bird species!
+
+**Why train a custom model?**
+- Pre-trained models often misidentify European garden birds as exotic species
+- Custom models achieve >90% accuracy for YOUR specific birds
+- Train on YOUR camera setup and lighting conditions
+
+👉 **[Get Started with vogel-model-trainer →](https://github.com/kamera-linux/vogel-model-trainer)**
+
+---
+
 ## 🚀 Quick Start
 
 ### Installation

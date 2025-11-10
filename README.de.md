@@ -30,6 +30,19 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
 
 ---
 
+## 🎓 Möchten Sie Ihren eigenen Arten-Klassifikator trainieren?
+
+Schauen Sie sich **[vogel-model-trainer](https://github.com/kamera-linux/vogel-model-trainer)** an, um Trainingsdaten aus Ihren Videos zu extrahieren und eigene Modelle für Ihre lokalen Vogelarten zu erstellen!
+
+**Warum ein eigenes Modell trainieren?**
+- Vortrainierte Modelle identifizieren europäische Gartenvögel oft falsch als exotische Arten
+- Eigene Modelle erreichen >90% Genauigkeit für IHRE spezifischen Vögel
+- Training auf IHRE Kamera-Aufnahmen und Lichtverhältnisse abgestimmt
+
+👉 **[Erste Schritte mit vogel-model-trainer →](https://github.com/kamera-linux/vogel-model-trainer)**
+
+---
+
 ## 🚀 Schnellstart
 
 ### Installation
