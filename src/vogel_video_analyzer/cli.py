@@ -173,7 +173,6 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         sample_rate=args.sample_rate,
                         multilingual=args.multilingual
                     )
-                    print(f"\n✅ {t('annotation_complete')}")
                 else:
                     # Standard analysis
                     stats = analyzer.analyze_video(video_path, sample_rate=args.sample_rate)

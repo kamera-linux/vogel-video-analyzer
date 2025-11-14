@@ -804,8 +804,6 @@ class VideoAnalyzer:
             # Any other error - keep video without audio
             print(f"   ⚠️  Could not merge audio: {e}")
         
-        print(f"\n{t('annotation_output')} {output_path}\n")
-        
         return {
             'input_video': str(video_path),
             'output_video': str(output_path),
