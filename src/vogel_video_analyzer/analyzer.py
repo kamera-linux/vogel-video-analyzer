@@ -471,7 +471,7 @@ class VideoAnalyzer:
             raise FileNotFoundError(t('video_not_found').format(path=str(video_path)))
             
         print(f"\n🎬 {t('annotation_creating')} {video_path.name}")
-        print(f"   {t('annotation_output')} {output_path}")
+        print(f"{t('annotation_output')} {output_path}")
         
         # Open input video
         cap = cv2.VideoCapture(str(video_path))
@@ -740,9 +740,9 @@ class VideoAnalyzer:
         cap.release()
         out.release()
         
-        print(f"\n\n✅ {t('annotation_complete')}")
-        print(f"   {t('annotation_frames_processed').format(processed=frames_processed, total=total_frames)}")
-        print(f"   {t('annotation_birds_detected').format(count=total_birds_detected)}")
+        print(f"\n{t('annotation_complete')}")
+        print(f"{t('annotation_frames_processed').format(processed=frames_processed, total=total_frames)}")
+        print(f"{t('annotation_birds_detected').format(count=total_birds_detected)}")
         
         # Try to merge audio from original video using ffmpeg
         try:
@@ -763,7 +763,7 @@ class VideoAnalyzer:
             has_audio = probe_result.stdout.strip() == 'audio'
             
             if has_audio:
-                print(f"   🎵 {t('annotation_merging_audio')}")
+                print(f"{t('annotation_merging_audio')}")
                 
                 # Create temporary file for video without audio
                 temp_video = output_path.parent / f"{output_path.stem}_temp{output_path.suffix}"
@@ -787,12 +787,12 @@ class VideoAnalyzer:
                 if result.returncode == 0:
                     # Success - delete temp file
                     temp_video.unlink()
-                    print(f"   ✅ {t('annotation_audio_merged')}")
+                    print(f"{t('annotation_audio_merged')}")
                 else:
                     # Failed - restore original output
                     if temp_video.exists():
                         temp_video.rename(output_path)
-                    print(f"   ⚠️  Could not merge audio (video has no audio track)")
+                    print(f"{t('annotation_audio_failed')}")
             else:
                 print(f"   ℹ️  Original video has no audio track")
                 
@@ -804,7 +804,7 @@ class VideoAnalyzer:
             # Any other error - keep video without audio
             print(f"   ⚠️  Could not merge audio: {e}")
         
-        print(f"   📁 Output: {output_path}")
+        print(f"\n{t('annotation_output')} {output_path}\n")
         
         return {
             'input_video': str(video_path),
