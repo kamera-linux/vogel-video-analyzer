@@ -5,6 +5,116 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2025-11-14
+
+### Added
+- **Video Annotation Feature** - Create annotated videos with bounding boxes and species labels
+  - New `--annotate-video` CLI parameter (auto-generates output path)
+  - New `--annotate-output PATH` for custom output location
+  - Automatic output path generation: saves as `<original>_annotated.mp4` in same directory
+  - Support for processing multiple videos at once
+  - New `annotate_video()` method in VideoAnalyzer class
+  - Bounding boxes around detected birds (green boxes, 3px width)
+  - **Multilingual species labels** with `--multilingual` flag
+  - Large, high-contrast text (34pt/38pt, black on white background)
+  - Text positioned above bird to avoid covering subject
+  - Timestamp and frame information display
+  - Real-time progress indicator during processing
+  - Audio preservation from original video (automatic ffmpeg merge)
+  - Maintains original video resolution and framerate
+  - Detection caching to prevent flickering bounding boxes
+  
+- **Multilingual Bird Names** - Species identification in multiple languages
+  - English and German translations for all species
+  - Japanese translations available (39 species total)
+  - Format: "EN: Hawfinch / DE: Kernbeißer / 75%"
+  - Three-line display for better readability
+  - Unicode text rendering using PIL/Pillow
+  - Support for German bird classifier model (kamera-linux/german-bird-classifier)
+  - Reverse mapping: German labels → English keys → translations
+  
+- **Enhanced Bird Species Database**
+  - Complete translations for 8 German model birds:
+    - Blaumeise (Blue Tit / アオガラ)
+    - Grünling (European Greenfinch / アオカワラヒワ)
+    - Haussperling (House Sparrow / イエスズメ)
+    - Kernbeißer (Hawfinch / シメ)
+    - Kleiber (Eurasian Nuthatch / ゴジュウカラ)
+    - Kohlmeise (Parus Major / シジュウカラ)
+    - Rotkehlchen (European Robin / ヨーロッパコマドリ)
+    - Sumpfmeise (Marsh Tit / ヨーロッパコガラ)
+  - Total: 39 bird species with full EN/DE/JA translations
+  
+### Changed
+- **Enhanced i18n Support** - Added German translations for all annotation messages
+  - annotation_creating: "Erstelle annotiertes Video"
+  - annotation_output: "Ausgabe"
+  - annotation_video_info: "{width}x{height}, {fps} FPS, {frames} Frames"
+  - annotation_processing: "Verarbeite jeden {n}. Frame..."
+  - annotation_frames_processed: "Verarbeitete Frames: {processed}/{total}"
+  - annotation_birds_detected: "Erkannte Vögel gesamt: {count}"
+  - annotation_merging_audio: "Füge Audio vom Original-Video hinzu..."
+  - annotation_audio_merged: "Audio erfolgreich hinzugefügt"
+  - annotation_complete: "Annotiertes Video erfolgreich erstellt"
+  
+- **CLI Improvements**
+  - `--annotate-video` is now a flag (no required argument)
+  - Optional `--annotate-output PATH` for custom output location
+  - Automatic path generation when no custom output specified
+  - Support for batch processing multiple videos
+  - Warning when using custom path with multiple videos (falls back to auto-path)
+
+### Fixed
+- **Unicode Rendering Issues** - Emoji and special character display
+  - Replaced OpenCV cv2.putText with PIL/Pillow rendering for Unicode support
+  - Fixed emoji rendering issues (removed emojis due to font compatibility)
+  - Proper German umlaut support (ä, ö, ü, ß)
+  - DejaVuSans font for Latin characters
+  - No more box characters (□□□□□□) in video output
+  
+- **Text Visibility** - High contrast and proper positioning
+  - Changed to black text (0,0,0) on white background (255,255,255)
+  - Larger text box: 550px wide, 45px line height, 12px padding
+  - Positioned above bird bounding box (10px gap) to avoid covering subject
+  - Increased font sizes: 34pt (species names), 38pt (confidence)
+  
+- **Detection Flickering** - Smooth animation
+  - Implemented detection caching with last_detections list
+  - Bounding boxes preserved across frames without re-detection
+  - Smoother video playback with consistent annotations
+
+### Technical
+- Uses OpenCV VideoWriter with 'mp4v' codec for video output
+- PIL/Pillow for Unicode text rendering (RGB↔BGR conversion)
+- ffmpeg integration for audio preservation
+- Frame-by-frame processing with YOLO inference
+- Optional species classification per detection (--species-threshold)
+- Configurable sample rate for performance optimization
+- Detection caching prevents flickering
+- Automatic output path generation with pathlib
+- Support for glob patterns in video paths
+
+### Documentation
+- **Updated READMEs** - All language variants now include v0.3.0 features
+  - New "Video Annotation (v0.3.0+)" section with usage examples
+  - Multilingual species identification documentation
+  - Performance tips for faster processing
+  - Batch processing examples
+  - Audio preservation notes
+  - Complete feature descriptions
+
+### Requirements
+- opencv-python for video processing
+- PIL/Pillow for Unicode text rendering (installed with [species] extras)
+- ffmpeg for audio merging (system package)
+- transformers and torch for species classification (optional)
+
+### Migration Notes
+- Old syntax: `--annotate-video OUTPUT input.mp4`
+- New syntax: `--annotate-video input.mp4` (auto-generates output)
+- Custom output: `--annotate-video --annotate-output OUTPUT input.mp4`
+- Multiple videos: `--annotate-video *.mp4` (each gets `*_annotated.mp4`)
+
 ## [0.2.3] - 2025-11-09
 
 ### Added

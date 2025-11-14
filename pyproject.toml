@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vogel-video-analyzer"
-version = "0.2.3"
+dynamic = ["version"]
 description = "YOLOv8-based video analysis tool for automated bird content detection, quantification, and species identification"
 readme = "README.md"
 authors = [
@@ -76,6 +76,9 @@ package-dir = {"" = "src"}
 [tool.setuptools.packages.find]
 where = ["src"]
 include = ["vogel_video_analyzer*"]
+
+[tool.setuptools.dynamic]
+version = {attr = "vogel_video_analyzer.__version__"}
 
 [tool.setuptools.package-data]
 vogel_video_analyzer = ["py.typed"]

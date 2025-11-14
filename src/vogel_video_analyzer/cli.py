@@ -61,6 +61,12 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         help='Species classification model: Hugging Face model ID or local path (default: chriamue/bird-species-classifier)')
     parser.add_argument('--species-threshold', type=float, default=0.3,
                         help='Minimum confidence threshold for species classification (default: 0.3)')
+    parser.add_argument('--multilingual', action='store_true', 
+                        help='Show bird names in all available languages with flag emojis (🇬🇧 🇩🇪 🇯🇵)')
+    parser.add_argument('--annotate-video', action='store_true',
+                        help='Create annotated video with bounding boxes and species labels, saves as <original>_annotated.mp4 in the same directory')
+    parser.add_argument('--annotate-output', metavar='PATH',
+                        help='Custom output path for annotated video (requires --annotate-video)')
     parser.add_argument('--output', '-o', help='Save report as JSON')
     parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
@@ -144,9 +150,35 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         all_stats = []
         for video_path in args.videos:
             try:
-                stats = analyzer.analyze_video(video_path, sample_rate=args.sample_rate)
-                analyzer.print_report(stats)
-                all_stats.append(stats)
+                # Create annotated video if requested
+                if args.annotate_video:
+                    # Determine output path
+                    if args.annotate_output:
+                        # Use custom output path (only for single video)
+                        if len(args.videos) > 1:
+                            print(f"\n⚠️  {t('annotation_multiple_custom_path')}: {video_path}")
+                            print(f"    {t('annotation_using_auto_path')}")
+                            video_path_obj = Path(video_path)
+                            output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated{video_path_obj.suffix}"
+                        else:
+                            output_path = args.annotate_output
+                    else:
+                        # Auto-generate output filename in same directory
+                        video_path_obj = Path(video_path)
+                        output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated{video_path_obj.suffix}"
+                    
+                    annotation_stats = analyzer.annotate_video(
+                        video_path, 
+                        str(output_path), 
+                        sample_rate=args.sample_rate,
+                        multilingual=args.multilingual
+                    )
+                    print(f"\n✅ {t('annotation_complete')}")
+                else:
+                    # Standard analysis
+                    stats = analyzer.analyze_video(video_path, sample_rate=args.sample_rate)
+                    analyzer.print_report(stats)
+                    all_stats.append(stats)
             except Exception as e:
                 print(f"❌ {t('error_analyzing')} {video_path}: {e}", file=sys.stderr)
                 continue

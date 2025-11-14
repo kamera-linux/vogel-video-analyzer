@@ -3,10 +3,20 @@ Video analyzer core module for bird detection in videos using YOLOv8
 """
 
 import cv2
+import subprocess
+import tempfile
+import numpy as np
 from pathlib import Path
 from datetime import timedelta
 from ultralytics import YOLO
 from .i18n import t
+
+# Try to import PIL for Unicode text rendering
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    PIL_AVAILABLE = True
+except ImportError:
+    PIL_AVAILABLE = False
 
 # Optional species classification
 try:
@@ -16,6 +26,91 @@ except ImportError:
     SPECIES_AVAILABLE = False
     BirdSpeciesClassifier = None
     aggregate_species_detections = None
+
+
+def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), bg_color=None):
+    """
+    Draw Unicode text (including emojis) on image using PIL
+    
+    Args:
+        img: OpenCV image (numpy array, BGR)
+        text: Text to draw (can contain Unicode/emojis)
+        position: (x, y) position tuple
+        font_size: Font size in pixels
+        color: Text color in BGR format
+        bg_color: Background color in BGR format (None = transparent)
+        
+    Returns:
+        Modified image with text
+    """
+    if not PIL_AVAILABLE:
+        # Fallback to cv2.putText if PIL not available
+        print("WARNING: PIL not available, using cv2.putText fallback")
+        cv2.putText(img, text, position, cv2.FONT_HERSHEY_SIMPLEX, 
+                   font_size/30, color, 2, cv2.LINE_AA)
+        return img
+    
+    # Make a copy to avoid modifying original
+    img = img.copy()
+    
+    # Convert BGR to RGB for PIL
+    img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(img_pil)
+    
+    # Try to load a font that supports Unicode (including CJK characters)
+    try:
+        # For best results, use a font that supports BOTH Latin and CJK characters
+        # DejaVu has good Latin support, Droid has CJK support
+        # Try fonts that support both
+        font_paths = [
+            # Fonts with BOTH Latin and CJK support
+            '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',  # Noto Sans (good Latin)
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # DejaVu (excellent Latin)
+            '/usr/share/fonts/TTF/DejaVuSans.ttf',              # Arch
+            '/System/Library/Fonts/Helvetica.ttc',              # macOS
+            'C:\\Windows\\Fonts\\arial.ttf',                    # Windows
+        ]
+        
+        font = None
+        for font_path in font_paths:
+            if Path(font_path).exists():
+                try:
+                    font = ImageFont.truetype(font_path, font_size)
+                    break
+                except:
+                    continue
+        
+        if font is None:
+            font = ImageFont.load_default()
+    except:
+        font = ImageFont.load_default()
+    
+    # For Japanese/CJK fallback, we need to use a composite approach
+    # PIL doesn't support font fallback well, so we'll just use DejaVu which is most reliable
+    # Note: Japanese characters may not render perfectly, but Latin text will be clear
+    
+    # Get text bounding box for background
+    bbox = draw.textbbox(position, text, font=font)
+    
+    # Draw background if specified
+    if bg_color is not None:
+        # Convert BGR to RGB
+        bg_rgb = (bg_color[2], bg_color[1], bg_color[0])
+        padding = 5
+        draw.rectangle(
+            [bbox[0] - padding, bbox[1] - padding, 
+             bbox[2] + padding, bbox[3] + padding],
+            fill=bg_rgb
+        )
+    
+    # Draw text (convert BGR to RGB)
+    text_rgb = (color[2], color[1], color[0])
+    draw.text(position, text, font=font, fill=text_rgb)
+    
+    # Convert back to BGR for OpenCV
+    img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
+    
+    return img_cv
 
 
 class VideoAnalyzer:
@@ -351,3 +446,371 @@ class VideoAnalyzer:
                 print(f"   {t('species_no_detections')}")
         
         print("━" * 70)
+
+    def annotate_video(self, video_path, output_path, sample_rate=1, show_timestamp=True, show_confidence=True, box_color=(0, 255, 0), text_color=(255, 255, 255), multilingual=False):
+        """
+        Create annotated video with bounding boxes and species labels
+        
+        Args:
+            video_path: Path to input video
+            output_path: Path for output annotated video
+            sample_rate: Process every Nth frame (1=all frames)
+            show_timestamp: Display timestamp on video
+            show_confidence: Display confidence scores
+            box_color: BGR color for bounding boxes (default: green)
+            text_color: BGR color for text labels (default: white)
+            multilingual: Show bird names in all languages with flags (default: False)
+            
+        Returns:
+            dict with processing statistics
+        """
+        video_path = Path(video_path)
+        output_path = Path(output_path)
+        
+        if not video_path.exists():
+            raise FileNotFoundError(t('video_not_found').format(path=str(video_path)))
+            
+        print(f"\n🎬 {t('annotation_creating')} {video_path.name}")
+        print(f"   {t('annotation_output')} {output_path}")
+        
+        # Open input video
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            raise RuntimeError(t('cannot_open_video').format(path=str(video_path)))
+            
+        # Video properties
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        
+        # Handle high framerates that exceed codec limits
+        # MPEG4 timebase denominator max is 65535, which limits FPS to ~65
+        output_fps = fps
+        if fps > 60:
+            output_fps = 30.0  # Reduce to standard 30 FPS for compatibility
+            print(f"   ℹ️  Original FPS ({fps:.1f}) exceeds codec limits, reducing output to {output_fps} FPS")
+        
+        # Create output video writer
+        # Try different codecs for better compatibility
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(str(output_path), fourcc, output_fps, (width, height))
+        
+        # Check if writer opened successfully
+        if not out.isOpened():
+            # Fallback to XVID with AVI container
+            print(f"   ⚠️  MP4V codec not available, trying XVID with AVI...")
+            fourcc = cv2.VideoWriter_fourcc(*'XVID')
+            output_path_avi = output_path.parent / (output_path.stem + '.avi')
+            out = cv2.VideoWriter(str(output_path_avi), fourcc, output_fps, (width, height))
+            if not out.isOpened():
+                raise RuntimeError(f"Could not open video writer. Try installing ffmpeg: sudo apt install ffmpeg")
+            output_path = output_path_avi
+            print(f"   ℹ️  Output changed to: {output_path}")
+        
+        print(f"   📊 {t('annotation_video_info').format(width=width, height=height, fps=f'{fps:.1f}', output_fps=f'{output_fps:.1f}', frames=total_frames)}")
+        print(f"   🔍 {t('annotation_processing').format(n=sample_rate)}")
+
+
+        
+        # Processing variables
+        current_frame = 0
+        frames_processed = 0
+        total_birds_detected = 0
+        
+        # Cache for last detections (to avoid flickering)
+        last_detections = []
+        last_birds_count = 0
+        
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                break
+                
+            current_frame += 1
+            annotated_frame = frame.copy()
+            
+            # Process frame if matches sample rate
+            if current_frame % sample_rate == 0:
+                frames_processed += 1
+                
+                # YOLO inference
+                results = self.model(frame, verbose=False)
+                
+                # Clear and rebuild detection cache
+                last_detections = []
+                birds_in_frame = 0
+                
+                for result in results:
+                    boxes = result.boxes
+                    for box in boxes:
+                        cls = int(box.cls[0])
+                        conf = float(box.conf[0])
+                        
+                        if cls == self.target_class and conf >= self.threshold:
+                            birds_in_frame += 1
+                            total_birds_detected += 1
+                            
+                            # Get bounding box coordinates
+                            xyxy = box.xyxy[0].cpu().numpy()
+                            x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                            
+                            # Species identification if enabled
+                            species_label = None
+                            if self.identify_species and self.species_classifier:
+                                try:
+                                    bbox = (x1, y1, x2, y2)
+                                    species_predictions = self.species_classifier.classify_crop(
+                                        frame, bbox, top_k=1
+                                    )
+                                    
+                                    if species_predictions:
+                                        species_info = species_predictions[0]
+                                        
+                                        # Use multilingual name if requested
+                                        if multilingual:
+                                            # Use full Unicode format with emojis if PIL available
+                                            bird_name = BirdSpeciesClassifier.get_multilingual_name(
+                                                species_info['label'].upper(), 
+                                                show_flags=PIL_AVAILABLE,
+                                                opencv_compatible=not PIL_AVAILABLE
+                                            )
+                                        else:
+                                            bird_name = BirdSpeciesClassifier.format_species_name(
+                                                species_info['label'], translate=True
+                                            )
+                                        
+                                        if show_confidence:
+                                            species_label = f"{bird_name} {species_info['score']:.0%}"
+                                        else:
+                                            species_label = bird_name
+                                except Exception as e:
+                                    species_label = "Bird"
+                            else:
+                                # No species classification
+                                if show_confidence:
+                                    species_label = f"Bird {conf:.0%}"
+                                else:
+                                    species_label = "Bird"
+                            
+                            # Store detection for reuse
+                            last_detections.append({
+                                'bbox': (x1, y1, x2, y2),
+                                'label': species_label
+                            })
+                
+                last_birds_count = birds_in_frame
+            
+            # Draw all cached detections (even on non-processed frames)
+            for detection in last_detections:
+                x1, y1, x2, y2 = detection['bbox']
+                label = detection['label']
+                
+                # Draw bounding box
+                cv2.rectangle(annotated_frame, (x1, y1), (x2, y2), box_color, 2)
+                
+                # Use PIL for Unicode text if available, otherwise fallback to cv2
+                if PIL_AVAILABLE and multilingual:
+                    # Extract bird name and confidence
+                    if '%' in label:
+                        bird_part, conf_part = label.rsplit(' ', 1)
+                    else:
+                        bird_part = label
+                        conf_part = ""
+                    
+                    # Get individual translations
+                    try:
+                        species_display = bird_part  # Already just the German name, no emojis
+                        from .species_classifier import GERMAN_TO_ENGLISH, BIRD_NAME_TRANSLATIONS
+                        species_key = GERMAN_TO_ENGLISH.get(species_display.lower())
+                        
+                        if species_key:
+                            # Get translations
+                            en_name = ' '.join(word.capitalize() for word in species_key.split())
+                            de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_key, en_name)
+                            
+                            # Multiline format without emojis
+                            # Line 1: EN: English name
+                            # Line 2: DE: German name  
+                            # Line 3: Confidence
+                            lines = [
+                                f"EN: {en_name}",
+                                f"DE: {de_name}",
+                                conf_part
+                            ]
+                        else:
+                            lines = [label]
+                    except:
+                        lines = [label]
+                    
+                    # Draw multiline with larger font
+                    line_height = 45  # Increased from 40
+                    total_height = len(lines) * line_height + 20  # More padding
+                    
+                    # Calculate position - place box ABOVE the bounding box to avoid covering bird
+                    box_y_start = max(0, y1 - total_height - 10)  # 10px gap above bird box
+                    box_y_end = y1 - 10
+                    
+                    # White background for better contrast - wider box
+                    cv2.rectangle(
+                        annotated_frame,
+                        (x1, box_y_start),
+                        (x1 + 550, box_y_end),  # Wider: 550 instead of 500
+                        (255, 255, 255),  # White background
+                        -1
+                    )
+                    
+                    # Draw each line with black text
+                    for i, line in enumerate(lines):
+                        annotated_frame = put_unicode_text(
+                            annotated_frame,
+                            line,
+                            (x1 + 12, box_y_start + 12 + i * line_height),  # More padding: 12 instead of 10
+                            font_size=34 if i < len(lines) - 1 else 38,  # Even larger: 34pt for names, 38pt for confidence
+                            color=(0, 0, 0),  # Black text
+                            bg_color=None  # Background already drawn
+                        )
+                else:
+                    # Fallback to OpenCV text (ASCII only)
+                    (text_width, text_height), baseline = cv2.getTextSize(
+                        label, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 3
+                    )
+                    
+                    # Background rectangle
+                    cv2.rectangle(
+                        annotated_frame,
+                        (x1, y1 - text_height - 15),
+                        (x1 + text_width + 15, y1),
+                        box_color,
+                        -1
+                    )
+                    
+                    # Text
+                    cv2.putText(
+                        annotated_frame,
+                        label,
+                        (x1 + 7, y1 - 7),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.9,
+                        text_color,
+                        3
+                    )
+            
+            # Add frame info overlay
+            if show_timestamp:
+                timestamp = current_frame / fps if fps > 0 else 0
+                timestamp_str = str(timedelta(seconds=int(timestamp)))
+                info_text = f"Frame: {current_frame}/{total_frames} | Time: {timestamp_str}"
+                
+                if last_birds_count > 0:
+                    info_text += f" | Birds: {last_birds_count}"
+                    
+                    # Background for timestamp
+                    (info_width, info_height), _ = cv2.getTextSize(
+                        info_text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 3
+                    )
+                    cv2.rectangle(
+                        annotated_frame,
+                        (10, height - info_height - 25),
+                        (info_width + 25, height - 10),
+                        (0, 0, 0),
+                        -1
+                    )
+                    
+                    # Timestamp text
+                    cv2.putText(
+                        annotated_frame,
+                        info_text,
+                        (17, height - 17),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.9,
+                        (255, 255, 255),
+                        3
+                    )
+            
+            # Write frame to output
+            out.write(annotated_frame)
+            
+            # Progress indicator
+            if current_frame % 100 == 0:
+                progress = (current_frame / total_frames) * 100
+                print(f"   Progress: {progress:.1f}% ({current_frame}/{total_frames})", end='\r')
+        
+        # Cleanup
+        cap.release()
+        out.release()
+        
+        print(f"\n\n✅ {t('annotation_complete')}")
+        print(f"   {t('annotation_frames_processed').format(processed=frames_processed, total=total_frames)}")
+        print(f"   {t('annotation_birds_detected').format(count=total_birds_detected)}")
+        
+        # Try to merge audio from original video using ffmpeg
+        try:
+            # Check if ffmpeg is available
+            subprocess.run(['ffmpeg', '-version'], 
+                          capture_output=True, check=True, timeout=5)
+            
+            # Check if original video has audio
+            probe_cmd = [
+                'ffprobe', '-v', 'error',
+                '-select_streams', 'a:0',
+                '-show_entries', 'stream=codec_type',
+                '-of', 'default=noprint_wrappers=1:nokey=1',
+                str(video_path)
+            ]
+            
+            probe_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=10)
+            has_audio = probe_result.stdout.strip() == 'audio'
+            
+            if has_audio:
+                print(f"   🎵 {t('annotation_merging_audio')}")
+                
+                # Create temporary file for video without audio
+                temp_video = output_path.parent / f"{output_path.stem}_temp{output_path.suffix}"
+                output_path.rename(temp_video)
+                
+                # Merge audio using ffmpeg
+                ffmpeg_cmd = [
+                    'ffmpeg', '-y',
+                    '-i', str(temp_video),      # Video input (annotated, no audio)
+                    '-i', str(video_path),       # Original video (with audio)
+                    '-c:v', 'copy',              # Copy video stream
+                    '-c:a', 'aac',               # Re-encode audio to AAC
+                    '-map', '0:v:0',             # Take video from first input
+                    '-map', '1:a:0',             # Take audio from second input
+                    '-shortest',                 # Match shortest stream
+                    str(output_path)
+                ]
+                
+                result = subprocess.run(ffmpeg_cmd, capture_output=True, text=True, timeout=300)
+                
+                if result.returncode == 0:
+                    # Success - delete temp file
+                    temp_video.unlink()
+                    print(f"   ✅ {t('annotation_audio_merged')}")
+                else:
+                    # Failed - restore original output
+                    if temp_video.exists():
+                        temp_video.rename(output_path)
+                    print(f"   ⚠️  Could not merge audio (video has no audio track)")
+            else:
+                print(f"   ℹ️  Original video has no audio track")
+                
+        except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
+            # ffmpeg not available or failed - keep video without audio
+            print(f"   ⚠️  ffmpeg not available - video saved without audio")
+            print(f"   💡 Install ffmpeg to preserve audio: sudo apt install ffmpeg")
+        except Exception as e:
+            # Any other error - keep video without audio
+            print(f"   ⚠️  Could not merge audio: {e}")
+        
+        print(f"   📁 Output: {output_path}")
+        
+        return {
+            'input_video': str(video_path),
+            'output_video': str(output_path),
+            'total_frames': total_frames,
+            'frames_processed': frames_processed,
+            'birds_detected': total_birds_detected,
+            'fps': fps
+        }

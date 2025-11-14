@@ -135,6 +135,7 @@ Thumbs.db
 
 # Project specific
 models/*.pt
+yolov8n.pt
 *.mp4
 *.avi
 test_videos/

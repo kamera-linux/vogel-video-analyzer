@@ -20,6 +20,7 @@
 
 - 🤖 **YOLOv8による検出** - 事前学習済みモデルによる正確な鳥検出
 - 🦜 **種の識別** - Hugging Faceモデルを使用した鳥の種の識別（オプション）
+- 🎬 **動画注釈** - バウンディングボックスと種ラベル付きの注釈動画を作成（v0.3.0+）
 - 📊 **詳細な統計** - フレームごとの分析と鳥コンテンツのパーセンテージ
 - 🎯 **セグメント検出** - 鳥が存在する連続した時間帯を識別
 - ⚡ **パフォーマンス最適化** - 設定可能なサンプリングレートで高速処理
@@ -84,6 +85,11 @@ vogel-analyze video.mp4
 
 # 鳥の種を識別
 vogel-analyze --identify-species video.mp4
+
+# バウンディングボックスと種ラベル付きの注釈動画を作成
+vogel-analyze --identify-species \
+  --annotate-video output_annotated.mp4 \
+  video.mp4
 
 # 日本語で出力
 vogel-analyze --language ja video.mp4
@@ -154,6 +160,35 @@ vogel-analyze --identify-species \
 - `0.6-0.9` - 高信頼度のみ
 
 詳細については、[カスタムモデルトレーニング](#-カスタムモデルトレーニング)セクションを参照してください。
+
+#### 動画注釈（v0.3.0+）
+
+バウンディングボックスと種ラベル付きの注釈動画を作成：
+
+```bash
+# 基本的な注釈（種の識別が必要）
+vogel-analyze --identify-species \
+  --annotate-video output_annotated.mp4 \
+  input.mp4
+
+# カスタムモデルと高速処理
+vogel-analyze --identify-species \
+  --species-model kamera-linux/german-bird-classifier \
+  --sample-rate 3 \
+  --annotate-video annotated_output.mp4 \
+  my_video.mp4
+```
+
+**機能：**
+- 📦 検出された鳥の周りに**バウンディングボックス**（緑色）
+- 🏷️ 信頼度スコア付きの**種ラベル**
+- ⏱️ フレーム番号と時間を表示する**タイムスタンプオーバーレイ**
+- 📊 **リアルタイム進行状況**インジケーター
+
+**パフォーマンスのヒント：**
+- より高速な処理には`--sample-rate 2`以上を使用（Nフレームごとに注釈）
+- 出力動画は元の解像度とフレームレートを維持
+- 処理時間は動画の長さと種分類の複雑さによる
 
 #### 高度なオプション
 ```bash

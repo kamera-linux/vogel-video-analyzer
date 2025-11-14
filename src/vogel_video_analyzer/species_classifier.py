@@ -17,11 +17,20 @@ except ImportError:
 from .i18n import t
 
 
-# Translation dictionary for common bird species (English -> German)
+# Translation dictionary for common bird species
 BIRD_NAME_TRANSLATIONS = {
     'de': {
-        # European garden birds
+        # European garden birds (from kamera-linux/german-bird-classifier)
         'PARUS MAJOR': 'Kohlmeise',
+        'BLUE TIT': 'Blaumeise',
+        'MARSH TIT': 'Sumpfmeise',
+        'EURASIAN NUTHATCH': 'Kleiber',
+        'EUROPEAN GREENFINCH': 'Grünling',
+        'HAWFINCH': 'Kernbeißer',
+        'HOUSE SPARROW': 'Haussperling',
+        'EUROPEAN ROBIN': 'Rotkehlchen',
+        
+        # Additional European garden birds
         'COMMON STARLING': 'Star',
         'EUROPEAN GOLDFINCH': 'Stieglitz',
         'EUROPEAN TURTLE DOVE': 'Turteltaube',
@@ -60,7 +69,64 @@ BIRD_NAME_TRANSLATIONS = {
         'FRILL BACK PIGEON': 'Kröpfer-Taube',
         'JACOBIN PIGEON': 'Jacobiner-Taube',
         'WHITE THROATED BEE EATER': 'Weißkehlspint',
+    },
+    'ja': {
+        # European garden birds (from kamera-linux/german-bird-classifier)
+        'PARUS MAJOR': 'シジュウカラ',
+        'BLUE TIT': 'アオガラ',
+        'MARSH TIT': 'ヨーロッパコガラ',
+        'EURASIAN NUTHATCH': 'ゴジュウカラ',
+        'EUROPEAN GREENFINCH': 'アオカワラヒワ',
+        'HAWFINCH': 'シメ',
+        'HOUSE SPARROW': 'イエスズメ',
+        'EUROPEAN ROBIN': 'ヨーロッパコマドリ',
+        
+        # Additional European garden birds
+        'COMMON STARLING': 'ホシムクドリ',
+        'EUROPEAN GOLDFINCH': 'ゴシキヒワ',
+        'EUROPEAN TURTLE DOVE': 'コキジバト',
+        'EURASIAN BULLFINCH': 'ウソ',
+        'EURASIAN GOLDEN ORIOLE': 'ニシコウライウグイス',
+        'EURASIAN MAGPIE': 'カササギ',
+        'HOUSE SPARROW': 'イエスズメ',
+        'COMMON HOUSE MARTIN': 'ニシイワツバメ',
+        'BARN SWALLOW': 'ツバメ',
+        'BARN OWL': 'メンフクロウ',
+        'CROW': 'カラス',
+        'COMMON FIRECREST': 'マミジロキクイタダキ',
+        'BEARDED REEDLING': 'ヒゲガラ',
+        
+        # American birds
+        'AMERICAN ROBIN': 'コマツグミ',
+        'AMERICAN GOLDFINCH': 'オウゴンヒワ',
+        'BLACK-CAPPED CHICKADEE': 'アメリカコガラ',
+        'NORTHERN CARDINAL': 'ショウジョウコウカンチョウ',
+        'DOWNY WOODPECKER': 'コゲラ',
+        'INDIGO BUNTING': 'ルリノジコ',
+        
+        # Asian/exotic pheasants
+        'CABOTS TRAGOPAN': 'カボットジュケイ',
+        'BLOOD PHEASANT': 'ベニジュケイ',
+        'SATYR TRAGOPAN': 'ニジュケイ',
+        
+        # Exotic/tropical
+        'AZURE BREASTED PITTA': 'ムネアオヤイロチョウ',
+        'BULWERS PHEASANT': 'ハイイロコクジャク',
+        'BORNEAN PHEASANT': 'ボルネオコクジャク',
+        'SAMATRAN THRUSH': 'スマトラツグミ',
+        'FAIRY PENGUIN': 'コガタペンギン',
+        'OILBIRD': 'アブラヨタカ',
+        'BLUE DACNIS': 'ルリミツドリ',
+        'FRILL BACK PIGEON': 'フリルバックピジョン',
+        'JACOBIN PIGEON': 'ジャコビンピジョン',
+        'WHITE THROATED BEE EATER': 'ノドジロハチクイ',
     }
+}
+
+# Create reverse mapping: German lowercase -> English uppercase
+# This is needed for models that use German labels (like kamera-linux/german-bird-classifier)
+GERMAN_TO_ENGLISH = {
+    v.lower(): k for k, v in BIRD_NAME_TRANSLATIONS['de'].items()
 }
 
 
@@ -219,9 +285,62 @@ class BirdSpeciesClassifier:
         from .i18n import get_language
         
         lang = get_language()
-        if lang == 'de' and species_name in BIRD_NAME_TRANSLATIONS['de']:
-            return BIRD_NAME_TRANSLATIONS['de'][species_name]
+        if lang in BIRD_NAME_TRANSLATIONS and species_name in BIRD_NAME_TRANSLATIONS[lang]:
+            return BIRD_NAME_TRANSLATIONS[lang][species_name]
         return species_name
+    
+    @staticmethod
+    def get_multilingual_name(species_name: str, show_flags: bool = True, opencv_compatible: bool = False) -> str:
+        """
+        Get bird name in all available languages with flag emojis
+        
+        Args:
+            species_name: Species name in English (uppercase) or German (any case)
+            show_flags: Whether to show flag emojis (default: True)
+            opencv_compatible: Use only ASCII-compatible characters (default: False)
+            
+        Returns:
+            Multilingual string with all translations
+            Example: "EN: Parus Major | DE: Kohlmeise" (opencv_compatible=True)
+            Example: "🇬🇧 Parus Major 🇩🇪 Kohlmeise 🇯🇵 シジュウカラ" (opencv_compatible=False)
+        """
+        # Try to convert German label to English key (for models using German labels)
+        species_name_lower = species_name.lower()
+        if species_name_lower in GERMAN_TO_ENGLISH:
+            species_name = GERMAN_TO_ENGLISH[species_name_lower]
+        
+        # English name (formatted)
+        en_name = ' '.join(word.capitalize() for word in species_name.split())
+        
+        # Build multilingual string
+        flags = {
+            'en': '🇬🇧',
+            'de': '🇩🇪', 
+            'ja': '🇯🇵'
+        }
+        
+        if opencv_compatible:
+            # Use ASCII-only format for OpenCV compatibility
+            parts = [f"EN: {en_name}"]
+            
+            # Add German translation if available
+            if species_name in BIRD_NAME_TRANSLATIONS.get('de', {}):
+                de_name = BIRD_NAME_TRANSLATIONS['de'][species_name]
+                parts.append(f"DE: {de_name}")
+            
+            return ' | '.join(parts)
+        else:
+            # Get translations
+            de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_name, en_name)
+            ja_name = BIRD_NAME_TRANSLATIONS.get('ja', {}).get(species_name, en_name)
+            
+            if show_flags:
+                # Return German name only (no emojis - they don't render properly)
+                # The multilingual rendering will handle the EN/DE display
+                return de_name
+            else:
+                # No flags: just use German name
+                return de_name
     
     @staticmethod
     def format_species_name(label: str, translate: bool = True) -> str:

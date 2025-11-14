@@ -20,6 +20,7 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
 
 - 🤖 **YOLOv8-basierte Erkennung** - Präzise Vogelerkennung mit vortrainierten Modellen
 - 🦜 **Artenerkennung** - Identifiziert Vogelarten mit Hugging Face Modellen (optional)
+- 🎬 **Video-Annotation** - Erstellen Sie annotierte Videos mit Bounding Boxes und Artenlabels (v0.3.0+)
 - 📊 **Detaillierte Statistiken** - Frame-für-Frame-Analyse mit Vogelinhalt in Prozent
 - 🎯 **Segment-Erkennung** - Identifiziert zusammenhängende Zeitperioden mit Vogelvorkommen
 - ⚡ **Performance-Optimiert** - Konfigurierbare Sample-Rate für schnellere Verarbeitung
@@ -84,6 +85,11 @@ vogel-analyze video.mp4
 
 # Vogelarten identifizieren
 vogel-analyze --identify-species video.mp4
+
+# Annotiertes Video mit Bounding Boxes und Artenlabels erstellen
+vogel-analyze --identify-species \
+  --annotate-video output_annotiert.mp4 \
+  video.mp4
 
 # Schnellere Analyse (jedes 5. Frame)
 vogel-analyze --sample-rate 5 video.mp4
@@ -196,6 +202,35 @@ vogel-analyze --identify-species \
 
 Siehe Abschnitt [Eigenes Modell trainieren](#-eigenes-modell-trainieren) für Details zum Training.
 
+#### Video-Annotation (v0.3.0+)
+
+Erstellen Sie annotierte Videos mit Bounding Boxes und Artenlabels:
+
+```bash
+# Basis-Annotation (erfordert Artenerkennung)
+vogel-analyze --identify-species \
+  --annotate-video output_annotiert.mp4 \
+  input.mp4
+
+# Mit benutzerdefiniertem Modell und schnellerer Verarbeitung
+vogel-analyze --identify-species \
+  --species-model kamera-linux/german-bird-classifier \
+  --sample-rate 3 \
+  --annotate-video annotiert_output.mp4 \
+  mein_video.mp4
+```
+
+**Features:**
+- 📦 **Bounding Boxes** um erkannte Vögel (grün)
+- 🏷️ **Artenlabels** mit Konfidenzwerten
+- ⏱️ **Zeitstempel-Overlay** mit Frame-Nummer und Zeit
+- 📊 **Echtzeit-Fortschritt** Anzeige
+
+**Performance-Tipps:**
+- Verwenden Sie `--sample-rate 2` oder höher für schnellere Verarbeitung (annotiert jedes N-te Frame)
+- Das Ausgabevideo behält die ursprüngliche Auflösung und Framerate bei
+- Verarbeitungszeit hängt von Videolänge und Komplexität der Artenklassifizierung ab
+
 #### Erweiterte Optionen
 ```bash
 # Benutzerdefinierter Schwellenwert und Sample-Rate
@@ -205,7 +240,7 @@ vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
 vogel-analyze --identify-species --species-threshold 0.4 video.mp4
 vogel-analyze --identify-species --sample-rate 10 video.mp4
 
-# Ausgabesprache festlegen (en/de, standardmäßig automatisch erkannt)
+# Ausgabesprache festlegen (en/de/ja, standardmäßig automatisch erkannt)
 vogel-analyze --language de video.mp4
 
 # Nur Videodateien mit 0% Vogelinhalt löschen

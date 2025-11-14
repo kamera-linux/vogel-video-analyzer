@@ -20,12 +20,24 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 
 - 🤖 **YOLOv8-powered Detection** - Accurate bird detection using pre-trained models
 - 🦜 **Species Identification** - Identify bird species using Hugging Face models (optional)
+- 🎬 **Video Annotation (v0.3.0+)** - Create annotated videos with bounding boxes and species labels
+  - Automatic output path generation (`video.mp4` → `video_annotated.mp4`)
+  - Multilingual species labels (English, German, Japanese)
+  - High-contrast text display (34pt/38pt, black on white)
+  - Audio preservation from original video
+  - Flicker-free bounding boxes with detection caching
+  - Batch processing support for multiple videos
+- 🌍 **Multilingual Support (v0.3.0+)** - Bird names in English, German, and Japanese
+  - 39 bird species with full translations
+  - All 8 German model birds supported (kamera-linux/german-bird-classifier)
+  - Display format: "EN: Hawfinch / DE: Kernbeißer / 75%"
 - 📊 **Detailed Statistics** - Frame-by-frame analysis with bird content percentage
 - 🎯 **Segment Detection** - Identifies continuous time periods with bird presence
 - ⚡ **Performance Optimized** - Configurable sample rate for faster processing
 - 📄 **JSON Export** - Structured reports for archival and further analysis
 - 🗑️ **Smart Auto-Delete** - Remove video files or folders without bird content
 - 📝 **Logging Support** - Structured logs for batch processing workflows
+- 🌐 **i18n Support** - English, German, and Japanese interface translations
 - 🐍 **Library & CLI** - Use as standalone tool or integrate into your Python projects
 
 ---
@@ -64,6 +76,9 @@ pip install vogel-video-analyzer
 
 # Install with species identification support (optional)
 pip install vogel-video-analyzer[species]
+
+# Install ffmpeg for audio preservation (Ubuntu/Debian)
+sudo apt install ffmpeg
 ```
 
 #### Direct Installation
@@ -84,6 +99,21 @@ vogel-analyze video.mp4
 
 # Identify bird species
 vogel-analyze --identify-species video.mp4
+
+# Create annotated video (v0.3.0+)
+vogel-analyze --identify-species --annotate-video video.mp4
+# Output: video_annotated.mp4 (automatic)
+
+# Create annotated video with multilingual labels
+vogel-analyze --identify-species \
+  --species-model kamera-linux/german-bird-classifier \
+  --multilingual \
+  --annotate-video \
+  video.mp4
+
+# Batch processing multiple videos
+vogel-analyze --identify-species --annotate-video --multilingual *.mp4
+# Creates: video1_annotated.mp4, video2_annotated.mp4, etc.
 
 # Faster analysis (every 5th frame)
 vogel-analyze --sample-rate 5 video.mp4
@@ -196,6 +226,91 @@ vogel-analyze --identify-species \
 
 See the [Custom Model Training](#-custom-model-training) section for details on training your own model.
 
+#### Video Annotation (v0.3.0+)
+
+Create annotated videos with bounding boxes and species labels:
+
+```bash
+# Basic annotation with automatic output path
+vogel-analyze --identify-species --annotate-video input.mp4
+# Output: input_annotated.mp4
+
+# With multilingual labels (English + German)
+vogel-analyze --identify-species \
+  --species-model kamera-linux/german-bird-classifier \
+  --multilingual \
+  --annotate-video \
+  input.mp4
+
+# Custom output path (single video only)
+vogel-analyze --identify-species \
+  --annotate-video \
+  --annotate-output custom_output.mp4 \
+  input.mp4
+
+# Batch processing multiple videos
+vogel-analyze --identify-species \
+  --annotate-video \
+  --multilingual \
+  *.mp4
+# Creates: video1_annotated.mp4, video2_annotated.mp4, etc.
+
+# Fast processing with sample rate
+vogel-analyze --identify-species \
+  --sample-rate 30 \
+  --annotate-video \
+  input.mp4
+```
+
+**Features:**
+- 📦 **Bounding boxes** around detected birds (green, 3px width)
+- 🏷️ **Multilingual species labels** (EN: Hawfinch / DE: Kernbeißer / 75%)
+- 🎨 **High-contrast text** (34pt/38pt, black on white background)
+- 📍 **Smart positioning** (text above bird, 10px gap to avoid covering)
+- 🎵 **Audio preservation** (automatic ffmpeg merge from original video)
+- ⚡ **Flicker-free** animation (detection caching)
+- ⏱️ **Real-time progress** indicator
+- 📊 **Automatic path generation** (saves in same directory as original)
+
+**Multilingual Display Format:**
+```
+EN: Hawfinch
+DE: Kernbeißer
+75%
+```
+
+**Supported Languages:**
+- 🇬🇧 English (primary)
+- 🇩🇪 German (full support, 39 species)
+- 🇯🇵 Japanese (39 species, database only)
+
+**Supported Birds (German Model):**
+All 8 birds from `kamera-linux/german-bird-classifier`:
+- Blaumeise (Blue Tit)
+- Grünling (European Greenfinch)
+- Haussperling (House Sparrow)
+- Kernbeißer (Hawfinch)
+- Kleiber (Eurasian Nuthatch)
+- Kohlmeise (Parus Major)
+- Rotkehlchen (European Robin)
+- Sumpfmeise (Marsh Tit)
+
+**Performance Tips:**
+- Use `--sample-rate 30` for 4K videos (analyzes every 30th frame)
+- Use `--sample-rate 5-10` for HD videos (balance speed vs accuracy)
+- Lower sample rates = more detections but slower processing
+- Audio is automatically preserved from original video
+- Output maintains original resolution and framerate
+
+**Requirements:**
+```bash
+# Install species extras for multilingual support
+pip install vogel-video-analyzer[species]
+
+# Install ffmpeg for audio preservation (Ubuntu/Debian)
+sudo apt install ffmpeg
+```
+
 #### Advanced Options
 ```bash
 # Custom threshold and sample rate
@@ -205,7 +320,7 @@ vogel-analyze --threshold 0.4 --sample-rate 10 video.mp4
 vogel-analyze --identify-species --species-threshold 0.4 video.mp4
 vogel-analyze --identify-species --sample-rate 10 video.mp4
 
-# Set output language (en/de, auto-detected by default)
+# Set output language (en/de/ja, auto-detected by default)
 vogel-analyze --language de video.mp4
 
 # Delete only video files with 0% bird content
