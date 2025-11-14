@@ -86,10 +86,11 @@ vogel-analyze video.mp4
 # 鳥の種を識別
 vogel-analyze --identify-species video.mp4
 
-# バウンディングボックスと種ラベル付きの注釈動画を作成
+# バウンディングボックスと種ラベル付きの注釈動画を作成（v0.3.0+）
 vogel-analyze --identify-species \
-  --annotate-video output_annotated.mp4 \
+  --annotate-video \
   video.mp4
+# 出力：video_annotated.mp4（自動）
 
 # 日本語で出力
 vogel-analyze --language ja video.mp4
@@ -166,24 +167,42 @@ vogel-analyze --identify-species \
 バウンディングボックスと種ラベル付きの注釈動画を作成：
 
 ```bash
-# 基本的な注釈（種の識別が必要）
+# 基本的な注釈（自動出力パス）
 vogel-analyze --identify-species \
-  --annotate-video output_annotated.mp4 \
+  --annotate-video \
   input.mp4
+# 出力：input_annotated.mp4
 
 # カスタムモデルと高速処理
 vogel-analyze --identify-species \
   --species-model kamera-linux/german-bird-classifier \
   --sample-rate 3 \
-  --annotate-video annotated_output.mp4 \
+  --annotate-video \
   my_video.mp4
+# 出力：my_video_annotated.mp4
+
+# カスタム出力パス（単一動画のみ）
+vogel-analyze --identify-species \
+  --annotate-video \
+  --annotate-output custom_output.mp4 \
+  input.mp4
+
+# 複数の動画を同時処理
+vogel-analyze --identify-species \
+  --annotate-video \
+  --multilingual \
+  *.mp4
+# 作成：video1_annotated.mp4, video2_annotated.mp4, など
 ```
 
 **機能：**
 - 📦 検出された鳥の周りに**バウンディングボックス**（緑色）
 - 🏷️ 信頼度スコア付きの**種ラベル**
+- 🌍 **多言語ラベル**（英語、ドイツ語、日本語）
 - ⏱️ フレーム番号と時間を表示する**タイムスタンプオーバーレイ**
 - 📊 **リアルタイム進行状況**インジケーター
+- 🎵 **音声保持**（元の動画から自動的にマージ）
+
 
 **パフォーマンスのヒント：**
 - より高速な処理には`--sample-rate 2`以上を使用（Nフレームごとに注釈）

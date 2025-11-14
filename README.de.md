@@ -86,10 +86,11 @@ vogel-analyze video.mp4
 # Vogelarten identifizieren
 vogel-analyze --identify-species video.mp4
 
-# Annotiertes Video mit Bounding Boxes und Artenlabels erstellen
+# Annotiertes Video mit Bounding Boxes und Artenlabels erstellen (v0.3.0+)
 vogel-analyze --identify-species \
-  --annotate-video output_annotiert.mp4 \
+  --annotate-video \
   video.mp4
+# Ausgabe: video_annotated.mp4 (automatisch)
 
 # Schnellere Analyse (jedes 5. Frame)
 vogel-analyze --sample-rate 5 video.mp4
@@ -207,17 +208,32 @@ Siehe Abschnitt [Eigenes Modell trainieren](#-eigenes-modell-trainieren) für De
 Erstellen Sie annotierte Videos mit Bounding Boxes und Artenlabels:
 
 ```bash
-# Basis-Annotation (erfordert Artenerkennung)
+# Basis-Annotation mit automatischem Ausgabepfad
 vogel-analyze --identify-species \
-  --annotate-video output_annotiert.mp4 \
+  --annotate-video \
   input.mp4
+# Ausgabe: input_annotated.mp4
 
 # Mit benutzerdefiniertem Modell und schnellerer Verarbeitung
 vogel-analyze --identify-species \
   --species-model kamera-linux/german-bird-classifier \
   --sample-rate 3 \
-  --annotate-video annotiert_output.mp4 \
+  --annotate-video \
   mein_video.mp4
+# Ausgabe: mein_video_annotated.mp4
+
+# Benutzerdefinierter Ausgabepfad (nur einzelnes Video)
+vogel-analyze --identify-species \
+  --annotate-video \
+  --annotate-output eigene_ausgabe.mp4 \
+  input.mp4
+
+# Mehrere Videos gleichzeitig verarbeiten
+vogel-analyze --identify-species \
+  --annotate-video \
+  --multilingual \
+  *.mp4
+# Erstellt: video1_annotated.mp4, video2_annotated.mp4, usw.
 ```
 
 **Features:**
