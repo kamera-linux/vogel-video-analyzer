@@ -179,7 +179,9 @@ vogel-analyze --identify-species bird_video.mp4
 pip install vogel-video-analyzer[species]
 ```
 
-Beim ersten Ausführen der Artenerkennung wird das Modell (~100-300MB) automatisch heruntergeladen und lokal gecacht.
+Beim ersten Ausführen der Artenerkennung wird das Modell (~100-300MB) automatisch heruntergeladen und lokal für zukünftige Verwendung gecacht.
+
+**🚀 GPU-Beschleunigung:** Die Artenerkennung nutzt automatisch CUDA (NVIDIA GPU) falls verfügbar, was die Inferenz erheblich beschleunigt. Bei fehlender GPU wird automatisch auf CPU zurückgegriffen.
 
 #### Eigene Modelle verwenden
 

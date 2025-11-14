@@ -204,6 +204,8 @@ pip install vogel-video-analyzer[species]
 
 The first time you run species identification, the model (~100-300MB) will be downloaded automatically and cached locally for future use.
 
+**🚀 GPU Acceleration:** Species identification automatically uses CUDA (NVIDIA GPU) if available, significantly speeding up inference. Falls back to CPU if no GPU is detected.
+
 #### Using Custom Models
 
 You can use locally trained models for better accuracy with your specific bird species:
