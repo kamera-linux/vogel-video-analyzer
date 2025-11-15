@@ -37,6 +37,15 @@ TRANSLATIONS = {
         'analysis_complete': 'Analysis complete!',
         'analysis_interrupted': 'Analysis interrupted',
         
+        # Summary video creation (v0.3.1+)
+        'summary_analyzing': '🔍 Analyzing video for bird activity:',
+        'summary_segments_found': '📊 Bird activity segments identified',
+        'summary_creating': '🎬 Creating summary video:',
+        'summary_complete': '✅ Summary video created successfully',
+        'summary_multiple_custom_path': '⚠️  Cannot use custom output path with multiple videos',
+        'summary_using_auto_path': 'Using automatic path generation instead',
+        'summary_skip_multiple': 'Skipping summary for additional video',
+        
         # Report
         'report_title': 'Video Analysis Report',
         'report_file': 'File:',
@@ -134,6 +143,15 @@ TRANSLATIONS = {
         'analysis_complete': 'Analyse abgeschlossen!',
         'analysis_interrupted': 'Analyse unterbrochen',
         
+        # Summary video creation (v0.3.1+)
+        'summary_analyzing': '🔍 Analysiere Video für Vogelaktivität:',
+        'summary_segments_found': '📊 Vogelaktivitäts-Segmente identifiziert',
+        'summary_creating': '🎬 Erstelle Zusammenfassungs-Video:',
+        'summary_complete': '✅ Zusammenfassungs-Video erfolgreich erstellt',
+        'summary_multiple_custom_path': '⚠️  Kann keinen benutzerdefinierten Ausgabepfad mit mehreren Videos verwenden',
+        'summary_using_auto_path': 'Verwende stattdessen automatische Pfadgenerierung',
+        'summary_skip_multiple': 'Überspringe Zusammenfassung für zusätzliches Video',
+        
         # Report
         'report_title': 'Videoanalyse-Bericht',
         'report_file': 'Datei:',
@@ -224,12 +242,21 @@ TRANSLATIONS = {
         'annotation_birds_detected': '   検出された鳥の合計：{count}',
         'annotation_merging_audio': '   🎵 元のビデオから音声を追加しています...',
         'annotation_audio_merged': '   ✅ 音声が正常に追加されました',
-        'annotation_audio_failed': '⚠️  音声のマージに失敗しました（音声なしのビデオ）',
+        'annotation_audio_failed': '⚠️  オーディオのマージに失敗しました（オーディオなしのビデオ）',
         'video_info': 'ビデオ情報：',
         'frames': 'フレーム',
         'analyzing_every_nth': '{n}フレームごとに分析しています...',
         'analysis_complete': '分析完了！',
         'analysis_interrupted': '分析が中断されました',
+        
+        # Summary video creation (v0.3.1+)
+        'summary_analyzing': '🔍 鳥の活動についてビデオを分析しています：',
+        'summary_segments_found': '📊 鳥の活動セグメントが識別されました',
+        'summary_creating': '🎬 要約ビデオを作成中：',
+        'summary_complete': '✅ 要約ビデオが正常に作成されました',
+        'summary_multiple_custom_path': '⚠️  複数のビデオではカスタム出力パスを使用できません',
+        'summary_using_auto_path': '代わりに自動パス生成を使用します',
+        'summary_skip_multiple': '追加のビデオの要約をスキップします',
         
         # Report
         'report_title': 'ビデオ分析レポート',

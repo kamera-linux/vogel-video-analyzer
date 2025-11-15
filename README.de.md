@@ -249,6 +249,70 @@ vogel-analyze --identify-species \
 - Das Ausgabevideo behält die ursprüngliche Auflösung und Framerate bei
 - Verarbeitungszeit hängt von Videolänge und Komplexität der Artenklassifizierung ab
 
+#### Video-Zusammenfassung (v0.3.1+)
+
+Erstellen Sie komprimierte Videos, indem Sie Segmente ohne Vogelaktivität überspringen:
+
+```bash
+# Basis-Zusammenfassung mit Standardeinstellungen
+vogel-analyze --create-summary video.mp4
+# Ausgabe: video_summary.mp4
+
+# Benutzerdefinierte Schwellenwerte
+vogel-analyze --create-summary \
+  --skip-empty-seconds 5.0 \
+  --min-activity-duration 1.0 \
+  video.mp4
+
+# Benutzerdefinierter Ausgabepfad (nur einzelnes Video)
+vogel-analyze --create-summary \
+  --summary-output eigene_zusammenfassung.mp4 \
+  video.mp4
+
+# Mehrere Videos gleichzeitig verarbeiten
+vogel-analyze --create-summary *.mp4
+# Erstellt: video1_summary.mp4, video2_summary.mp4, usw.
+
+# Kombination mit schnellerer Verarbeitung
+vogel-analyze --create-summary \
+  --sample-rate 10 \
+  video.mp4
+```
+
+**Features:**
+- ✂️ **Intelligente Segment-Erkennung** - Erkennt automatisch Vogelaktivitäts-Perioden
+- 🎵 **Audio-Erhaltung** - Perfekte Audio-Synchronisation (keine Tonhöhen-/Geschwindigkeitsänderungen)
+- ⚙️ **Konfigurierbare Schwellenwerte**:
+  - `--skip-empty-seconds` (Standard: 3.0) - Mindestdauer vogelfreier Segmente zum Überspringen
+  - `--min-activity-duration` (Standard: 2.0) - Mindestdauer von Vogelaktivität zum Behalten
+- 📊 **Kompressionsstatistiken** - Zeigt Original- vs. Zusammenfassungs-Dauer
+- ⚡ **Schnelle Verarbeitung** - Nutzt ffmpeg concat (keine Re-Codierung)
+- 📁 **Automatische Pfadgenerierung** - Speichert als `<original>_summary.mp4`
+
+**Wie es funktioniert:**
+1. Analysiert Video Frame für Frame zur Vogelerkennung
+2. Identifiziert kontinuierliche Segmente mit/ohne Vögel
+3. Filtert Segmente basierend auf Dauer-Schwellenwerten
+4. Verkettet Segmente mit Audio mittels ffmpeg
+5. Gibt Kompressionsstatistiken zurück
+
+**Beispiel-Ausgabe:**
+```
+🔍 Analysiere Video für Vogelaktivität: video.mp4...
+   📊 Analysiere 18000 Frames bei 30.0 FPS...
+   ✅ Analyse abgeschlossen - 1250 Frames mit Vögeln erkannt
+
+📊 Vogelaktivitäts-Segmente identifiziert
+   📊 Beizubehaltende Segmente: 8
+   ⏱️  Original-Dauer: 0:10:00
+   ⏱️  Zusammenfassungs-Dauer: 0:02:45
+   📉 Kompression: 72.5% kürzer
+
+🎬 Erstelle Zusammenfassungs-Video: video_summary.mp4...
+   ✅ Zusammenfassungs-Video erfolgreich erstellt
+   📁 video_summary.mp4
+```
+
 #### Erweiterte Optionen
 ```bash
 # Benutzerdefinierter Schwellenwert und Sample-Rate

@@ -281,6 +281,70 @@ DE: Kernbeißer
 75%
 ```
 
+#### Video Summary (v0.3.1+)
+
+Create compressed videos by skipping segments without bird activity:
+
+```bash
+# Basic summary with default settings
+vogel-analyze --create-summary video.mp4
+# Output: video_summary.mp4
+
+# Custom thresholds
+vogel-analyze --create-summary \
+  --skip-empty-seconds 5.0 \
+  --min-activity-duration 1.0 \
+  video.mp4
+
+# Custom output path (single video only)
+vogel-analyze --create-summary \
+  --summary-output custom_summary.mp4 \
+  video.mp4
+
+# Batch processing multiple videos
+vogel-analyze --create-summary *.mp4
+# Creates: video1_summary.mp4, video2_summary.mp4, etc.
+
+# Combine with faster processing
+vogel-analyze --create-summary \
+  --sample-rate 10 \
+  video.mp4
+```
+
+**Features:**
+- ✂️ **Smart segment detection** - Automatically identifies bird activity periods
+- 🎵 **Audio preservation** - Maintains perfect audio sync (no pitch/speed changes)
+- ⚙️ **Configurable thresholds**:
+  - `--skip-empty-seconds` (default: 3.0) - Minimum duration of bird-free segments to skip
+  - `--min-activity-duration` (default: 2.0) - Minimum duration of bird activity to keep
+- 📊 **Compression statistics** - Shows original vs. summary duration
+- ⚡ **Fast processing** - Uses ffmpeg concat (no re-encoding)
+- 📁 **Automatic path generation** - Saves as `<original>_summary.mp4`
+
+**How it works:**
+1. Analyzes video frame-by-frame to detect bird presence
+2. Identifies continuous segments with/without birds
+3. Filters segments based on duration thresholds
+4. Concatenates segments with audio using ffmpeg
+5. Returns compression statistics
+
+**Example Output:**
+```
+🔍 Analyzing video for bird activity: video.mp4...
+   📊 Analyzing 18000 frames at 30.0 FPS...
+   ✅ Analysis complete - 1250 frames with birds detected
+
+📊 Bird activity segments identified
+   📊 Segments to keep: 8
+   ⏱️  Original duration: 0:10:00
+   ⏱️  Summary duration: 0:02:45
+   📉 Compression: 72.5% shorter
+
+🎬 Creating summary video: video_summary.mp4...
+   ✅ Summary video created successfully
+   📁 video_summary.mp4
+```
+
 **Supported Languages:**
 - 🇬🇧 English (primary)
 - 🇩🇪 German (full support, 39 species)

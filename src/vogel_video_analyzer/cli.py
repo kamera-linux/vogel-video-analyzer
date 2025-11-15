@@ -67,6 +67,14 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         help='Create annotated video with bounding boxes and species labels, saves as <original>_annotated.mp4 in the same directory')
     parser.add_argument('--annotate-output', metavar='PATH',
                         help='Custom output path for annotated video (requires --annotate-video)')
+    parser.add_argument('--create-summary', action='store_true',
+                        help='Create summary video by skipping segments without bird activity (v0.3.1+)')
+    parser.add_argument('--summary-output', metavar='PATH',
+                        help='Custom output path for summary video (requires --create-summary)')
+    parser.add_argument('--skip-empty-seconds', type=float, default=3.0,
+                        help='Skip segments without birds longer than N seconds (default: 3.0, requires --create-summary)')
+    parser.add_argument('--min-activity-duration', type=float, default=2.0,
+                        help='Minimum duration for bird activity segments in seconds (default: 2.0, requires --create-summary)')
     parser.add_argument('--output', '-o', help='Save report as JSON')
     parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
@@ -172,6 +180,30 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         str(output_path), 
                         sample_rate=args.sample_rate,
                         multilingual=args.multilingual
+                    )
+                elif args.create_summary:
+                    # Create summary video (skip empty segments)
+                    # Determine output path
+                    if args.summary_output:
+                        # Use custom output path (only for single video)
+                        if len(args.videos) > 1:
+                            print(f"\n⚠️  {t('summary_multiple_custom_path')}: {video_path}")
+                            print(f"    {t('summary_using_auto_path')}")
+                            video_path_obj = Path(video_path)
+                            output_path = video_path_obj.parent / f"{video_path_obj.stem}_summary{video_path_obj.suffix}"
+                        else:
+                            output_path = args.summary_output
+                    else:
+                        # Auto-generate output filename in same directory
+                        video_path_obj = Path(video_path)
+                        output_path = video_path_obj.parent / f"{video_path_obj.stem}_summary{video_path_obj.suffix}"
+                    
+                    summary_stats = analyzer.create_summary_video(
+                        video_path,
+                        str(output_path),
+                        sample_rate=args.sample_rate,
+                        skip_empty_seconds=args.skip_empty_seconds,
+                        min_activity_duration=args.min_activity_duration
                     )
                 else:
                     # Standard analysis

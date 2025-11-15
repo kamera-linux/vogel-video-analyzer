@@ -5,6 +5,49 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-11-14
+
+### Added
+- **Summary Video Feature** - Create compressed videos by skipping segments without bird activity
+  - New `--create-summary` CLI flag to enable summary video creation
+  - New `--summary-output PATH` for custom output location (optional)
+  - New `--skip-empty-seconds FLOAT` to control minimum duration of bird-free segments to skip (default: 3.0)
+  - New `--min-activity-duration FLOAT` to control minimum duration of bird activity to keep (default: 2.0)
+  - Automatic output path generation: saves as `<original>_summary.mp4` in same directory
+  - Intelligent segment detection using existing YOLO bird detection
+  - Frame-by-frame analysis to identify continuous bird activity segments
+  - Audio preservation with synchronous cutting (no pitch/speed changes)
+  - Compression statistics: original duration, summary duration, compression ratio
+  - Progress indicator during analysis and processing
+  - Works with any video format supported by OpenCV/ffmpeg
+  
+- **i18n Support for Summary Feature**
+  - Translations in English, German, and Japanese
+  - Messages: summary_analyzing, summary_segments_found, summary_creating, summary_complete
+  - Multi-video handling messages: summary_multiple_custom_path, summary_using_auto_path, summary_skip_multiple
+
+### Technical Details
+- Uses `ffmpeg concat demuxer` for efficient video concatenation
+- No re-encoding required (uses `-c copy` for fast processing)
+- Temporary segment files automatically cleaned up after processing
+- Configurable thresholds allow fine-tuning of compression vs. content preservation
+- Compatible with both single and multiple video batch processing
+
+### Usage Examples
+```bash
+# Create summary with default settings (skip 3+ seconds, keep 2+ seconds)
+vogel-video-analyzer --create-summary video.mp4
+
+# Custom thresholds: skip 5+ seconds without birds, keep 1+ seconds with birds
+vogel-video-analyzer --create-summary --skip-empty-seconds 5.0 --min-activity-duration 1.0 video.mp4
+
+# Custom output path
+vogel-video-analyzer --create-summary --summary-output /path/to/output.mp4 video.mp4
+
+# Batch process multiple videos
+vogel-video-analyzer --create-summary video1.mp4 video2.mp4 video3.mp4
+```
+
 ## [0.3.0] - 2025-11-14
 
 ### Added

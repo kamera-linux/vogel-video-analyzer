@@ -211,6 +211,70 @@ vogel-analyze --identify-species \
 - 出力動画は元の解像度とフレームレートを維持
 - 処理時間は動画の長さと種分類の複雑さによる
 
+#### 動画サマリー（v0.3.1+）
+
+鳥の活動がないセグメントをスキップして圧縮動画を作成：
+
+```bash
+# デフォルト設定での基本的なサマリー
+vogel-analyze --create-summary video.mp4
+# 出力：video_summary.mp4
+
+# カスタム閾値
+vogel-analyze --create-summary \
+  --skip-empty-seconds 5.0 \
+  --min-activity-duration 1.0 \
+  video.mp4
+
+# カスタム出力パス（単一動画のみ）
+vogel-analyze --create-summary \
+  --summary-output custom_summary.mp4 \
+  video.mp4
+
+# 複数の動画を同時処理
+vogel-analyze --create-summary *.mp4
+# 作成：video1_summary.mp4, video2_summary.mp4, など
+
+# 高速処理との組み合わせ
+vogel-analyze --create-summary \
+  --sample-rate 10 \
+  video.mp4
+```
+
+**機能：**
+- ✂️ **スマートセグメント検出** - 鳥の活動期間を自動的に識別
+- 🎵 **音声保持** - 完璧な音声同期を維持（ピッチ/速度変更なし）
+- ⚙️ **設定可能な閾値**：
+  - `--skip-empty-seconds`（デフォルト：3.0）- スキップする鳥なしセグメントの最小期間
+  - `--min-activity-duration`（デフォルト：2.0）- 保持する鳥の活動の最小期間
+- 📊 **圧縮統計** - オリジナルとサマリーの期間を表示
+- ⚡ **高速処理** - ffmpeg concat を使用（再エンコードなし）
+- 📁 **自動パス生成** - `<original>_summary.mp4` として保存
+
+**動作の仕組み：**
+1. フレームごとに動画を分析して鳥の存在を検出
+2. 鳥のいる/いない連続セグメントを識別
+3. 期間の閾値に基づいてセグメントをフィルタリング
+4. ffmpeg を使用して音声付きでセグメントを連結
+5. 圧縮統計を返す
+
+**出力例：**
+```
+🔍 鳥の活動についてビデオを分析しています：video.mp4...
+   📊 30.0 FPSで18000フレームを分析しています...
+   ✅ 分析完了 - 1250フレームで鳥を検出
+
+📊 鳥の活動セグメントが識別されました
+   📊 保持するセグメント：8
+   ⏱️  オリジナル期間：0:10:00
+   ⏱️  サマリー期間：0:02:45
+   📉 圧縮：72.5% 短縮
+
+🎬 要約ビデオを作成中：video_summary.mp4...
+   ✅ 要約ビデオが正常に作成されました
+   📁 video_summary.mp4
+```
+
 #### 高度なオプション
 ```bash
 # カスタム閾値とサンプルレート

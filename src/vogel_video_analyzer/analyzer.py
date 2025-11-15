@@ -812,3 +812,207 @@ class VideoAnalyzer:
             'birds_detected': total_birds_detected,
             'fps': fps
         }
+    
+    def create_summary_video(self, video_path, output_path, sample_rate=5, 
+                            skip_empty_seconds=3.0, min_activity_duration=2.0):
+        """
+        Create summary video by skipping segments without bird activity
+        
+        Args:
+            video_path: Path to input video
+            output_path: Path to output summary video
+            sample_rate: Frames to skip between detections (higher = faster but less accurate)
+            skip_empty_seconds: Minimum duration of bird-free segment to skip (default: 3.0)
+            min_activity_duration: Minimum duration of bird activity to keep (default: 2.0)
+            
+        Returns:
+            dict with summary statistics
+        """
+        video_path = Path(video_path)
+        output_path = Path(output_path)
+        
+        print(f"\n{t('summary_analyzing')} {video_path.name}...")
+        
+        # Open video
+        cap = cv2.VideoCapture(str(video_path))
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video: {video_path}")
+        
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        total_duration = total_frames / fps
+        
+        # Analyze video to find bird activity segments
+        print(f"   📊 Analyzing {total_frames} frames at {fps:.1f} FPS...")
+        
+        bird_frames = set()  # Frame numbers with bird detections
+        frame_number = 0
+        
+        while frame_number < total_frames:
+            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            # Run detection
+            results = self.model(frame, verbose=False)
+            
+            # Check if any birds detected
+            for result in results:
+                boxes = result.boxes
+                if boxes is not None and len(boxes) > 0:
+                    # Bird detected in this frame
+                    bird_frames.add(frame_number)
+                    break
+            
+            frame_number += sample_rate
+            
+            # Progress indicator
+            if frame_number % (sample_rate * 100) == 0:
+                progress = (frame_number / total_frames) * 100
+                print(f"   ⏳ Progress: {progress:.1f}%", end='\r')
+        
+        cap.release()
+        print(f"   ✅ Analysis complete - {len(bird_frames)} frames with birds detected")
+        
+        # Convert frame numbers to time segments
+        skip_empty_frames = int(skip_empty_seconds * fps)
+        min_activity_frames = int(min_activity_duration * fps)
+        
+        # Find continuous segments with bird activity
+        segments = []  # [(start_time, end_time), ...]
+        current_segment_start = None
+        last_bird_frame = -skip_empty_frames - 1
+        
+        for frame_num in sorted(bird_frames):
+            # Check if this frame is close enough to previous bird frame
+            if frame_num - last_bird_frame <= skip_empty_frames:
+                # Continue current segment
+                if current_segment_start is None:
+                    current_segment_start = max(0, last_bird_frame - min_activity_frames // 2)
+            else:
+                # End previous segment and start new one
+                if current_segment_start is not None:
+                    segment_end = min(total_frames, last_bird_frame + min_activity_frames // 2)
+                    segment_duration = (segment_end - current_segment_start) / fps
+                    if segment_duration >= min_activity_duration:
+                        segments.append((current_segment_start / fps, segment_end / fps))
+                
+                current_segment_start = max(0, frame_num - min_activity_frames // 2)
+            
+            last_bird_frame = frame_num
+        
+        # Don't forget the last segment
+        if current_segment_start is not None:
+            segment_end = min(total_frames, last_bird_frame + min_activity_frames // 2)
+            segment_duration = (segment_end - current_segment_start) / fps
+            if segment_duration >= min_activity_duration:
+                segments.append((current_segment_start / fps, segment_end / fps))
+        
+        if not segments:
+            print(f"   ⚠️  No bird activity segments found - video would be empty")
+            return {
+                'input_video': str(video_path),
+                'output_video': None,
+                'original_duration': total_duration,
+                'summary_duration': 0,
+                'segments_kept': 0,
+                'segments_skipped': 0,
+                'compression_ratio': 0
+            }
+        
+        summary_duration = sum(end - start for start, end in segments)
+        print(f"\n{t('summary_segments_found')}")
+        print(f"   📊 Segments to keep: {len(segments)}")
+        print(f"   ⏱️  Original duration: {timedelta(seconds=int(total_duration))}")
+        print(f"   ⏱️  Summary duration: {timedelta(seconds=int(summary_duration))}")
+        print(f"   📉 Compression: {(1 - summary_duration/total_duration) * 100:.1f}% shorter")
+        
+        # Create ffmpeg concat file
+        concat_file = output_path.parent / f"{output_path.stem}_concat.txt"
+        
+        try:
+            print(f"\n{t('summary_creating')} {output_path.name}...")
+            
+            # Create temporary segment files
+            temp_dir = Path(tempfile.mkdtemp())
+            segment_files = []
+            
+            for idx, (start, end) in enumerate(segments):
+                segment_path = temp_dir / f"segment_{idx:04d}.mp4"
+                segment_files.append(segment_path)
+                
+                # Extract segment with ffmpeg (with audio)
+                cmd = [
+                    'ffmpeg', '-y',
+                    '-ss', str(start),
+                    '-i', str(video_path),
+                    '-t', str(end - start),
+                    '-c', 'copy',  # Copy streams without re-encoding
+                    '-avoid_negative_ts', 'make_zero',
+                    str(segment_path)
+                ]
+                
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    print(f"   ⚠️  Warning: Failed to extract segment {idx}")
+            
+            # Create concat file
+            with open(concat_file, 'w') as f:
+                for seg_file in segment_files:
+                    if seg_file.exists():
+                        f.write(f"file '{seg_file}'\n")
+            
+            # Concatenate segments
+            cmd = [
+                'ffmpeg', '-y',
+                '-f', 'concat',
+                '-safe', '0',
+                '-i', str(concat_file),
+                '-c', 'copy',
+                str(output_path)
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            
+            if result.returncode == 0 and output_path.exists():
+                print(f"   {t('summary_complete')}")
+                print(f"   📁 {output_path}")
+                
+                # Cleanup
+                concat_file.unlink(missing_ok=True)
+                for seg_file in segment_files:
+                    seg_file.unlink(missing_ok=True)
+                temp_dir.rmdir()
+                
+                return {
+                    'input_video': str(video_path),
+                    'output_video': str(output_path),
+                    'original_duration': total_duration,
+                    'summary_duration': summary_duration,
+                    'segments_kept': len(segments),
+                    'segments_skipped': total_duration - summary_duration,
+                    'compression_ratio': 1 - (summary_duration / total_duration)
+                }
+            else:
+                print(f"   ⚠️  ffmpeg concatenation failed")
+                print(f"   Error: {result.stderr}")
+                return None
+                
+        except subprocess.TimeoutExpired:
+            print(f"   ⚠️  ffmpeg timeout - video too long")
+            return None
+        except FileNotFoundError:
+            print(f"   ⚠️  ffmpeg not found - please install: sudo apt install ffmpeg")
+            return None
+        except Exception as e:
+            print(f"   ⚠️  Error creating summary: {e}")
+            return None
+        finally:
+            # Cleanup temp files
+            if concat_file.exists():
+                concat_file.unlink()
+            if 'temp_dir' in locals():
+                for seg_file in segment_files:
+                    seg_file.unlink(missing_ok=True)
+                temp_dir.rmdir()

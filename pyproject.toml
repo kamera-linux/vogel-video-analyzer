@@ -8,7 +8,7 @@ dynamic = ["version"]
 description = "YOLOv8-based video analysis tool for automated bird content detection, quantification, and species identification"
 readme = "README.md"
 authors = [
-    {name = "Vogel-Kamera-Linux Team", email = "info@vogel-kamera-linux.org"}
+    {name = "kamera-linux", email = "kamera-linux@mailbox.org"}
 ]
 license = "MIT"
 keywords = [
