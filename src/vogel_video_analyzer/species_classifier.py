@@ -18,6 +18,18 @@ from .i18n import t
 
 
 # Translation dictionary for common bird species
+# English names from kamera-linux/german-bird-classifier
+ENGLISH_NAMES = {
+    'PARUS MAJOR': 'Great Tit',
+    'BLUE TIT': 'Blue Tit',
+    'MARSH TIT': 'Marsh Tit',
+    'EURASIAN NUTHATCH': 'Eurasian Nuthatch',
+    'EUROPEAN GREENFINCH': 'European Greenfinch',
+    'HAWFINCH': 'Hawfinch',
+    'HOUSE SPARROW': 'House Sparrow',
+    'EUROPEAN ROBIN': 'European Robin',
+}
+
 BIRD_NAME_TRANSLATIONS = {
     'de': {
         # European garden birds (from kamera-linux/german-bird-classifier)
@@ -25,7 +37,7 @@ BIRD_NAME_TRANSLATIONS = {
         'BLUE TIT': 'Blaumeise',
         'MARSH TIT': 'Sumpfmeise',
         'EURASIAN NUTHATCH': 'Kleiber',
-        'EUROPEAN GREENFINCH': 'Grünling',
+        'EUROPEAN GREENFINCH': 'Grünfink',
         'HAWFINCH': 'Kernbeißer',
         'HOUSE SPARROW': 'Haussperling',
         'EUROPEAN ROBIN': 'Rotkehlchen',
@@ -298,23 +310,20 @@ class BirdSpeciesClassifier:
             
         Returns:
             Multilingual string with all translations
-            Example: "EN: Parus Major | DE: Kohlmeise" (opencv_compatible=True)
-            Example: "🇬🇧 Parus Major 🇩🇪 Kohlmeise 🇯🇵 シジュウカラ" (opencv_compatible=False)
+            Example: "EN: Great Tit | DE: Kohlmeise" (opencv_compatible=True)
+            Example: "🇬🇧 Great Tit 🇩🇪 Kohlmeise 🇯🇵 シジュウカラ" (opencv_compatible=False)
         """
         # Try to convert German label to English key (for models using German labels)
         species_name_lower = species_name.lower()
         if species_name_lower in GERMAN_TO_ENGLISH:
             species_name = GERMAN_TO_ENGLISH[species_name_lower]
         
-        # English name (formatted)
-        en_name = ' '.join(word.capitalize() for word in species_name.split())
+        # Get proper English name from dictionary, or format as title case
+        en_name = ENGLISH_NAMES.get(species_name, ' '.join(word.capitalize() for word in species_name.split()))
         
-        # Build multilingual string
-        flags = {
-            'en': '🇬🇧',
-            'de': '🇩🇪', 
-            'ja': '🇯🇵'
-        }
+        # Get translations
+        de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_name, en_name)
+        ja_name = BIRD_NAME_TRANSLATIONS.get('ja', {}).get(species_name, en_name)
         
         if opencv_compatible:
             # Use ASCII-only format for OpenCV compatibility
@@ -322,22 +331,26 @@ class BirdSpeciesClassifier:
             
             # Add German translation if available
             if species_name in BIRD_NAME_TRANSLATIONS.get('de', {}):
-                de_name = BIRD_NAME_TRANSLATIONS['de'][species_name]
                 parts.append(f"DE: {de_name}")
+            
+            # Add Japanese translation if available
+            if species_name in BIRD_NAME_TRANSLATIONS.get('ja', {}):
+                parts.append(f"JA: {ja_name}")
             
             return ' | '.join(parts)
         else:
-            # Get translations
-            de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_name, en_name)
-            ja_name = BIRD_NAME_TRANSLATIONS.get('ja', {}).get(species_name, en_name)
-            
+            # For video annotation with PIL: return German name only
+            # The rendering code will fetch EN/DE/JA separately and render with flag icons
             if show_flags:
-                # Return German name only (no emojis - they don't render properly)
-                # The multilingual rendering will handle the EN/DE display
                 return de_name
             else:
-                # No flags: just use German name
-                return de_name
+                # No flags: concatenate all available names
+                parts = [en_name]
+                if species_name in BIRD_NAME_TRANSLATIONS.get('de', {}):
+                    parts.append(de_name)
+                if species_name in BIRD_NAME_TRANSLATIONS.get('ja', {}):
+                    parts.append(ja_name)
+                return ' / '.join(parts)
     
     @staticmethod
     def format_species_name(label: str, translate: bool = True) -> str:

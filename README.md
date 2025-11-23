@@ -367,11 +367,11 @@ vogel-analyze --create-summary \
 **Supported Birds (German Model):**
 All 8 birds from `kamera-linux/german-bird-classifier`:
 - Blaumeise (Blue Tit)
-- Grünling (European Greenfinch)
+- Grünfink (European Greenfinch)
 - Haussperling (House Sparrow)
 - Kernbeißer (Hawfinch)
 - Kleiber (Eurasian Nuthatch)
-- Kohlmeise (Parus Major)
+- Kohlmeise (Great Tit)
 - Rotkehlchen (European Robin)
 - Sumpfmeise (Marsh Tit)
 

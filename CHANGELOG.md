@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2025-11-24
+
+### Fixed
+- **Multilingual Species Names**: Corrected English bird names to use proper common names instead of scientific names
+  - Example: "Great Tit" instead of "Parus Major"
+  - Added `ENGLISH_NAMES` dictionary with correct English common names for all 8 species from kamera-linux/german-bird-classifier
+  - Species: Great Tit, Blue Tit, Marsh Tit, Eurasian Nuthatch, European Greenfinch, Hawfinch, House Sparrow, European Robin
+- **German Translation**: Corrected "European Greenfinch" translation from "Grünling" to "Grünfink"
+- **Video Annotation**: Fixed multilingual rendering to properly use English common names with flag icons
+
+### Technical Details
+- Added `ENGLISH_NAMES` lookup dictionary in `species_classifier.py`
+- Updated `analyzer.py` to import and use `ENGLISH_NAMES` for proper English name display
+- Maintained backward compatibility with existing translation system
+
 ## [0.4.0] - 2025-11-23
 
 ### Added

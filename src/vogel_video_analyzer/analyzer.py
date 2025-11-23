@@ -746,12 +746,12 @@ class VideoAnalyzer:
                     # Get individual translations
                     try:
                         species_display = bird_part  # Already just the German name, no emojis
-                        from .species_classifier import GERMAN_TO_ENGLISH, BIRD_NAME_TRANSLATIONS
+                        from .species_classifier import GERMAN_TO_ENGLISH, BIRD_NAME_TRANSLATIONS, ENGLISH_NAMES
                         species_key = GERMAN_TO_ENGLISH.get(species_display.lower())
                         
                         if species_key:
-                            # Get translations
-                            en_name = ' '.join(word.capitalize() for word in species_key.split())
+                            # Get translations (use proper English names from dictionary)
+                            en_name = ENGLISH_NAMES.get(species_key, ' '.join(word.capitalize() for word in species_key.split()))
                             de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_key, en_name)
                             ja_name = BIRD_NAME_TRANSLATIONS.get('ja', {}).get(species_key, en_name)
                             
