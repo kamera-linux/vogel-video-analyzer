@@ -1,5 +1,7 @@
 # 🐦 Vogel Video Analyzer
 
+![Vogel Video Analyzer Banner](assets/banner.png)
+
 **Sprachen:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md) | [🇯🇵 日本語](README.ja.md)
 
 <p align="left">

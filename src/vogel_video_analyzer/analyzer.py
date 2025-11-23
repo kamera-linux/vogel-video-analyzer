@@ -27,8 +27,72 @@ except ImportError:
     BirdSpeciesClassifier = None
     aggregate_species_detections = None
 
+def render_emoji_icon(emoji, size=24):
+    """
+    Render flag emoji with accurate flag designs
+    
+    Args:
+        emoji: Emoji character (e.g., '🇩🇪', '🇬🇧', '🇯🇵')
+        size: Icon size in pixels
+        
+    Returns:
+        PIL Image with colored flag representation (in BGR for later OpenCV compatibility)
+    """
+    if not PIL_AVAILABLE:
+        return None
+    
+    try:
+        width = int(size * 1.5)
+        flag_array = np.zeros((size, width, 3), dtype=np.uint8)
+        
+        if emoji == '🇩🇪':
+            # Germany: Horizontal stripes (Black, Red, Gold)
+            stripe_height = size // 3
+            flag_array[0:stripe_height, :] = (0, 0, 0)  # BGR: Black
+            flag_array[stripe_height:2*stripe_height, :] = (0, 0, 221)  # BGR: Red
+            flag_array[2*stripe_height:, :] = (0, 206, 255)  # BGR: Gold
+            
+        elif emoji == '🇬🇧':
+            # UK: Simplified Union Jack
+            # Blue background
+            flag_array[:, :] = (125, 36, 0)  # BGR: Blue
+            
+            # White diagonal cross (thicker)
+            thickness = max(2, size // 8)
+            # Diagonals
+            cv2.line(flag_array, (0, 0), (width, size), (255, 255, 255), thickness)
+            cv2.line(flag_array, (width, 0), (0, size), (255, 255, 255), thickness)
+            
+            # Red cross (vertical and horizontal)
+            cross_thickness = max(3, size // 6)
+            cv2.line(flag_array, (width//2, 0), (width//2, size), (38, 17, 206), cross_thickness)  # BGR: Red
+            cv2.line(flag_array, (0, size//2), (width, size//2), (38, 17, 206), cross_thickness)  # BGR: Red
+            
+        elif emoji == '🇯🇵':
+            # Japan: White background with red circle
+            flag_array[:, :] = (255, 255, 255)  # BGR: White
+            
+            # Red circle in center
+            center_x = width // 2
+            center_y = size // 2
+            radius = int(size * 0.3)
+            cv2.circle(flag_array, (center_x, center_y), radius, (60, 20, 220), -1)  # BGR: Red (filled)
+            
+        else:
+            # Fallback: Gray
+            flag_array[:, :] = (128, 128, 128)
+        
+        # Add border
+        cv2.rectangle(flag_array, (0, 0), (width - 1, size - 1), (80, 80, 80), 1)
+        
+        # Convert BGR to RGB for PIL
+        flag_rgb = cv2.cvtColor(flag_array, cv2.COLOR_BGR2RGB)
+        return Image.fromarray(flag_rgb)
+    except Exception as e:
+        return None
 
-def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), bg_color=None):
+
+def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), bg_color=None, emoji_prefix=None):
     """
     Draw Unicode text (including emojis) on image using PIL
     
@@ -39,6 +103,7 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
         font_size: Font size in pixels
         color: Text color in BGR format
         bg_color: Background color in BGR format (None = transparent)
+        emoji_prefix: Optional emoji to render as icon before text (e.g., '🇩🇪')
         
     Returns:
         Modified image with text
@@ -57,40 +122,81 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
     img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img_pil)
     
-    # Try to load a font that supports Unicode (including CJK characters)
+    # Render emoji icon if specified
+    emoji_icon = None
+    emoji_width = 0
+    if emoji_prefix:
+        emoji_icon = render_emoji_icon(emoji_prefix, size=font_size)
+        if emoji_icon:
+            emoji_width = emoji_icon.width + 4  # Add spacing
+    
+    # Try to load fonts - we need TWO: one for Latin and one for CJK (Japanese)
     try:
-        # For best results, use a font that supports BOTH Latin and CJK characters
-        # DejaVu has good Latin support, Droid has CJK support
-        # Try fonts that support both
-        font_paths = [
-            # Fonts with BOTH Latin and CJK support
-            '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',  # Noto Sans (good Latin)
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # DejaVu (excellent Latin)
+        # Latin font paths (for English/German)
+        latin_font_paths = [
+            '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',  # Noto Sans
+            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # DejaVu
             '/usr/share/fonts/TTF/DejaVuSans.ttf',              # Arch
             '/System/Library/Fonts/Helvetica.ttc',              # macOS
             'C:\\Windows\\Fonts\\arial.ttf',                    # Windows
         ]
         
-        font = None
-        for font_path in font_paths:
+        # CJK font paths (for Japanese)
+        cjk_font_paths = [
+            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',  # Noto CJK
+            '/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc',
+            '/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf',  # Takao
+            '/usr/share/fonts/truetype/vlgothic/VL-Gothic-Regular.ttf',  # VL Gothic
+            '/System/Library/Fonts/Hiragino Sans GB.ttc',       # macOS
+            'C:\\Windows\\Fonts\\msgothic.ttc',                 # MS Gothic (Windows)
+        ]
+        
+        # Load Latin font
+        latin_font = None
+        for font_path in latin_font_paths:
             if Path(font_path).exists():
                 try:
-                    font = ImageFont.truetype(font_path, font_size)
+                    latin_font = ImageFont.truetype(font_path, font_size)
                     break
                 except:
                     continue
         
-        if font is None:
-            font = ImageFont.load_default()
+        # Load CJK font
+        cjk_font = None
+        for font_path in cjk_font_paths:
+            if Path(font_path).exists():
+                try:
+                    cjk_font = ImageFont.truetype(font_path, font_size)
+                    break
+                except:
+                    continue
+        
+        # Use Latin font as primary, fallback to default if both fail
+        font = latin_font if latin_font else ImageFont.load_default()
     except:
         font = ImageFont.load_default()
+        cjk_font = None
     
-    # For Japanese/CJK fallback, we need to use a composite approach
-    # PIL doesn't support font fallback well, so we'll just use DejaVu which is most reliable
-    # Note: Japanese characters may not render perfectly, but Latin text will be clear
+    # Detect if text contains CJK characters and choose appropriate font
+    def contains_cjk(text):
+        """Check if text contains CJK (Chinese/Japanese/Korean) characters"""
+        for char in text:
+            if '\u4e00' <= char <= '\u9fff' or '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff':
+                return True
+        return False
+    
+    # Choose font based on text content
+    active_font = cjk_font if (cjk_font and contains_cjk(text)) else font
+    
+    # Adjust position for emoji icon
+    text_position = (position[0] + emoji_width, position[1])
     
     # Get text bounding box for background
-    bbox = draw.textbbox(position, text, font=font)
+    bbox = draw.textbbox(text_position, text, font=active_font)
+    
+    # Adjust bbox to include emoji if present
+    if emoji_icon:
+        bbox = (position[0], bbox[1], bbox[2], bbox[3])
     
     # Draw background if specified
     if bg_color is not None:
@@ -103,9 +209,18 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
             fill=bg_rgb
         )
     
-    # Draw text (convert BGR to RGB)
+    # Paste emoji icon if available (no transparency, direct paste)
+    if emoji_icon:
+        # Calculate vertical centering
+        emoji_y = position[1] + (font_size - emoji_icon.height) // 2
+        # Convert emoji icon to RGB if needed and paste without mask
+        if emoji_icon.mode == 'RGBA':
+            emoji_icon = emoji_icon.convert('RGB')
+        img_pil.paste(emoji_icon, (position[0], emoji_y))
+    
+    # Draw text (convert BGR to RGB) - use the appropriate font
     text_rgb = (color[2], color[1], color[0])
-    draw.text(position, text, font=font, fill=text_rgb)
+    draw.text(text_position, text, font=active_font, fill=text_rgb)
     
     # Convert back to BGR for OpenCV
     img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
@@ -447,7 +562,7 @@ class VideoAnalyzer:
         
         print("━" * 70)
 
-    def annotate_video(self, video_path, output_path, sample_rate=1, show_timestamp=True, show_confidence=True, box_color=(0, 255, 0), text_color=(255, 255, 255), multilingual=False):
+    def annotate_video(self, video_path, output_path, sample_rate=1, show_timestamp=True, show_confidence=True, box_color=(0, 255, 0), text_color=(255, 255, 255), multilingual=False, font_size=20):
         """
         Create annotated video with bounding boxes and species labels
         
@@ -460,6 +575,7 @@ class VideoAnalyzer:
             box_color: BGR color for bounding boxes (default: green)
             text_color: BGR color for text labels (default: white)
             multilingual: Show bird names in all languages with flags (default: False)
+            font_size: Font size for species labels (default: 20)
             
         Returns:
             dict with processing statistics
@@ -557,6 +673,8 @@ class VideoAnalyzer:
                             
                             # Species identification if enabled
                             species_label = None
+                            skip_detection = False
+                            
                             if self.identify_species and self.species_classifier:
                                 try:
                                     bbox = (x1, y1, x2, y2)
@@ -584,20 +702,27 @@ class VideoAnalyzer:
                                             species_label = f"{bird_name} {species_info['score']:.0%}"
                                         else:
                                             species_label = bird_name
+                                    else:
+                                        # No species passed threshold - skip this detection entirely
+                                        skip_detection = True
                                 except Exception as e:
-                                    species_label = "Bird"
-                            else:
-                                # No species classification
+                                    # On error, skip detection
+                                    skip_detection = True
+                            
+                            # Fallback if species_label is still None
+                            if species_label is None and not skip_detection:
+                                # No species classification enabled - show as generic bird
                                 if show_confidence:
                                     species_label = f"Bird {conf:.0%}"
                                 else:
                                     species_label = "Bird"
                             
-                            # Store detection for reuse
-                            last_detections.append({
-                                'bbox': (x1, y1, x2, y2),
-                                'label': species_label
-                            })
+                            # Store detection for reuse (only if not skipped)
+                            if not skip_detection and species_label is not None:
+                                last_detections.append({
+                                    'bbox': (x1, y1, x2, y2),
+                                    'label': species_label
+                                })
                 
                 last_birds_count = birds_in_frame
             
@@ -628,47 +753,67 @@ class VideoAnalyzer:
                             # Get translations
                             en_name = ' '.join(word.capitalize() for word in species_key.split())
                             de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_key, en_name)
+                            ja_name = BIRD_NAME_TRANSLATIONS.get('ja', {}).get(species_key, en_name)
                             
-                            # Multiline format without emojis
-                            # Line 1: EN: English name
-                            # Line 2: DE: German name  
-                            # Line 3: Confidence
+                            # Multiline format with flag icons (rendered as colored stripes)
+                            # Line 1: 🇬🇧 English name
+                            # Line 2: 🇩🇪 German name
+                            # Line 3: 🇯🇵 Japanese name
+                            # Line 4: Confidence
                             lines = [
-                                f"EN: {en_name}",
-                                f"DE: {de_name}",
-                                conf_part
+                                (en_name, '🇬🇧'),  # Text + emoji icon
+                                (de_name, '🇩🇪'),
+                                (ja_name, '🇯🇵'),
+                                (conf_part, None)  # No icon for confidence
                             ]
                         else:
-                            lines = [label]
+                            lines = [(label, None)]
                     except:
-                        lines = [label]
+                        lines = [(label, None)]
                     
-                    # Draw multiline with larger font
-                    line_height = 45  # Increased from 40
-                    total_height = len(lines) * line_height + 20  # More padding
+                    # Draw multiline with configurable font size
+                    line_height = int(font_size * 1.4)  # Dynamic line height based on font size
+                    total_height = len(lines) * line_height + 12  # Less padding
                     
-                    # Calculate position - place box ABOVE the bounding box to avoid covering bird
-                    box_y_start = max(0, y1 - total_height - 10)  # 10px gap above bird box
-                    box_y_end = y1 - 10
+                    # Calculate position - place box to the RIGHT of the bounding box
+                    box_x_start = x2 + 10  # 10px gap to the right of bird box
+                    box_y_start = y1
                     
-                    # White background for better contrast - wider box
+                    # Dynamic width based on font size
+                    box_width = int(font_size * 16)
+                    box_y_end = box_y_start + total_height
+                    
+                    # Semi-transparent white background using PIL for better control
+                    # Create overlay with alpha channel
+                    overlay = annotated_frame.copy()
                     cv2.rectangle(
-                        annotated_frame,
-                        (x1, box_y_start),
-                        (x1 + 550, box_y_end),  # Wider: 550 instead of 500
+                        overlay,
+                        (box_x_start, box_y_start),
+                        (box_x_start + box_width, box_y_end),
                         (255, 255, 255),  # White background
                         -1
                     )
+                    # Blend with original (0.7 = 70% opaque, 30% transparent)
+                    cv2.addWeighted(overlay, 0.7, annotated_frame, 0.3, 0, annotated_frame)
                     
-                    # Draw each line with black text
-                    for i, line in enumerate(lines):
+                    # Draw each line with black text and emoji icons
+                    for i, line_data in enumerate(lines):
+                        # Unpack line text and emoji
+                        if isinstance(line_data, tuple):
+                            line_text, emoji = line_data
+                        else:
+                            line_text, emoji = line_data, None
+                        
+                        # Slightly larger font for confidence percentage
+                        current_font_size = font_size if i < len(lines) - 1 else int(font_size * 1.1)
                         annotated_frame = put_unicode_text(
                             annotated_frame,
-                            line,
-                            (x1 + 12, box_y_start + 12 + i * line_height),  # More padding: 12 instead of 10
-                            font_size=34 if i < len(lines) - 1 else 38,  # Even larger: 34pt for names, 38pt for confidence
+                            line_text,
+                            (box_x_start + 8, box_y_start + 8 + i * line_height),
+                            font_size=current_font_size,
                             color=(0, 0, 0),  # Black text
-                            bg_color=None  # Background already drawn
+                            bg_color=None,  # Background already drawn with transparency
+                            emoji_prefix=emoji  # Add emoji icon
                         )
                 else:
                     # Fallback to OpenCV text (ASCII only)
@@ -704,8 +849,23 @@ class VideoAnalyzer:
                 
                 if last_birds_count > 0:
                     info_text += f" | Birds: {last_birds_count}"
+                
+                # Use PIL with same font size as species labels
+                if PIL_AVAILABLE:
+                    # Calculate scale factor from font_size to cv2 scale
+                    cv2_scale = font_size / 30.0  # Approximate conversion
                     
-                    # Background for timestamp
+                    # Use put_unicode_text for consistent styling
+                    annotated_frame = put_unicode_text(
+                        annotated_frame,
+                        info_text,
+                        (17, height - 17 - font_size),
+                        font_size=font_size,
+                        color=(255, 255, 255),
+                        bg_color=(0, 0, 0)
+                    )
+                else:
+                    # Fallback to OpenCV (original behavior)
                     (info_width, info_height), _ = cv2.getTextSize(
                         info_text, cv2.FONT_HERSHEY_SIMPLEX, 0.9, 3
                     )
@@ -717,7 +877,6 @@ class VideoAnalyzer:
                         -1
                     )
                     
-                    # Timestamp text
                     cv2.putText(
                         annotated_frame,
                         info_text,

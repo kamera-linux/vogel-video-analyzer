@@ -1,5 +1,7 @@
 # 🐦 Vogel Video Analyzer
 
+![Vogel Video Analyzer Banner](assets/banner.png)
+
 **Languages:** [🇬🇧 English](README.md) | [🇩🇪 Deutsch](README.de.md) | [🇯🇵 日本語](README.ja.md)
 
 <p align="left">
@@ -21,12 +23,13 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 - 🤖 **YOLOv8-powered Detection** - Accurate bird detection using pre-trained models
 - 🦜 **Species Identification** - Identify bird species using Hugging Face models (optional)
 - 🎬 **Video Annotation (v0.3.0+)** - Create annotated videos with bounding boxes and species labels
-  - Automatic output path generation (`video.mp4` → `video_annotated.mp4`)
-  - Multilingual species labels (English, German, Japanese)
-  - High-contrast text display (34pt/38pt, black on white)
+  - Automatic output path generation with timestamp (`video.mp4` → `video_annotated_YYYYMMDD_HHMMSS.mp4`)
+  - Multilingual species labels with flag icons (🇬🇧 🇩🇪 🇯🇵)
+  - Configurable font sizes for optimal readability
   - Audio preservation from original video
   - Flicker-free bounding boxes with detection caching
   - Batch processing support for multiple videos
+  - Right-positioned semi-transparent label boxes
 - 🌍 **Multilingual Support (v0.3.0+)** - Bird names in English, German, and Japanese
   - 39 bird species with full translations
   - All 8 German model birds supported (kamera-linux/german-bird-classifier)
@@ -228,57 +231,68 @@ vogel-analyze --identify-species \
 
 See the [Custom Model Training](#-custom-model-training) section for details on training your own model.
 
-#### Video Annotation (v0.3.0+)
+#### Video Annotation (v0.4.0+)
 
-Create annotated videos with bounding boxes and species labels:
+Create professionally annotated videos with bounding boxes, species labels, and custom styling:
 
 ```bash
-# Basic annotation with automatic output path
+# Basic annotation with automatic timestamped output
 vogel-analyze --identify-species --annotate-video input.mp4
-# Output: input_annotated.mp4
+# Output: input_annotated_20251123_195542.mp4
 
-# With multilingual labels (English + German)
+# With multilingual labels and custom font size
 vogel-analyze --identify-species \
   --species-model kamera-linux/german-bird-classifier \
   --multilingual \
   --annotate-video \
+  --font-size 16 \
   input.mp4
 
-# Custom output path (single video only)
+# With confidence threshold (only show birds >= 50%)
 vogel-analyze --identify-species \
+  --species-threshold 0.5 \
+  --multilingual \
   --annotate-video \
-  --annotate-output custom_output.mp4 \
+  --font-size 18 \
   input.mp4
 
 # Batch processing multiple videos
 vogel-analyze --identify-species \
   --annotate-video \
   --multilingual \
+  --font-size 16 \
   *.mp4
-# Creates: video1_annotated.mp4, video2_annotated.mp4, etc.
+# Creates: video1_annotated_20251123_195542.mp4, video2_annotated_20251123_195545.mp4, etc.
 
 # Fast processing with sample rate
 vogel-analyze --identify-species \
   --sample-rate 30 \
   --annotate-video \
+  --font-size 14 \
   input.mp4
 ```
 
 **Features:**
 - 📦 **Bounding boxes** around detected birds (green, 3px width)
-- 🏷️ **Multilingual species labels** (EN: Hawfinch / DE: Kernbeißer / 75%)
-- 🎨 **High-contrast text** (34pt/38pt, black on white background)
-- 📍 **Smart positioning** (text above bird, 10px gap to avoid covering)
+- 🏷️ **Multilingual species labels** with flag icons
+  - 🇬🇧 English: European Robin
+  - 🇩🇪 German: Rotkehlchen
+  - 🇯🇵 Japanese: ヨーロッパコマドリ
+  - Confidence: 73%
+- 🎨 **Customizable text size** (`--font-size 12-24`, default: 20)
+- 🎯 **Confidence filtering** (`--species-threshold 0.0-1.0`, default: 0.0)
+- 📍 **Smart positioning** (labels right of bird with semi-transparent background)
 - 🎵 **Audio preservation** (automatic ffmpeg merge from original video)
 - ⚡ **Flicker-free** animation (detection caching)
-- ⏱️ **Real-time progress** indicator
-- 📊 **Automatic path generation** (saves in same directory as original)
+- ⏱️ **Timestamped outputs** (never overwrites existing files)
+- 📊 **Real-time progress** indicator
 
-**Multilingual Display Format:**
+**Label Display Format:**
 ```
-EN: Hawfinch
-DE: Kernbeißer
-75%
+🇬🇧 European Robin
+🇩🇪 Rotkehlchen  
+🇯🇵 ヨーロッパコマドリ
+73%
 ```
 
 #### Video Summary (v0.3.1+)
@@ -517,14 +531,34 @@ else:
 
 ## ⚙️ Configuration Options
 
+### Core Options
+
 | Option | Description | Default | Values |
 |--------|-------------|---------|--------|
 | `--model` | YOLO model to use | `yolov8n.pt` | Any YOLO model |
-| `--threshold` | Confidence threshold | `0.3` | `0.0` - `1.0` |
+| `--threshold` | Bird detection confidence | `0.3` | `0.0` - `1.0` |
 | `--sample-rate` | Analyze every Nth frame | `5` | `1` - `∞` |
 | `--output` | Save JSON report | - | File path |
-| `--delete` | Auto-delete 0% videos | `False` | Flag |
+| `--delete-file` | Auto-delete 0% videos | `False` | Flag |
+| `--delete-folder` | Auto-delete 0% folders | `False` | Flag |
 | `--log` | Enable logging | `False` | Flag |
+
+### Species Identification Options (v0.3.0+)
+
+| Option | Description | Default | Values |
+|--------|-------------|---------|--------|
+| `--identify-species` | Enable species identification | `False` | Flag |
+| `--species-model` | Hugging Face model name | `kamera-linux/german-bird-classifier` | Model ID |
+| `--species-threshold` | Min confidence for species label | `0.0` | `0.0` - `1.0` |
+| `--multilingual` | Show names in EN/DE/JA | `False` | Flag |
+
+### Video Annotation Options (v0.4.0+)
+
+| Option | Description | Default | Values |
+|--------|-------------|---------|--------|
+| `--annotate-video` | Create annotated video | `False` | Flag |
+| `--font-size` | Label text size | `20` | `12` - `32` |
+| `--annotate-output` | Custom output path | Auto-generated | File path |
 
 ### Sample Rate Recommendations
 

@@ -222,11 +222,8 @@ class BirdSpeciesClassifier:
                 if pred['score'] >= self.confidence_threshold
             ]
             
-            # If nothing passes threshold, return best prediction anyway
-            # (but note: even "best" predictions are often inaccurate for European birds)
-            if not filtered and predictions:
-                filtered = [predictions[0]]
-            
+            # Return only predictions that meet the threshold
+            # Do not return low-confidence predictions as fallback
             return filtered
             
         except Exception as e:

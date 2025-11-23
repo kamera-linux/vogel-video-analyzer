@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2025-11-23
+
+### Added
+- **Enhanced Video Annotation Features**
+  - Configurable font size with `--font-size` parameter (default: 20, range: 12-32)
+  - Timestamped output filenames to prevent overwriting (`video_annotated_YYYYMMDD_HHMMSS.mp4`)
+  - Flag icons for multilingual labels (🇬🇧 🇩🇪 🇯🇵) using custom-rendered flag designs
+  - Accurate flag representations:
+    - 🇩🇪 Germany: Black-Red-Gold horizontal stripes
+    - 🇬🇧 UK: Simplified Union Jack with crosses
+    - 🇯🇵 Japan: Red circle on white background
+  - Label positioning changed from above to right side of detected bird
+  - Semi-transparent label backgrounds (70% opacity) for better visibility
+  - Synchronized font sizes for species labels and frame info
+
+- **Species Classification Improvements**
+  - Fixed `--species-threshold` bug where low-confidence predictions were shown despite threshold setting
+  - Detections below threshold are now properly skipped (no fallback to best prediction)
+  - Improved confidence filtering for cleaner annotation outputs
+
+- **CJK Font Support**
+  - Added Japanese language support with proper rendering
+  - Multi-font system: DejaVu/Noto for Latin text, NotoSansCJK for Japanese characters
+  - Automatic font fallback for unsupported characters
+
+### Fixed
+- Species threshold now correctly filters predictions (previously always showed best match)
+- Flag colors now render correctly (RGB/BGR conversion issues resolved)
+- Japanese characters now display properly in video annotations
+
+### Changed
+- Label box position moved from above bird to right side for better visibility
+- Label background changed to semi-transparent (70% opacity)
+- Frame info text size now synchronized with species label size
+
+### Technical Details
+- Flag rendering using numpy arrays with OpenCV drawing primitives
+- Proper color space handling between PIL (RGB) and OpenCV (BGR)
+- Multi-font rendering with PIL.ImageFont for Unicode support
+- Custom flag designs rendered at runtime (no external image files needed)
+
 ## [0.3.1] - 2025-11-14
 
 ### Added

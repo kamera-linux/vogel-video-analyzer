@@ -67,6 +67,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         help='Create annotated video with bounding boxes and species labels, saves as <original>_annotated.mp4 in the same directory')
     parser.add_argument('--annotate-output', metavar='PATH',
                         help='Custom output path for annotated video (requires --annotate-video)')
+    parser.add_argument('--font-size', type=int, default=20,
+                        help='Font size for species labels in annotated video (default: 20)')
     parser.add_argument('--create-summary', action='store_true',
                         help='Create summary video by skipping segments without bird activity (v0.3.1+)')
     parser.add_argument('--summary-output', metavar='PATH',
@@ -167,19 +169,22 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                             print(f"\n⚠️  {t('annotation_multiple_custom_path')}: {video_path}")
                             print(f"    {t('annotation_using_auto_path')}")
                             video_path_obj = Path(video_path)
-                            output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated{video_path_obj.suffix}"
+                            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                            output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated_{timestamp}{video_path_obj.suffix}"
                         else:
                             output_path = args.annotate_output
                     else:
-                        # Auto-generate output filename in same directory
+                        # Auto-generate output filename with timestamp in same directory
                         video_path_obj = Path(video_path)
-                        output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated{video_path_obj.suffix}"
+                        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                        output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated_{timestamp}{video_path_obj.suffix}"
                     
                     annotation_stats = analyzer.annotate_video(
                         video_path, 
                         str(output_path), 
                         sample_rate=args.sample_rate,
-                        multilingual=args.multilingual
+                        multilingual=args.multilingual,
+                        font_size=args.font_size
                     )
                 elif args.create_summary:
                     # Create summary video (skip empty segments)
