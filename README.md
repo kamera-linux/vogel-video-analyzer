@@ -25,6 +25,7 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 - 🎬 **Video Annotation (v0.3.0+)** - Create annotated videos with bounding boxes and species labels
   - Automatic output path generation with timestamp (`video.mp4` → `video_annotated_YYYYMMDD_HHMMSS.mp4`)
   - Multilingual species labels with flag icons (🇬🇧 🇩🇪 🇯🇵)
+  - 🏴 **Hybrid flag rendering (v0.4.2+)** - PNG images with automatic fallback
   - Configurable font sizes for optimal readability
   - Audio preservation from original video
   - Flicker-free bounding boxes with detection caching
@@ -74,11 +75,8 @@ python3 -m venv ~/venv-vogel
 # Activate it
 source ~/venv-vogel/bin/activate  # On Windows: ~/venv-vogel\Scripts\activate
 
-# Install package (basic)
+# Install package
 pip install vogel-video-analyzer
-
-# Install with species identification support (optional)
-pip install vogel-video-analyzer[species]
 
 # Install ffmpeg for audio preservation (Ubuntu/Debian)
 sudo apt install ffmpeg
@@ -87,11 +85,7 @@ sudo apt install ffmpeg
 #### Direct Installation
 
 ```bash
-# Basic installation
 pip install vogel-video-analyzer
-
-# With species identification support
-pip install vogel-video-analyzer[species]
 ```
 
 ### Basic Usage
@@ -200,11 +194,6 @@ vogel-analyze --identify-species bird_video.mp4
 
 **⚠️ Experimental Feature:** Pre-trained models may misidentify European garden birds as exotic species. For accurate identification of local bird species, consider training a custom model (see [Custom Model Training](#-custom-model-training)).
 
-**Installation:**
-```bash
-pip install vogel-video-analyzer[species]
-```
-
 The first time you run species identification, the model (~100-300MB) will be downloaded automatically and cached locally for future use.
 
 **🚀 GPU Acceleration:** Species identification automatically uses CUDA (NVIDIA GPU) if available, significantly speeding up inference. Falls back to CPU if no GPU is detected.
@@ -248,6 +237,14 @@ vogel-analyze --identify-species \
   --font-size 16 \
   input.mp4
 
+# With high-quality PNG flag icons (v0.4.2+)
+vogel-analyze --identify-species \
+  --species-model kamera-linux/german-bird-classifier \
+  --multilingual \
+  --annotate-video \
+  --flag-dir assets/flags/ \
+  input.mp4
+
 # With confidence threshold (only show birds >= 50%)
 vogel-analyze --identify-species \
   --species-threshold 0.5 \
@@ -278,6 +275,7 @@ vogel-analyze --identify-species \
   - 🇬🇧 English: European Robin
   - 🇩🇪 German: Rotkehlchen
   - 🇯🇵 Japanese: ヨーロッパコマドリ
+- 🏴 **Hybrid flag rendering** (v0.4.2+): PNG images with automatic fallback
   - Confidence: 73%
 - 🎨 **Customizable text size** (`--font-size 12-24`, default: 20)
 - 🎯 **Confidence filtering** (`--species-threshold 0.0-1.0`, default: 0.0)
@@ -384,9 +382,6 @@ All 8 birds from `kamera-linux/german-bird-classifier`:
 
 **Requirements:**
 ```bash
-# Install species extras for multilingual support
-pip install vogel-video-analyzer[species]
-
 # Install ffmpeg for audio preservation (Ubuntu/Debian)
 sudo apt install ffmpeg
 ```
@@ -558,6 +553,7 @@ else:
 |--------|-------------|---------|--------|
 | `--annotate-video` | Create annotated video | `False` | Flag |
 | `--font-size` | Label text size | `20` | `12` - `32` |
+| `--flag-dir` | Custom flag images directory (v0.4.2+) | Auto-detect | Directory path |
 | `--annotate-output` | Custom output path | Auto-generated | File path |
 
 ### Sample Rate Recommendations

@@ -6,10 +6,10 @@ We release patches for security vulnerabilities in the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.4.x   | :white_check_mark: |
 | 0.3.x   | :white_check_mark: |
-| 0.2.x   | :white_check_mark: |
-| 0.1.x   | :x:                |
-| < 0.1   | :x:                |
+| 0.2.x   | :x:                |
+| < 0.2   | :x:                |
 
 ## 🚨 Reporting a Vulnerability
 
@@ -78,7 +78,7 @@ Please include as much of the following information as possible:
 
 5. **Dependency Security**: Keep dependencies updated
    ```bash
-   pip install --upgrade vogel-video-analyzer[species]
+   pip install --upgrade vogel-video-analyzer
    ```
 
 6. **Audio Processing (v0.3.0+)**: ffmpeg is used for audio preservation

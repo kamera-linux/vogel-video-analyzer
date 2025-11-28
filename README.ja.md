@@ -62,21 +62,14 @@ python3 -m venv ~/venv-vogel
 # アクティベート
 source ~/venv-vogel/bin/activate  # Windows: ~/venv-vogel\Scripts\activate
 
-# パッケージのインストール（基本）
+# パッケージのインストール
 pip install vogel-video-analyzer
-
-# 種の識別サポート付きでインストール（オプション）
-pip install vogel-video-analyzer[species]
 ```
 
 #### 直接インストール
 
 ```bash
-# 基本インストール
 pip install vogel-video-analyzer
-
-# 種の識別サポート付き
-pip install vogel-video-analyzer[species]
 ```
 
 ### 基本的な使い方

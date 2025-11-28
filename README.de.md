@@ -62,21 +62,14 @@ python3 -m venv ~/venv-vogel
 # Aktivieren
 source ~/venv-vogel/bin/activate  # Unter Windows: ~/venv-vogel\Scripts\activate
 
-# Paket installieren (Basis)
+# Paket installieren
 pip install vogel-video-analyzer
-
-# Mit Artenerkennung (optional)
-pip install vogel-video-analyzer[species]
 ```
 
 #### Direkte Installation
 
 ```bash
-# Basis-Installation
 pip install vogel-video-analyzer
-
-# Mit Artenerkennung
-pip install vogel-video-analyzer[species]
 ```
 
 ### Grundlegende Verwendung
@@ -175,11 +168,6 @@ vogel-analyze --identify-species bird_video.mp4
 ```
 
 **⚠️ Experimentelle Funktion:** Vortrainierte Modelle können europäische Gartenvögel als exotische Arten fehlidentifizieren. Für präzise Identifizierung lokaler Vogelarten empfiehlt sich das Training eines eigenen Modells (siehe [Eigenes Modell trainieren](#-eigenes-modell-trainieren)).
-
-**Installation:**
-```bash
-pip install vogel-video-analyzer[species]
-```
 
 Beim ersten Ausführen der Artenerkennung wird das Modell (~100-300MB) automatisch heruntergeladen und lokal für zukünftige Verwendung gecacht.
 
