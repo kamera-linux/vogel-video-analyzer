@@ -5,6 +5,56 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] - 2025-11-28
+
+### Added
+- **Hybrid Flag Rendering System**: New flexible flag icon rendering with multiple input methods
+  - Support for PNG/JPG flag image files via `--flag-dir` parameter
+  - Automatic fallback to pixel-rendered flags if image files not available
+  - Five input methods: emoji strings, file paths, country codes, PIL Images, NumPy arrays
+  - Included high-quality Public Domain flag images for DE, GB, JP from Wikimedia Commons
+  - Flag images (150x90px, 150x75px, 150x100px) in `assets/flags/` directory
+  - Auto-detection of flag directory (uses `module_dir/assets/flags/` if not specified)
+  - Maintains 3:2 aspect ratio with LANCZOS resampling for quality
+
+- **New Functions**:
+  - `render_flag_from_file()`: Load and resize flag images from PNG/JPG files
+  - `render_flag_icon()`: Unified hybrid rendering function supporting multiple input types
+  - Enhanced `put_unicode_text()` with `flag_dir` parameter for custom flag paths
+  - Extended `annotate_video()` with `flag_dir` parameter and auto-detection
+
+- **CLI Enhancement**:
+  - New `--flag-dir PATH` parameter to specify custom flag image directory
+  - Usage: `vogel-video-analyzer video.mp4 --flag-dir assets/flags/ --multilingual --annotate-video`
+
+- **Documentation**:
+  - `docs/FLAG_RENDERING.md`: Complete guide for hybrid flag rendering system
+  - `assets/flags/README.md`: Usage instructions and examples
+  - `assets/flags/LICENSE`: Public Domain license documentation for included flags
+  - `tests/test_flag_rendering.py`: Comprehensive test suite for all rendering methods
+
+- **Package Distribution**:
+  - Updated `MANIFEST.in` to include flag assets in distribution
+  - Flag images bundled with package for immediate use
+
+### Fixed
+- **Japanese Text Rendering**: Fixed missing Japanese characters (シジュウカラ) in annotations
+  - Requires CJK font installation: `sudo apt-get install fonts-noto-cjk`
+  - Multi-font system properly selects CJK font for Japanese text
+  - Auto-detection of CJK characters in text
+
+- **Flag Icon Display**: Changed from emoji strings to country codes for hybrid rendering
+  - Now uses country codes ('gb', 'de', 'jp') instead of emoji strings ('🇬🇧', '🇩🇪', '🇯🇵')
+  - Enables automatic PNG loading when flag images available
+  - Seamless fallback to pixel rendering when images not found
+
+### Technical Details
+- Flag rendering priority: PNG/JPG file → emoji fallback → pixel rendering → None
+- Supported image formats: PNG, JPG, JPEG
+- Flag sources: Wikimedia Commons (Public Domain)
+- Path resolution: Absolute and relative paths supported
+- Transparent integration with existing annotation pipeline
+
 ## [0.4.1] - 2025-11-24
 
 ### Fixed

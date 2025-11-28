@@ -5,6 +5,7 @@ Video analyzer core module for bird detection in videos using YOLOv8
 import cv2
 import subprocess
 import tempfile
+import os
 import numpy as np
 from pathlib import Path
 from datetime import timedelta
@@ -92,7 +93,127 @@ def render_emoji_icon(emoji, size=24):
         return None
 
 
-def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), bg_color=None, emoji_prefix=None):
+def render_flag_from_file(flag_path, size=24):
+    """
+    Load flag icon from image file
+    
+    Args:
+        flag_path: Path to flag image file (PNG, JPG, etc.)
+        size: Target height in pixels
+        
+    Returns:
+        PIL Image with flag icon, or None if loading fails
+    """
+    if not PIL_AVAILABLE:
+        return None
+    
+    try:
+        flag_path = Path(flag_path)
+        if not flag_path.exists():
+            return None
+        
+        img = Image.open(flag_path)
+        # Convert to RGB if needed
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        
+        # Maintain 3:2 aspect ratio (standard flag ratio)
+        width = int(size * 1.5)
+        img = img.resize((width, size), Image.Resampling.LANCZOS)
+        
+        return img
+    except Exception as e:
+        return None
+
+
+def render_flag_icon(source, size=24, flag_dir=None):
+    """
+    Flexible flag rendering supporting multiple input types
+    
+    Args:
+        source: Can be:
+            - Emoji string ('🇩🇪', '🇬🇧', '🇯🇵') -> pixel rendering
+            - Path to image file (str or Path)
+            - PIL Image object
+            - numpy array (BGR or RGB)
+        size: Icon height in pixels
+        flag_dir: Optional directory to search for flag files (e.g., 'assets/flags/')
+        
+    Returns:
+        PIL Image with flag icon, or None if rendering fails
+        
+    Examples:
+        # Emoji (pixel-rendered)
+        icon = render_flag_icon('🇩🇪', size=24)
+        
+        # File path
+        icon = render_flag_icon('assets/flags/de.png', size=24)
+        
+        # Auto-detect from directory
+        icon = render_flag_icon('de', size=24, flag_dir='assets/flags/')
+        
+        # PIL Image
+        img = Image.open('flag.png')
+        icon = render_flag_icon(img, size=24)
+    """
+    if not PIL_AVAILABLE:
+        return None
+    
+    try:
+        # String input
+        if isinstance(source, str):
+            # Check if it's an emoji
+            if source in ['🇩🇪', '🇬🇧', '🇯🇵']:
+                return render_emoji_icon(source, size)
+            
+            # Check if it's a file path
+            source_path = Path(source)
+            if source_path.exists() and source_path.is_file():
+                return render_flag_from_file(source_path, size)
+            
+            # Try to find file in flag_dir
+            if flag_dir:
+                flag_dir = Path(flag_dir)
+                # Try different extensions
+                for ext in ['.png', '.jpg', '.jpeg', '.svg']:
+                    flag_file = flag_dir / f"{source}{ext}"
+                    if flag_file.exists():
+                        return render_flag_from_file(flag_file, size)
+            
+            # Fallback to emoji rendering if string looks like emoji
+            if len(source) <= 4 and not source.isalpha():
+                return render_emoji_icon(source, size)
+        
+        # PIL Image input
+        elif isinstance(source, Image.Image):
+            width = int(size * 1.5)
+            img = source.copy()
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            return img.resize((width, size), Image.Resampling.LANCZOS)
+        
+        # NumPy array input
+        elif isinstance(source, np.ndarray):
+            # Assume BGR format (OpenCV default)
+            if len(source.shape) == 3 and source.shape[2] == 3:
+                # Convert BGR to RGB
+                img_rgb = cv2.cvtColor(source, cv2.COLOR_BGR2RGB)
+                img = Image.fromarray(img_rgb)
+                width = int(size * 1.5)
+                return img.resize((width, size), Image.Resampling.LANCZOS)
+        
+        # Path object input
+        elif isinstance(source, Path):
+            if source.exists() and source.is_file():
+                return render_flag_from_file(source, size)
+        
+        return None
+        
+    except Exception as e:
+        return None
+
+
+def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), bg_color=None, emoji_prefix=None, flag_dir=None):
     """
     Draw Unicode text (including emojis) on image using PIL
     
@@ -103,7 +224,8 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
         font_size: Font size in pixels
         color: Text color in BGR format
         bg_color: Background color in BGR format (None = transparent)
-        emoji_prefix: Optional emoji to render as icon before text (e.g., '🇩🇪')
+        emoji_prefix: Optional emoji/flag to render as icon before text (e.g., '🇩🇪', 'de', or path)
+        flag_dir: Directory containing flag image files (optional)
         
     Returns:
         Modified image with text
@@ -122,11 +244,12 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
     img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
     draw = ImageDraw.Draw(img_pil)
     
-    # Render emoji icon if specified
+    # Render flag icon if specified (now using hybrid system)
     emoji_icon = None
     emoji_width = 0
     if emoji_prefix:
-        emoji_icon = render_emoji_icon(emoji_prefix, size=font_size)
+        # Use hybrid render_flag_icon function
+        emoji_icon = render_flag_icon(emoji_prefix, size=font_size, flag_dir=flag_dir)
         if emoji_icon:
             emoji_width = emoji_icon.width + 4  # Add spacing
     
@@ -562,7 +685,7 @@ class VideoAnalyzer:
         
         print("━" * 70)
 
-    def annotate_video(self, video_path, output_path, sample_rate=1, show_timestamp=True, show_confidence=True, box_color=(0, 255, 0), text_color=(255, 255, 255), multilingual=False, font_size=20):
+    def annotate_video(self, video_path, output_path, sample_rate=1, show_timestamp=True, show_confidence=True, box_color=(0, 255, 0), text_color=(255, 255, 255), multilingual=False, font_size=20, flag_dir=None):
         """
         Create annotated video with bounding boxes and species labels
         
@@ -576,6 +699,8 @@ class VideoAnalyzer:
             text_color: BGR color for text labels (default: white)
             multilingual: Show bird names in all languages with flags (default: False)
             font_size: Font size for species labels (default: 20)
+            flag_dir: Directory containing flag image files (optional, default: assets/flags/)
+                     If None, uses pixel-rendered flags for DE, GB, JP
             
         Returns:
             dict with processing statistics
@@ -585,8 +710,18 @@ class VideoAnalyzer:
         
         if not video_path.exists():
             raise FileNotFoundError(t('video_not_found').format(path=str(video_path)))
+        
+        # Set default flag directory if not specified
+        if flag_dir is None:
+            # Try to find assets/flags relative to this file
+            module_dir = Path(__file__).parent.parent.parent
+            flag_dir = module_dir / 'assets' / 'flags'
+            if not flag_dir.exists():
+                flag_dir = None  # Fall back to emoji rendering
             
         print(f"\n🎬 {t('annotation_creating')} {video_path.name}")
+        if flag_dir and Path(flag_dir).exists():
+            print(f"   🏴 Flag directory: {flag_dir}")
         print(f"{t('annotation_output')} {output_path}")
         
         # Open input video
@@ -755,15 +890,15 @@ class VideoAnalyzer:
                             de_name = BIRD_NAME_TRANSLATIONS.get('de', {}).get(species_key, en_name)
                             ja_name = BIRD_NAME_TRANSLATIONS.get('ja', {}).get(species_key, en_name)
                             
-                            # Multiline format with flag icons (rendered as colored stripes)
+                            # Multiline format with flag icons (hybrid rendering: PNG files if available, pixel fallback)
                             # Line 1: 🇬🇧 English name
                             # Line 2: 🇩🇪 German name
                             # Line 3: 🇯🇵 Japanese name
                             # Line 4: Confidence
                             lines = [
-                                (en_name, '🇬🇧'),  # Text + emoji icon
-                                (de_name, '🇩🇪'),
-                                (ja_name, '🇯🇵'),
+                                (en_name, 'gb'),  # Text + country code (loads PNG if available)
+                                (de_name, 'de'),
+                                (ja_name, 'jp'),
                                 (conf_part, None)  # No icon for confidence
                             ]
                         else:
@@ -813,7 +948,8 @@ class VideoAnalyzer:
                             font_size=current_font_size,
                             color=(0, 0, 0),  # Black text
                             bg_color=None,  # Background already drawn with transparency
-                            emoji_prefix=emoji  # Add emoji icon
+                            emoji_prefix=emoji,  # Add emoji/flag icon
+                            flag_dir=flag_dir  # Pass flag directory for hybrid rendering
                         )
                 else:
                     # Fallback to OpenCV text (ASCII only)

@@ -7,3 +7,4 @@ include CONTRIBUTING.md
 include SECURITY.md
 recursive-include src *.py
 recursive-include src *.typed
+recursive-include assets/flags *.png *.jpg *.jpeg *.md

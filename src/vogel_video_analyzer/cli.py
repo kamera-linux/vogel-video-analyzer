@@ -69,6 +69,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         help='Custom output path for annotated video (requires --annotate-video)')
     parser.add_argument('--font-size', type=int, default=20,
                         help='Font size for species labels in annotated video (default: 20)')
+    parser.add_argument('--flag-dir', metavar='PATH',
+                        help='Directory containing flag image files (PNG/JPG). Falls back to pixel-rendered flags if not specified')
     parser.add_argument('--create-summary', action='store_true',
                         help='Create summary video by skipping segments without bird activity (v0.3.1+)')
     parser.add_argument('--summary-output', metavar='PATH',
@@ -184,7 +186,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         str(output_path), 
                         sample_rate=args.sample_rate,
                         multilingual=args.multilingual,
-                        font_size=args.font_size
+                        font_size=args.font_size,
+                        flag_dir=args.flag_dir  # Pass flag directory for hybrid rendering
                     )
                 elif args.create_summary:
                     # Create summary video (skip empty segments)
