@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.3] - 2025-11-30
+
+### Fixed
+- **Internationalization**: Added missing translation for flag directory output message
+  - English: "🏴 Flag directory:"
+  - German: "🏴 Flaggen-Verzeichnis:"
+  - Japanese: "🏴 フラグディレクトリ："
+  - Console output now properly localized in all supported languages
+
+### Changed
+- **Documentation**: Removed deprecated `[species]` installation extra from all README files
+  - Updated main README.md with `--flag-dir` parameter documentation
+  - Added hybrid flag rendering to features list
+  - Updated SECURITY.md supported versions (0.4.x now supported)
+  - Simplified installation instructions across all language versions
+
 ## [0.4.2] - 2025-11-28
 
 ### Added
