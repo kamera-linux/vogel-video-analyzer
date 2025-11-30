@@ -721,7 +721,7 @@ class VideoAnalyzer:
             
         print(f"\n🎬 {t('annotation_creating')} {video_path.name}")
         if flag_dir and Path(flag_dir).exists():
-            print(f"   🏴 Flag directory: {flag_dir}")
+            print(f"   {t('annotation_flag_directory')} {flag_dir}")
         print(f"{t('annotation_output')} {output_path}")
         
         # Open input video
