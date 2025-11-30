@@ -8,6 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.4.3] - 2025-11-30
 
 ### Fixed
+- **Documentation**: Removed deprecated `[species]` extra from all README files
+  - Installation now simply: `pip install vogel-video-analyzer`
+  - All dependencies are included by default
+  - Updated README.md, README.de.md, and README.ja.md
+
+- **i18n**: Added missing translation for flag directory output
+  - English: "🏴 Flag directory:"
+  - German: "🏴 Flaggen-Verzeichnis:"
+  - Japanese: "🏴 フラグディレクトリ："
+  - Flag directory message now properly localized in all languages
+
+### Changed
+- **Security Policy**: Updated supported versions table
+  - 0.4.x: ✅ Supported
+  - 0.3.x: ✅ Supported
+  - 0.2.x and older: ❌ Not supported
+
+### Documentation
+- Added `--flag-dir` parameter documentation to main README
+- Added usage examples with PNG flag icons
+- Updated features list with hybrid flag rendering
+- Clarified installation instructions (removed [species] confusion)
+
+## [0.4.2] - 2025-11-28
+
+### Fixed
 - **Internationalization**: Added missing translation for flag directory output message
   - English: "🏴 Flag directory:"
   - German: "🏴 Flaggen-Verzeichnis:"
