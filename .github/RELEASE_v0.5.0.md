@@ -32,7 +32,7 @@ vogel-analyze --identify-species --html-report report.html --max-thumbnails 100 
 vogel-analyze --identify-species -o data.json --html-report report.html video.mp4
 ```
 
-**[🔗 View Example Report](../examples/html_report_example.html)**
+**[🔗 View Example Report](https://htmlpreview.github.io/?https://github.com/kamera-linux/vogel-video-analyzer/blob/main/examples/html_report_example.html)**
 
 ### Example Report
 

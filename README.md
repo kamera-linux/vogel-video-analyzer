@@ -105,7 +105,7 @@ vogel-analyze --identify-species video.mp4
 
 # Generate HTML report (v0.5.0+)
 vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 15 video.mp4
-# View example: examples/html_report_example.html
+# View example: https://htmlpreview.github.io/?https://github.com/kamera-linux/vogel-video-analyzer/blob/main/examples/html_report_example.html
 
 # Create annotated video (v0.3.0+)
 vogel-analyze --identify-species --annotate-video video.mp4

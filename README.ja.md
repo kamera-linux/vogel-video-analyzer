@@ -89,7 +89,7 @@ vogel-analyze --identify-species video.mp4
 
 # HTMLレポートを生成（v0.5.0+）
 vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 15 video.mp4
-# サンプルを見る: examples/html_report_example.html
+# サンプルを見る: https://htmlpreview.github.io/?https://github.com/kamera-linux/vogel-video-analyzer/blob/main/examples/html_report_example.html
 
 # バウンディングボックスと種ラベル付きの注釈動画を作成（v0.3.0+）
 vogel-analyze --identify-species \

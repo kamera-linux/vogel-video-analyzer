@@ -35,4 +35,6 @@ vogel-analyze --language en \
 
 ---
 
-**Note:** To view the HTML report locally, simply open `html_report_example.html` in your web browser.
+**[🌐 View Online](https://htmlpreview.github.io/?https://github.com/kamera-linux/vogel-video-analyzer/blob/main/examples/html_report_example.html)**
+
+**Note:** To view locally, download and open `html_report_example.html` in your web browser.
