@@ -566,6 +566,7 @@ class VideoAnalyzer:
             'bird_percentage': bird_percentage,
             'bird_detections': len(bird_detections),
             'bird_segments': segments,
+            'detections': bird_detections,  # Full detection list for HTML reports
             'threshold': self.threshold,
             'model': str(self.model.ckpt_path if hasattr(self.model, 'ckpt_path') else 'unknown')
         }
@@ -678,9 +679,11 @@ class VideoAnalyzer:
                 for species_name, data in sorted(species_stats.items(), 
                                                   key=lambda x: x[1]['count'], 
                                                   reverse=True):
+                    # Translate species name to current language
+                    translated_name = BirdSpeciesClassifier.translate_species_name(species_name)
                     count = data['count']
                     avg_conf = data['avg_confidence']
-                    print(f"  • {species_name}")
+                    print(f"  • {translated_name}")
                     print(f"    {t('species_detections').format(detections=count)} ({t('species_avg_confidence')}: {avg_conf:.2f})")
             else:
                 print(f"   {t('species_no_detections')}")

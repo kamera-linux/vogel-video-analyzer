@@ -22,6 +22,12 @@
 
 - 🤖 **YOLOv8による検出** - 事前学習済みモデルによる正確な鳥検出
 - 🦜 **種の識別** - Hugging Faceモデルを使用した鳥の種の識別（オプション）
+- 📊 **HTMLレポート（v0.5.0+）** - チャートとサムネイル付きのインタラクティブなビジュアルレポート
+  - 時系列の鳥検出を示すアクティビティタイムライン
+  - 種の分布チャート
+  - 最良の検出のサムネイルギャラリー
+  - デスクトップとモバイル対応のレスポンシブデザイン
+  - 自己完結型HTMLファイル（外部依存関係なし）
 - 🎬 **動画注釈** - バウンディングボックスと種ラベル付きの注釈動画を作成（v0.3.0+）
 - 📊 **詳細な統計** - フレームごとの分析と鳥コンテンツのパーセンテージ
 - 🎯 **セグメント検出** - 鳥が存在する連続した時間帯を識別
@@ -81,11 +87,18 @@ vogel-analyze video.mp4
 # 鳥の種を識別
 vogel-analyze --identify-species video.mp4
 
+# HTMLレポートを生成（v0.5.0+）
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 15 video.mp4
+# サンプルを見る: examples/html_report_example.html
+
 # バウンディングボックスと種ラベル付きの注釈動画を作成（v0.3.0+）
 vogel-analyze --identify-species \
   --annotate-video \
   video.mp4
 # 出力：video_annotated.mp4（自動）
+
+# 複合出力：JSON + HTMLレポート
+vogel-analyze --identify-species -o data.json --html-report report.html video.mp4
 
 # 日本語で出力
 vogel-analyze --language ja video.mp4

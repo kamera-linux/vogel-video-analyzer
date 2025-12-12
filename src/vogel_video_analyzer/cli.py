@@ -80,6 +80,10 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--min-activity-duration', type=float, default=2.0,
                         help='Minimum duration for bird activity segments in seconds (default: 2.0, requires --create-summary)')
     parser.add_argument('--output', '-o', help='Save report as JSON')
+    parser.add_argument('--html-report', metavar='PATH',
+                        help='Generate interactive HTML report with charts and thumbnails (v0.5.0+)')
+    parser.add_argument('--max-thumbnails', type=int, default=50,
+                        help='Maximum number of thumbnails in HTML report (default: 50)')
     parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
     parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
     parser.add_argument('--delete', action='store_true', help='(Deprecated) Use --delete-file or --delete-folder instead')
@@ -241,6 +245,10 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         if args.output:
             _save_json_output(all_stats, args.output)
         
+        # HTML report generation
+        if args.html_report and all_stats:
+            _generate_html_report(all_stats, args.html_report, args.max_thumbnails)
+        
         return 0
         
     except KeyboardInterrupt:
@@ -363,6 +371,34 @@ def _save_json_output(all_stats, output_path):
     with open(output_path, 'w', encoding='utf-8') as f:
         json.dump(output_data, f, indent=2, ensure_ascii=False)
     print(f"\n💾 {t('report_saved')} {output_path}")
+
+
+def _generate_html_report(all_stats, output_path, max_thumbnails):
+    """Generate interactive HTML report"""
+    try:
+        from .reporter import HTMLReporter
+        
+        # For now, only support single video reports
+        # Multi-video reports could be a future enhancement
+        if len(all_stats) > 1:
+            print(f"\n⚠️  {t('html_single_only')}")
+            print(f"    {t('html_processing_first')} {all_stats[0]['video_path']}")
+        
+        stats = all_stats[0]
+        video_path = stats['video_path']
+        
+        print(f"\n📊 {t('html_generating')}")
+        reporter = HTMLReporter(stats, video_path)
+        reporter.generate_report(output_path, max_thumbnails=max_thumbnails)
+        print(f"✅ {t('html_success')} {output_path}")
+        
+    except ImportError as e:
+        print(f"❌ {t('html_error')} {e}", file=sys.stderr)
+    except Exception as e:
+        print(f"❌ {t('html_error')} {e}", file=sys.stderr)
+        import traceback
+        traceback.print_exc()
+
 
 
 if __name__ == '__main__':

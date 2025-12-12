@@ -354,17 +354,24 @@ class BirdSpeciesClassifier:
         Translate bird species name to current language
         
         Args:
-            species_name: Species name in English (uppercase)
+            species_name: Species name in English (uppercase) or German (any case)
             
         Returns:
             Translated species name or original if no translation available
         """
         from .i18n import get_language
         
+        # Try to convert German label to English key (for models using German labels)
+        species_name_lower = species_name.lower()
+        if species_name_lower in GERMAN_TO_ENGLISH:
+            species_name = GERMAN_TO_ENGLISH[species_name_lower]
+        
         lang = get_language()
         if lang in BIRD_NAME_TRANSLATIONS and species_name in BIRD_NAME_TRANSLATIONS[lang]:
             return BIRD_NAME_TRANSLATIONS[lang][species_name]
-        return species_name
+        
+        # If no translation found, return proper English name or formatted version
+        return ENGLISH_NAMES.get(species_name, ' '.join(word.capitalize() for word in species_name.split()))
     
     @staticmethod
     def get_multilingual_name(species_name: str, show_flags: bool = True, opencv_compatible: bool = False) -> str:

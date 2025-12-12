@@ -22,6 +22,12 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
 
 - 🤖 **YOLOv8-basierte Erkennung** - Präzise Vogelerkennung mit vortrainierten Modellen
 - 🦜 **Artenerkennung** - Identifiziert Vogelarten mit Hugging Face Modellen (optional)
+- 📊 **HTML-Berichte (v0.5.0+)** - Interaktive visuelle Berichte mit Diagrammen und Thumbnails
+  - Aktivitäts-Timeline zeigt Vogelerkennungen über Zeit
+  - Arten-Verteilungsdiagramme
+  - Thumbnail-Galerie der besten Erkennungen
+  - Responsives Design für Desktop und Mobil
+  - Eigenständige HTML-Dateien (keine externen Abhängigkeiten)
 - 🎬 **Video-Annotation** - Erstellen Sie annotierte Videos mit Bounding Boxes und Artenlabels (v0.3.0+)
 - 📊 **Detaillierte Statistiken** - Frame-für-Frame-Analyse mit Vogelinhalt in Prozent
 - 🎯 **Segment-Erkennung** - Identifiziert zusammenhängende Zeitperioden mit Vogelvorkommen
@@ -81,11 +87,18 @@ vogel-analyze video.mp4
 # Vogelarten identifizieren
 vogel-analyze --identify-species video.mp4
 
+# HTML-Bericht erstellen (v0.5.0+)
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 15 video.mp4
+# Beispiel ansehen: examples/html_report_example.html
+
 # Annotiertes Video mit Bounding Boxes und Artenlabels erstellen (v0.3.0+)
 vogel-analyze --identify-species \
   --annotate-video \
   video.mp4
 # Ausgabe: video_annotated.mp4 (automatisch)
+
+# Kombinierte Ausgaben: JSON + HTML-Bericht
+vogel-analyze --identify-species -o daten.json --html-report bericht.html video.mp4
 
 # Schnellere Analyse (jedes 5. Frame)
 vogel-analyze --sample-rate 5 video.mp4

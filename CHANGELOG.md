@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2025-12-12
+
+### Added
+- **HTML Report Generation**: Interactive HTML reports with charts and visualizations
+  - `--html-report PATH` CLI parameter to generate visual reports
+  - Activity timeline chart showing bird detections over time
+  - Species distribution bar chart (top 10 species)
+  - Interactive thumbnails from detected birds (requires `--identify-species`)
+  - Responsive design for desktop and mobile viewing
+  - Statistics cards: total detections, unique species, average confidence, frames with birds
+  - Professional gradient styling with hover effects
+  - Chart.js integration for data visualization
+
+- **HTMLReporter Module**: New `reporter.py` module for report generation
+  - Generates self-contained HTML files with embedded images
+  - Thumbnails encoded as base64 (no external image dependencies)
+  - Configurable `--max-thumbnails` parameter (default: 50)
+  - Supports single video reports (multi-video planned for future)
+
+### Usage Examples
+```bash
+# Generate HTML report with species identification
+vogel-analyze --identify-species --html-report report.html video.mp4
+
+# Custom thumbnail count
+vogel-analyze --identify-species --html-report report.html --max-thumbnails 100 video.mp4
+
+# Combined JSON and HTML output
+vogel-analyze --identify-species -o data.json --html-report report.html video.mp4
+```
+
+### Technical Details
+- Report generation uses analysis data from `analyzer.py`
+- Timeline chart uses 10-second intervals for activity visualization
+- Species chart sorted by detection count (descending)
+- Thumbnails extracted from best confidence detections
+- Graceful fallback when species identification not enabled
+
 ## [0.4.4] - 2025-12-12
 
 ### Performance

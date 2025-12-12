@@ -158,4 +158,5 @@ training/*_video*/
 
 # Test files
 test_batch_processing.py
+test_html_report.py
 report.json

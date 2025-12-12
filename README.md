@@ -22,6 +22,12 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 
 - 🤖 **YOLOv8-powered Detection** - Accurate bird detection using pre-trained models
 - 🦜 **Species Identification** - Identify bird species using Hugging Face models (optional)
+- 📊 **HTML Reports (v0.5.0+)** - Interactive visual reports with charts and thumbnails
+  - Activity timeline showing bird detections over time
+  - Species distribution charts
+  - Thumbnail gallery of best detections
+  - Responsive design for desktop and mobile
+  - Self-contained HTML files (no external dependencies)
 - 🎬 **Video Annotation (v0.3.0+)** - Create annotated videos with bounding boxes and species labels
   - Automatic output path generation with timestamp (`video.mp4` → `video_annotated_YYYYMMDD_HHMMSS.mp4`)
   - Multilingual species labels with flag icons (🇬🇧 🇩🇪 🇯🇵)
@@ -97,6 +103,10 @@ vogel-analyze video.mp4
 # Identify bird species
 vogel-analyze --identify-species video.mp4
 
+# Generate HTML report (v0.5.0+)
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 15 video.mp4
+# View example: examples/html_report_example.html
+
 # Create annotated video (v0.3.0+)
 vogel-analyze --identify-species --annotate-video video.mp4
 # Output: video_annotated.mp4 (automatic)
@@ -111,6 +121,9 @@ vogel-analyze --identify-species \
 # Batch processing multiple videos
 vogel-analyze --identify-species --annotate-video --multilingual *.mp4
 # Creates: video1_annotated.mp4, video2_annotated.mp4, etc.
+
+# Combined outputs: JSON + HTML report
+vogel-analyze --identify-species -o data.json --html-report report.html video.mp4
 
 # Faster analysis (every 5th frame)
 vogel-analyze --sample-rate 5 video.mp4

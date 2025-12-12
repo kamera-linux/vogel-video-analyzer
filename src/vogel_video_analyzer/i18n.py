@@ -115,6 +115,26 @@ TRANSLATIONS = {
         'model_loaded_success': 'Model loaded successfully',
         'model_load_error': 'Error loading model:',
         'fallback_basic_detection': 'Falling back to basic bird detection only',
+        
+        # HTML Reports (v0.5.0+)
+        'html_generating': 'Generating HTML report...',
+        'html_success': 'HTML report saved:',
+        'html_error': 'Error generating HTML report:',
+        'html_single_only': 'HTML reports currently support single videos only.',
+        'html_processing_first': 'Processing first video:',
+        'html_title': 'Bird Video Analysis',
+        'html_video': 'Video:',
+        'html_created': 'Created:',
+        'html_detections': 'Detections',
+        'html_unique_species': 'Unique Species',
+        'html_avg_confidence': 'Avg Confidence',
+        'html_frames_with_birds': 'Frames with Birds',
+        'html_activity_timeline': 'Activity Timeline',
+        'html_species_distribution': 'Species Distribution',
+        'html_best_shots': 'Best Shots',
+        'html_images': 'images',
+        'html_no_thumbnails': 'No thumbnails available (species identification required)',
+        'html_footer': 'Generated with vogel-video-analyzer',
     },
     'de': {
         # Loading and initialization
@@ -222,6 +242,26 @@ TRANSLATIONS = {
         'model_loaded_success': 'Modell erfolgreich geladen',
         'model_load_error': 'Fehler beim Laden des Modells:',
         'fallback_basic_detection': 'Verwende nur grundlegende Vogelerkennung',
+        
+        # HTML Reports (v0.5.0+)
+        'html_generating': 'Erstelle HTML-Bericht...',
+        'html_success': 'HTML-Bericht gespeichert:',
+        'html_error': 'Fehler beim Erstellen des HTML-Berichts:',
+        'html_single_only': 'HTML-Berichte unterstützen derzeit nur einzelne Videos.',
+        'html_processing_first': 'Verarbeite erstes Video:',
+        'html_title': 'Vogel-Video-Analyse',
+        'html_video': 'Video:',
+        'html_created': 'Erstellt:',
+        'html_detections': 'Erkennungen',
+        'html_unique_species': 'Verschiedene Arten',
+        'html_avg_confidence': 'Ø Konfidenz',
+        'html_frames_with_birds': 'Frames mit Vögeln',
+        'html_activity_timeline': 'Aktivitäts-Timeline',
+        'html_species_distribution': 'Arten-Verteilung',
+        'html_best_shots': 'Beste Aufnahmen',
+        'html_images': 'Bilder',
+        'html_no_thumbnails': 'Keine Thumbnails verfügbar (Artenerkennung erforderlich)',
+        'html_footer': 'Generiert mit vogel-video-analyzer',
     },
     'ja': {
         # Loading and initialization
@@ -308,27 +348,47 @@ TRANSLATIONS = {
         
         # Logging
         'log_file': 'ログファイル：',
-        'log_permission_denied': '警告：/var/log/vogel-kamera-linux/への書き込み権限がありません',
+        'log_permission_denied': '警告：/var/log/vogel-kamera-linux/ への書き込み権限がありません',
         'log_permission_hint': 'sudoで実行するか、権限を変更してください：',
         
         # Errors
         'error': 'エラー',
-        'error_analyzing': '分析エラー',
-        'report_saved': 'レポートを保存しました：',
+        'error_analyzing': '分析中にエラー',
+        'report_saved': 'レポートが保存されました：',
         
         # Species identification
         'species_dependencies_missing': '種の識別には追加の依存関係が必要です。',
-        'identifying_species': '鳥の種を識別しています...',
+        'identifying_species': '鳥の種を識別中...',
         'species_title': '検出された種：',
         'species_count': '{count}種を検出',
-        'species_detections': '{detections}回の検出',
+        'species_detections': '{detections}件の検出',
         'species_avg_confidence': '平均信頼度',
         'species_no_detections': '種が識別されませんでした',
-        'loading_species_model': '鳥の種分類モデルを読み込んでいます：',
-        'model_download_info': '初回実行時に約100-300MBをダウンロードし、その後ローカルにキャッシュされます',
-        'model_loaded_success': 'モデルの読み込みに成功しました',
+        'loading_species_model': '鳥種分類モデルを読み込んでいます：',
+        'model_download_info': '初回実行時は約100-300MBダウンロード、その後ローカルにキャッシュされます',
+        'model_loaded_success': 'モデルが正常に読み込まれました',
         'model_load_error': 'モデルの読み込みエラー：',
-        'fallback_basic_detection': '基本的な鳥検出のみにフォールバック',
+        'fallback_basic_detection': '基本的な鳥検出のみにフォールバックします',
+        
+        # HTML Reports (v0.5.0+)
+        'html_generating': 'HTMLレポートを生成中...',
+        'html_success': 'HTMLレポートが保存されました：',
+        'html_error': 'HTMLレポートの生成エラー：',
+        'html_single_only': 'HTMLレポートは現在、単一の動画のみをサポートしています。',
+        'html_processing_first': '最初の動画を処理中：',
+        'html_title': '鳥動画分析',
+        'html_video': '動画：',
+        'html_created': '作成日時：',
+        'html_detections': '検出数',
+        'html_unique_species': '固有種数',
+        'html_avg_confidence': '平均信頼度',
+        'html_frames_with_birds': '鳥検出フレーム',
+        'html_activity_timeline': 'アクティビティタイムライン',
+        'html_species_distribution': '種の分布',
+        'html_best_shots': 'ベストショット',
+        'html_images': '枚',
+        'html_no_thumbnails': 'サムネイルなし（種の識別が必要）',
+        'html_footer': 'vogel-video-analyzerで生成',
     }
 }
 
