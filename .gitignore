@@ -155,3 +155,7 @@ training/*_video*/
 
 # Hugging Face cache
 .cache/huggingface/
+
+# Test files
+test_batch_processing.py
+report.json

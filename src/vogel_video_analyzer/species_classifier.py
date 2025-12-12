@@ -193,10 +193,17 @@ class BirdSpeciesClassifier:
             # Suppress some warnings from transformers
             warnings.filterwarnings('ignore', category=FutureWarning)
             
+            # Determine device
+            device = 0 if torch.cuda.is_available() else -1
+            if device == 0:
+                device_name = torch.cuda.get_device_name(0)
+                print(f"   🎮 Using GPU: {device_name}")
+            
             self.classifier = pipeline(
                 "image-classification",
                 model=model_source,
-                device=0 if torch.cuda.is_available() else -1  # Use GPU if available
+                device=device,
+                batch_size=8  # Process up to 8 images in parallel for efficiency
             )
             
             print(f"   ✅ {t('model_loaded_success')}")
@@ -274,6 +281,67 @@ class BirdSpeciesClassifier:
         except Exception as e:
             print(f"   ⚠️  Crop classification error: {e}")
             return []
+    
+    def classify_crops_batch(self, frame, bboxes: List[Tuple[int, int, int, int]], top_k: int = 3) -> List[List[Dict[str, any]]]:
+        """
+        Classify multiple cropped regions from the same frame in a batch (efficient for GPU)
+        
+        Args:
+            frame: Full video frame (numpy array)
+            bboxes: List of bounding boxes [(x1, y1, x2, y2), ...]
+            top_k: Return top K predictions per crop
+            
+        Returns:
+            List of prediction lists, one per bounding box
+        """
+        if self.classifier is None or not bboxes:
+            return [[] for _ in bboxes]
+        
+        try:
+            # Crop all regions
+            crops = []
+            valid_indices = []
+            
+            h, w = frame.shape[:2]
+            for idx, bbox in enumerate(bboxes):
+                x1, y1, x2, y2 = bbox
+                
+                # Ensure coordinates are within frame
+                x1, y1 = max(0, int(x1)), max(0, int(y1))
+                x2, y2 = min(w, int(x2)), min(h, int(y2))
+                
+                # Crop the region
+                cropped = frame[y1:y2, x1:x2]
+                
+                if cropped.size > 0:
+                    # Convert to PIL Image
+                    crops.append(Image.fromarray(cropped))
+                    valid_indices.append(idx)
+            
+            if not crops:
+                return [[] for _ in bboxes]
+            
+            # Batch classify all crops at once (GPU-efficient)
+            all_predictions = self.classifier(crops, top_k=top_k, batch_size=len(crops))
+            
+            # Organize results back to match input bboxes order
+            results = [[] for _ in bboxes]
+            for crop_idx, predictions in enumerate(all_predictions):
+                original_idx = valid_indices[crop_idx]
+                
+                # Filter by confidence threshold
+                filtered = [
+                    pred for pred in predictions 
+                    if pred['score'] >= self.confidence_threshold
+                ]
+                results[original_idx] = filtered
+            
+            return results
+            
+        except Exception as e:
+            print(f"   ⚠️  Batch classification error: {e}")
+            return [[] for _ in bboxes]
+
     
     @staticmethod
     def is_available() -> bool:

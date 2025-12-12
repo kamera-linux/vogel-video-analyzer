@@ -482,6 +482,7 @@ class VideoAnalyzer:
             # Check bird detection
             birds_in_frame = 0
             frame_species = []
+            bird_bboxes = []  # Collect all bounding boxes for batch processing
             
             for result in results:
                 boxes = result.boxes
@@ -492,36 +493,37 @@ class VideoAnalyzer:
                     if cls == self.target_class and conf >= self.threshold:
                         birds_in_frame += 1
                         
-                        # Species identification if enabled
+                        # Collect bounding boxes for batch species identification
                         if self.identify_species and self.species_classifier:
-                            try:
-                                # Get bounding box coordinates
-                                xyxy = box.xyxy[0].cpu().numpy()
-                                x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
-                                bbox = (x1, y1, x2, y2)
-                                
-                                # Classify the bird crop
-                                species_predictions = self.species_classifier.classify_crop(
-                                    frame, bbox, top_k=1
-                                )
-                                
-                                if species_predictions:
-                                    species_info = species_predictions[0]
-                                    # Translate species name to current language
-                                    translated_name = BirdSpeciesClassifier.format_species_name(
-                                        species_info['label'], translate=True
-                                    )
-                                    frame_species.append({
-                                        'species': translated_name,
-                                        'confidence': species_info['score']
-                                    })
-                            except Exception as e:
-                                # Log error for debugging
-                                import sys
-                                print(f"   ⚠️  Species classification error (frame {current_frame}): {e}", file=sys.stderr)
-                                import traceback
-                                traceback.print_exc()
-                                pass
+                            xyxy = box.xyxy[0].cpu().numpy()
+                            x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
+                            bird_bboxes.append((x1, y1, x2, y2))
+            
+            # Batch process all bird crops at once (GPU-efficient)
+            if bird_bboxes and self.identify_species and self.species_classifier:
+                try:
+                    batch_predictions = self.species_classifier.classify_crops_batch(
+                        frame, bird_bboxes, top_k=1
+                    )
+                    
+                    for predictions in batch_predictions:
+                        if predictions:
+                            species_info = predictions[0]
+                            # Translate species name to current language
+                            translated_name = BirdSpeciesClassifier.format_species_name(
+                                species_info['label'], translate=True
+                            )
+                            frame_species.append({
+                                'species': translated_name,
+                                'confidence': species_info['score']
+                            })
+                except Exception as e:
+                    # Log error for debugging
+                    import sys
+                    print(f"   ⚠️  Species classification error (frame {current_frame}): {e}", file=sys.stderr)
+                    import traceback
+                    traceback.print_exc()
+                    pass
                         
             if birds_in_frame > 0:
                 frames_with_birds += 1
@@ -791,6 +793,8 @@ class VideoAnalyzer:
                 # Clear and rebuild detection cache
                 last_detections = []
                 birds_in_frame = 0
+                bird_bboxes = []  # Collect all bounding boxes for batch processing
+                bird_boxes_info = []  # Store YOLO box info
                 
                 for result in results:
                     boxes = result.boxes
@@ -806,58 +810,84 @@ class VideoAnalyzer:
                             xyxy = box.xyxy[0].cpu().numpy()
                             x1, y1, x2, y2 = int(xyxy[0]), int(xyxy[1]), int(xyxy[2]), int(xyxy[3])
                             
-                            # Species identification if enabled
+                            # Store box info for batch processing
+                            bird_bboxes.append((x1, y1, x2, y2))
+                            bird_boxes_info.append({
+                                'bbox': (x1, y1, x2, y2),
+                                'conf': conf
+                            })
+                
+                # Batch process all bird crops at once (GPU-efficient)
+                if bird_bboxes and self.identify_species and self.species_classifier:
+                    try:
+                        batch_predictions = self.species_classifier.classify_crops_batch(
+                            frame, bird_bboxes, top_k=1
+                        )
+                        
+                        for idx, (predictions, box_info) in enumerate(zip(batch_predictions, bird_boxes_info)):
                             species_label = None
                             skip_detection = False
                             
-                            if self.identify_species and self.species_classifier:
-                                try:
-                                    bbox = (x1, y1, x2, y2)
-                                    species_predictions = self.species_classifier.classify_crop(
-                                        frame, bbox, top_k=1
+                            if predictions:
+                                species_info = predictions[0]
+                                
+                                # Use multilingual name if requested
+                                if multilingual:
+                                    # Use full Unicode format with emojis if PIL available
+                                    bird_name = BirdSpeciesClassifier.get_multilingual_name(
+                                        species_info['label'].upper(), 
+                                        show_flags=PIL_AVAILABLE,
+                                        opencv_compatible=not PIL_AVAILABLE
                                     )
-                                    
-                                    if species_predictions:
-                                        species_info = species_predictions[0]
-                                        
-                                        # Use multilingual name if requested
-                                        if multilingual:
-                                            # Use full Unicode format with emojis if PIL available
-                                            bird_name = BirdSpeciesClassifier.get_multilingual_name(
-                                                species_info['label'].upper(), 
-                                                show_flags=PIL_AVAILABLE,
-                                                opencv_compatible=not PIL_AVAILABLE
-                                            )
-                                        else:
-                                            bird_name = BirdSpeciesClassifier.format_species_name(
-                                                species_info['label'], translate=True
-                                            )
-                                        
-                                        if show_confidence:
-                                            species_label = f"{bird_name} {species_info['score']:.0%}"
-                                        else:
-                                            species_label = bird_name
-                                    else:
-                                        # No species passed threshold - skip this detection entirely
-                                        skip_detection = True
-                                except Exception as e:
-                                    # On error, skip detection
-                                    skip_detection = True
+                                else:
+                                    bird_name = BirdSpeciesClassifier.format_species_name(
+                                        species_info['label'], translate=True
+                                    )
+                                
+                                if show_confidence:
+                                    species_label = f"{bird_name} {species_info['score']:.0%}"
+                                else:
+                                    species_label = bird_name
+                            else:
+                                # No species passed threshold - skip this detection entirely
+                                skip_detection = True
                             
                             # Fallback if species_label is still None
                             if species_label is None and not skip_detection:
                                 # No species classification enabled - show as generic bird
                                 if show_confidence:
-                                    species_label = f"Bird {conf:.0%}"
+                                    species_label = f"Bird {box_info['conf']:.0%}"
                                 else:
                                     species_label = "Bird"
                             
                             # Store detection for reuse (only if not skipped)
                             if not skip_detection and species_label is not None:
                                 last_detections.append({
-                                    'bbox': (x1, y1, x2, y2),
+                                    'bbox': box_info['bbox'],
                                     'label': species_label
                                 })
+                    except Exception as e:
+                        # On error, fall back to generic bird labels
+                        for box_info in bird_boxes_info:
+                            if show_confidence:
+                                species_label = f"Bird {box_info['conf']:.0%}"
+                            else:
+                                species_label = "Bird"
+                            last_detections.append({
+                                'bbox': box_info['bbox'],
+                                'label': species_label
+                            })
+                elif bird_boxes_info:
+                    # No species identification - show generic bird labels
+                    for box_info in bird_boxes_info:
+                        if show_confidence:
+                            species_label = f"Bird {box_info['conf']:.0%}"
+                        else:
+                            species_label = "Bird"
+                        last_detections.append({
+                            'bbox': box_info['bbox'],
+                            'label': species_label
+                        })
                 
                 last_birds_count = birds_in_frame
             

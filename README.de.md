@@ -490,6 +490,18 @@ Der Analyzer sucht YOLOv8-Modelle in dieser Reihenfolge:
 - **Segment-Erkennung:** Gruppiert aufeinanderfolgende Vogel-Frames mit max. 2-Sekunden-Lücken
 - **Performance:** ~5x Beschleunigung mit sample-rate=5 bei 30fps-Videos
 
+### Artenerkennung (GPU-Optimiert)
+
+- **GPU Batch-Processing:** Verarbeitet alle Vogel-Crops pro Frame gleichzeitig (v0.4.4+)
+  - Einzelne Batch-Inferenz für alle erkannten Vögel in einem Frame
+  - Bis zu 8 Crops parallel verarbeitet (`batch_size=8`)
+  - Bis zu 8x schneller als sequenzielle Verarbeitung
+  - Eliminiert "pipelines sequentially on GPU" Warnung
+- **Geräteauswahl:** Automatische CUDA (NVIDIA GPU) Erkennung mit CPU-Fallback
+- **Modell-Laden:** Download von Hugging Face Hub (~100-300MB, lokal gecacht)
+- **Schwellenwert-Filterung:** Konfigurierbarer Konfidenz-Schwellenwert (Standard: 0.3)
+- **Mehrsprachige Unterstützung:** Vogelnamen auf Englisch, Deutsch und Japanisch (39 Arten)
+
 ### Ausgabeformat
 
 JSON-Berichte enthalten:

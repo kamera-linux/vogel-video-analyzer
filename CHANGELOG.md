@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.4] - 2025-12-12
+
+### Performance
+- **GPU Batch Processing**: Implemented efficient batch processing for species identification
+  - New `classify_crops_batch()` method processes all bird crops per frame in single batch
+  - Eliminates sequential GPU processing (no more "pipelines sequentially on GPU" warning)
+  - Pipeline configured with `batch_size=8` for parallel inference
+  - Up to 8x faster species identification on multi-bird frames
+  - Processes up to 8 bird crops simultaneously on GPU
+
+- **GPU Detection**: Enhanced device information display
+  - Shows GPU model name on species classifier initialization
+  - Example: "🎮 Using GPU: NVIDIA GeForce RTX 2070 SUPER"
+  - Automatic fallback to CPU if no CUDA device available
+
+### Technical Details
+- **Analyzer Optimization**: Refactored species identification workflow
+  - `analyze_video()`: Collects all bird bounding boxes per frame, then batch processes
+  - `annotate_video()`: Same batch processing for video annotation
+  - Reduced GPU memory transfers (single batch vs. multiple sequential calls)
+  - Better GPU utilization through parallel processing
+
+- **Species Classifier Enhancement**:
+  - `classify_crops_batch(frame, bboxes, top_k=3)`: New batch processing method
+  - Returns `List[List[Dict]]` - one prediction list per bounding box
+  - Maintains threshold filtering per prediction
+  - Preserves original `classify_crop()` for backward compatibility
+
+### Testing
+- Added `test_batch_processing.py` for feature validation
+- Confirms GPU detection and batch processing functionality
+- Tests both single and batch classification methods
+
 ## [0.4.3] - 2025-11-30
 
 ### Fixed

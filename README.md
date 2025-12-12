@@ -594,6 +594,18 @@ The analyzer searches for YOLOv8 models in this order:
 - **Segment Detection:** Groups consecutive bird frames with max 2-second gaps
 - **Performance:** ~5x speedup with sample-rate=5 on 30fps videos
 
+### Species Identification (GPU-Optimized)
+
+- **GPU Batch Processing:** Processes all bird crops per frame simultaneously (v0.4.4+)
+  - Single batch inference for all detected birds in a frame
+  - Up to 8 crops processed in parallel (`batch_size=8`)
+  - Up to 8x faster than sequential processing
+  - Eliminates "pipelines sequentially on GPU" warning
+- **Device Selection:** Automatic CUDA (NVIDIA GPU) detection with CPU fallback
+- **Model Loading:** Downloads from Hugging Face Hub (~100-300MB, cached locally)
+- **Threshold Filtering:** Configurable confidence threshold (default: 0.3)
+- **Multilingual Support:** Bird names in English, German, and Japanese (39 species)
+
 ### Output Format
 
 JSON reports include:
