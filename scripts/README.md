@@ -12,6 +12,7 @@ Automated GitHub release creation from Git tags with PyPI workflow monitoring.
 - 📝 Finds and uses release notes from `.github/RELEASE_v*.md`
 - 🚀 Creates GitHub release via `gh` CLI
 - 📊 Monitors PyPI publish workflow status
+- ⏱️ **NEW:** Watch workflow completion with live status updates
 - ⚡ Supports draft and pre-release options
 - 🔄 Handles existing releases (delete/recreate)
 - ✅ Validates tag format and remote sync
@@ -24,6 +25,12 @@ python scripts/create_github_release.py
 
 # Specific tag
 python scripts/create_github_release.py v0.3.1
+
+# Watch workflow completion until finished
+python scripts/create_github_release.py v0.3.1 --watch
+
+# Watch with custom timeout (default: 600s)
+python scripts/create_github_release.py v0.3.1 --watch --watch-timeout 900
 
 # Create as draft
 python scripts/create_github_release.py --draft
@@ -56,6 +63,8 @@ optional arguments:
   --title TITLE        Custom release title
   --notes-dir DIR      Directory for release notes (default: .github)
   --force              Skip all confirmation prompts
+  --watch              Watch workflow completion until finished
+  --watch-timeout N    Workflow watch timeout in seconds (default: 600)
 ```
 
 ### Workflow
@@ -97,10 +106,18 @@ Create this release? [y/N]: y
 ============================================================
 Checking for PyPI publish workflow...
 ============================================================
-✅ Workflow found for v0.3.1 (Run ID: 12345678)
+
+⏳ Waiting for 'publish-pypi.yml' workflow to start for v0.3.1...
+✅ Workflow triggered (Run ID: 12345678)
+✅ Workflow triggered for v0.3.1
+
+🔄 Watching workflow completion (timeout: 600s)...
+[12:34:56] ⏳ Queued...
+[12:35:03] 🔄 Running...
+[12:38:45] ✅ Completed successfully!
 
 ============================================================
-📊 PyPI Publish Workflow Status
+📊 Final Workflow Status
 ============================================================
 Workflow:   Publish to PyPI
 Title:      Release v0.3.1
@@ -113,7 +130,12 @@ URL:        https://github.com/kamera-linux/vogel-video-analyzer/actions/runs/12
    Watch live:  gh run watch 12345678
    View logs:   gh run view 12345678 --log
    Open web:    gh run view 12345678 --web
+
+🎉 PyPI publish successful!
+📦 Package should be available at: https://pypi.org/project/vogel-video-analyzer/
 ```
+
+**Note:** Use `--watch` flag to automatically wait for workflow completion. Without it, the script shows initial status and exits.
 
 ### Notes
 

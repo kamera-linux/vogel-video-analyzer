@@ -21,7 +21,7 @@ vogel-analyze --language en \
   --species-threshold 0.80 \
   --html-report report.html \
   --sample-rate 15 \
-  --max-thumbnails 15 \
+  --max-thumbnails 12 \
   video.mp4
 ```
 

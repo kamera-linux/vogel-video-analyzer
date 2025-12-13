@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2025-12-13
+
+### Fixed
+- **HTML Reports**: Embedded Chart.js library inline for better compatibility
+  - Charts now work in HTMLPreview.github.io and offline environments
+  - No external CDN dependencies required
+  - Self-contained HTML files work in all browsers without internet connection
+  
+### Changed
+- HTML report file size increased by ~80KB due to inline Chart.js (still acceptable at ~460KB)
+
 ## [0.5.0] - 2025-12-12
 
 ### Added

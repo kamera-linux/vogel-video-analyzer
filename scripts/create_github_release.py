@@ -176,7 +176,7 @@ def create_github_release(tag, notes_file, title=None, draft=False, prerelease=F
     return True
 
 
-def wait_for_workflow_trigger(tag, workflow_name="publish-pypi.yml", timeout=30):
+def wait_for_workflow_trigger(tag, workflow_name="publish-pypi.yml", timeout=60):
     """Wait for workflow to be triggered after release creation."""
     print(f"\n⏳ Waiting for '{workflow_name}' workflow to start for {tag}...")
     
@@ -184,6 +184,7 @@ def wait_for_workflow_trigger(tag, workflow_name="publish-pypi.yml", timeout=30)
     version = tag.lstrip('v')
     
     start_time = time.time()
+    dots = 0
     while time.time() - start_time < timeout:
         # Get recent workflow runs with title
         result = subprocess.run(
@@ -201,14 +202,82 @@ def wait_for_workflow_trigger(tag, workflow_name="publish-pypi.yml", timeout=30)
                     title = run.get('displayTitle', '')
                     # Check if this run is for our release
                     if tag in title or version in title:
+                        print(f"\n✅ Workflow triggered (Run ID: {run.get('databaseId')})")
                         return run.get('databaseId')
             except json.JSONDecodeError:
                 pass
         
+        # Show progress
+        dots = (dots + 1) % 4
+        print(f"\r⏳ Waiting{'.' * dots}{' ' * (3 - dots)}", end='', flush=True)
         time.sleep(3)
     
-    print(f"⚠️  Workflow for {tag} did not start within timeout")
+    print(f"\n⚠️  Workflow for {tag} did not start within {timeout}s timeout")
     return None
+
+
+def watch_workflow_completion(run_id, workflow_name="publish-pypi.yml", timeout=600):
+    """Watch workflow until completion with live status updates."""
+    print(f"\n🔄 Watching workflow completion (timeout: {timeout}s)...")
+    
+    start_time = time.time()
+    last_status = None
+    
+    while time.time() - start_time < timeout:
+        result = subprocess.run(
+            f'gh run view {run_id} --json status,conclusion',
+            shell=True,
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            print(f"\n⚠️  Failed to get workflow status")
+            return None, None
+        
+        try:
+            run_info = json.loads(result.stdout)
+            status = run_info.get('status', 'unknown')
+            conclusion = run_info.get('conclusion')
+            
+            # Update status if changed
+            if status != last_status:
+                timestamp = time.strftime('%H:%M:%S')
+                if status == 'queued':
+                    print(f"[{timestamp}] ⏳ Queued...")
+                elif status == 'in_progress':
+                    print(f"[{timestamp}] 🔄 Running...")
+                elif status == 'completed':
+                    if conclusion == 'success':
+                        print(f"[{timestamp}] ✅ Completed successfully!")
+                        return 'completed', 'success'
+                    elif conclusion == 'failure':
+                        print(f"[{timestamp}] ❌ Failed!")
+                        return 'completed', 'failure'
+                    elif conclusion == 'cancelled':
+                        print(f"[{timestamp}] 🚫 Cancelled")
+                        return 'completed', 'cancelled'
+                    else:
+                        print(f"[{timestamp}] ✅ Completed: {conclusion}")
+                        return 'completed', conclusion
+                
+                last_status = status
+            
+            # Check if completed
+            if status == 'completed':
+                break
+            
+            time.sleep(5)
+            
+        except json.JSONDecodeError:
+            print(f"\n⚠️  Failed to parse workflow data")
+            return None, None
+    
+    if time.time() - start_time >= timeout:
+        print(f"\n⏱️  Workflow watch timeout after {timeout}s")
+        return 'timeout', None
+    
+    return status, conclusion
 
 
 def check_workflow_status(run_id=None, workflow_name="publish-pypi.yml"):
@@ -305,14 +374,17 @@ Examples:
   # Specific tag
   python scripts/create_github_release.py v0.1.15
   
+  # Create and watch workflow completion
+  python scripts/create_github_release.py v0.1.15 --watch
+  
   # Create as draft
   python scripts/create_github_release.py --draft
   
   # Mark as pre-release
   python scripts/create_github_release.py v0.2.0-beta.1 --prerelease
   
-  # Custom title
-  python scripts/create_github_release.py --title "My Custom Title"
+  # Custom title and watch with longer timeout
+  python scripts/create_github_release.py --title "My Custom Title" --watch --watch-timeout 900
         """
     )
     
@@ -344,6 +416,17 @@ Examples:
         '--force',
         action='store_true',
         help='Skip all confirmation prompts'
+    )
+    parser.add_argument(
+        '--watch',
+        action='store_true',
+        help='Watch workflow completion until finished (default: show status and exit)'
+    )
+    parser.add_argument(
+        '--watch-timeout',
+        type=int,
+        default=600,
+        help='Workflow watch timeout in seconds (default: 600)'
     )
     
     args = parser.parse_args()
@@ -461,12 +544,37 @@ Examples:
             print("=" * 60)
             
             # Wait for workflow to be triggered
-            run_id = wait_for_workflow_trigger(tag, "publish-pypi.yml", timeout=20)
+            run_id = wait_for_workflow_trigger(tag, "publish-pypi.yml", timeout=60)
             
             if run_id:
-                print(f"✅ Workflow found for {tag} (Run ID: {run_id})")
-                time.sleep(2)  # Give workflow time to update status
-                check_workflow_status(run_id)
+                print(f"✅ Workflow triggered for {tag}")
+                
+                if args.watch:
+                    # Watch workflow until completion
+                    status, conclusion = watch_workflow_completion(
+                        run_id, 
+                        "publish-pypi.yml", 
+                        timeout=args.watch_timeout
+                    )
+                    
+                    # Show final detailed status
+                    print("\n" + "=" * 60)
+                    print("📊 Final Workflow Status")
+                    print("=" * 60)
+                    check_workflow_status(run_id)
+                    
+                    if conclusion == 'success':
+                        print("\n🎉 PyPI publish successful!")
+                        print("📦 Package should be available at: https://pypi.org/project/vogel-video-analyzer/")
+                    elif conclusion == 'failure':
+                        print("\n❌ PyPI publish failed! Check workflow logs:")
+                        print(f"   gh run view {run_id} --log-failed")
+                else:
+                    # Just show current status
+                    time.sleep(3)  # Give workflow time to update status
+                    check_workflow_status(run_id)
+                    print("\n💡 To watch workflow completion, use: --watch")
+                    print(f"   python scripts/create_github_release.py {tag} --watch")
             else:
                 # Check if there's a recent workflow run anyway
                 print(f"⚠️  No workflow found for {tag}, showing latest run:")

@@ -20,7 +20,7 @@ Transform your video analysis results into beautiful, interactive HTML reports!
 
 ```bash
 # Example with all features
-vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 15 video.mp4
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
 
 # Basic HTML report
 vogel-analyze --identify-species --html-report report.html video.mp4

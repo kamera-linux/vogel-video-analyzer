@@ -15,9 +15,14 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
+import urllib.request
 
 from .i18n import t, get_language
 from .species_classifier import BirdSpeciesClassifier
+
+# Chart.js library will be embedded inline for HTMLPreview compatibility
+CHARTJS_CDN_URL = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+_CHARTJS_CACHE = None
 
 
 class HTMLReporter:
@@ -33,8 +38,22 @@ class HTMLReporter:
         """
         self.data = analysis_data
         self.video_path = Path(video_path)
-        self.video_name = self.video_path.name
+        self.video_name = self.video_path.name        
+    @staticmethod
+    def _get_chartjs() -> str:
+        """Get Chart.js library code (download once and cache)."""
+        global _CHARTJS_CACHE
         
+        if _CHARTJS_CACHE is None:
+            try:
+                with urllib.request.urlopen(CHARTJS_CDN_URL, timeout=10) as response:
+                    _CHARTJS_CACHE = response.read().decode('utf-8')
+            except Exception as e:
+                print(f"⚠️  Warning: Could not download Chart.js: {e}")
+                print(f"   Charts will not be displayed in the HTML report.")
+                _CHARTJS_CACHE = "// Chart.js not available"
+        
+        return _CHARTJS_CACHE        
     def generate_report(self, output_path: str, max_thumbnails: int = 50) -> None:
         """
         Generate and save an HTML report.
@@ -55,6 +74,7 @@ class HTMLReporter:
         timeline_data = self._prepare_timeline_data()
         species_data = self._prepare_species_data()
         thumbnails = self._generate_thumbnails(max_thumbnails)
+        chartjs_code = self._get_chartjs()
         
         html = f"""<!DOCTYPE html>
 <html lang="de">
@@ -62,7 +82,9 @@ class HTMLReporter:
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{t('html_title')}: {self.video_name}</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>
+    {chartjs_code}
+    </script>
     <style>
         {self._get_css()}
     </style>
