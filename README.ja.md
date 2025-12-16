@@ -88,7 +88,7 @@ vogel-analyze video.mp4
 vogel-analyze --identify-species video.mp4
 
 # HTMLレポートを生成（v0.5.0+）
-vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier-v2 --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
 # サンプルを見る: https://htmlpreview.github.io/?https://github.com/kamera-linux/vogel-video-analyzer/blob/main/examples/html_report_example.html
 
 # バウンディングボックスと種ラベル付きの注釈動画を作成（v0.3.0+）
@@ -185,7 +185,7 @@ vogel-analyze --identify-species \
 
 # カスタムモデルと高速処理
 vogel-analyze --identify-species \
-  --species-model kamera-linux/german-bird-classifier \
+  --species-model kamera-linux/german-bird-classifier-v2 \
   --sample-rate 3 \
   --annotate-video \
   my_video.mp4

@@ -39,7 +39,7 @@ A powerful command-line tool and Python library for analyzing videos to detect a
   - Right-positioned semi-transparent label boxes
 - 🌍 **Multilingual Support (v0.3.0+)** - Bird names in English, German, and Japanese
   - 39 bird species with full translations
-  - All 8 German model birds supported (kamera-linux/german-bird-classifier)
+  - All 8 German model birds supported (kamera-linux/german-bird-classifier-v2)
   - Display format: "EN: Hawfinch / DE: Kernbeißer / 75%"
 - 📊 **Detailed Statistics** - Frame-by-frame analysis with bird content percentage
 - 🎯 **Segment Detection** - Identifies continuous time periods with bird presence
@@ -104,7 +104,7 @@ vogel-analyze video.mp4
 vogel-analyze --identify-species video.mp4
 
 # Generate HTML report (v0.5.0+)
-vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier-v2 --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
 # View example: https://htmlpreview.github.io/?https://github.com/kamera-linux/vogel-video-analyzer/blob/main/examples/html_report_example.html
 
 # Create annotated video (v0.3.0+)
@@ -113,7 +113,7 @@ vogel-analyze --identify-species --annotate-video video.mp4
 
 # Create annotated video with multilingual labels
 vogel-analyze --identify-species \
-  --species-model kamera-linux/german-bird-classifier \
+  --species-model kamera-linux/german-bird-classifier-v2 \
   --multilingual \
   --annotate-video \
   video.mp4
@@ -244,7 +244,7 @@ vogel-analyze --identify-species --annotate-video input.mp4
 
 # With multilingual labels and custom font size
 vogel-analyze --identify-species \
-  --species-model kamera-linux/german-bird-classifier \
+  --species-model kamera-linux/german-bird-classifier-v2 \
   --multilingual \
   --annotate-video \
   --font-size 16 \
@@ -252,7 +252,7 @@ vogel-analyze --identify-species \
 
 # With high-quality PNG flag icons (v0.4.2+)
 vogel-analyze --identify-species \
-  --species-model kamera-linux/german-bird-classifier \
+  --species-model kamera-linux/german-bird-classifier-v2 \
   --multilingual \
   --annotate-video \
   --flag-dir assets/flags/ \
@@ -376,7 +376,7 @@ vogel-analyze --create-summary \
 - 🇯🇵 Japanese (39 species, database only)
 
 **Supported Birds (German Model):**
-All 8 birds from `kamera-linux/german-bird-classifier`:
+All 8 birds from `kamera-linux/german-bird-classifier-v2`:
 - Blaumeise (Blue Tit)
 - Grünfink (European Greenfinch)
 - Haussperling (House Sparrow)
@@ -556,7 +556,7 @@ else:
 | Option | Description | Default | Values |
 |--------|-------------|---------|--------|
 | `--identify-species` | Enable species identification | `False` | Flag |
-| `--species-model` | Hugging Face model name | `kamera-linux/german-bird-classifier` | Model ID |
+| `--species-model` | Hugging Face model name | `kamera-linux/german-bird-classifier-v2` | Model ID |
 | `--species-threshold` | Min confidence for species label | `0.0` | `0.0` - `1.0` |
 | `--multilingual` | Show names in EN/DE/JA | `False` | Flag |
 

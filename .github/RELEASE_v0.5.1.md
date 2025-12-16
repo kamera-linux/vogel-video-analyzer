@@ -53,7 +53,7 @@ The example report now displays correctly with:
 
 ```bash
 # Generate HTML report with all features
-vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
+vogel-analyze --language en --identify-species --species-model kamera-linux/german-bird-classifier-v2 --species-threshold 0.80 --html-report report.html --sample-rate 15 --max-thumbnails 12 video.mp4
 
 # Basic HTML report
 vogel-analyze --identify-species --html-report report.html video.mp4

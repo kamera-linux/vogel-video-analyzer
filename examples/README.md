@@ -17,7 +17,7 @@ Interactive HTML report demonstrating the visualization features of v0.5.0+:
 ```bash
 vogel-analyze --language en \
   --identify-species \
-  --species-model kamera-linux/german-bird-classifier \
+  --species-model kamera-linux/german-bird-classifier-v2 \
   --species-threshold 0.80 \
   --html-report report.html \
   --sample-rate 15 \

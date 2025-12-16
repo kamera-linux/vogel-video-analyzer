@@ -67,7 +67,7 @@ Please include as much of the following information as possible:
 
 3. **Model Files**: Only use models from trusted sources
    - YOLOv8 models from Ultralytics
-   - Hugging Face models from verified publishers (e.g., kamera-linux/german-bird-classifier)
+   - Hugging Face models from verified publishers (e.g., kamera-linux/german-bird-classifier-v2)
    - Ensure model files haven't been tampered with
 
 4. **File Permissions**: Be aware of file operations

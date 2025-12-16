@@ -18,7 +18,7 @@ from .i18n import t
 
 
 # Translation dictionary for common bird species
-# English names from kamera-linux/german-bird-classifier
+# English names from kamera-linux/german-bird-classifier-v2
 ENGLISH_NAMES = {
     'PARUS MAJOR': 'Great Tit',
     'BLUE TIT': 'Blue Tit',
@@ -32,7 +32,7 @@ ENGLISH_NAMES = {
 
 BIRD_NAME_TRANSLATIONS = {
     'de': {
-        # European garden birds (from kamera-linux/german-bird-classifier)
+        # European garden birds (from kamera-linux/german-bird-classifier-v2)
         'PARUS MAJOR': 'Kohlmeise',
         'BLUE TIT': 'Blaumeise',
         'MARSH TIT': 'Sumpfmeise',
@@ -83,7 +83,7 @@ BIRD_NAME_TRANSLATIONS = {
         'WHITE THROATED BEE EATER': 'Weißkehlspint',
     },
     'ja': {
-        # European garden birds (from kamera-linux/german-bird-classifier)
+        # European garden birds (from kamera-linux/german-bird-classifier-v2)
         'PARUS MAJOR': 'シジュウカラ',
         'BLUE TIT': 'アオガラ',
         'MARSH TIT': 'ヨーロッパコガラ',
@@ -136,7 +136,7 @@ BIRD_NAME_TRANSLATIONS = {
 }
 
 # Create reverse mapping: German lowercase -> English uppercase
-# This is needed for models that use German labels (like kamera-linux/german-bird-classifier)
+# This is needed for models that use German labels (like kamera-linux/german-bird-classifier-v2)
 GERMAN_TO_ENGLISH = {
     v.lower(): k for k, v in BIRD_NAME_TRANSLATIONS['de'].items()
 }

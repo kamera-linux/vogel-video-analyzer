@@ -184,7 +184,7 @@ vogel-analyze --identify-species -o data.json --html-report report.html video.mp
 ### Fixed
 - **Multilingual Species Names**: Corrected English bird names to use proper common names instead of scientific names
   - Example: "Great Tit" instead of "Parus Major"
-  - Added `ENGLISH_NAMES` dictionary with correct English common names for all 8 species from kamera-linux/german-bird-classifier
+  - Added `ENGLISH_NAMES` dictionary with correct English common names for all 8 species from kamera-linux/german-bird-classifier-v2
   - Species: Great Tit, Blue Tit, Marsh Tit, Eurasian Nuthatch, European Greenfinch, Hawfinch, House Sparrow, European Robin
 - **German Translation**: Corrected "European Greenfinch" translation from "Grünling" to "Grünfink"
 - **Video Annotation**: Fixed multilingual rendering to properly use English common names with flag icons
@@ -303,7 +303,7 @@ vogel-video-analyzer --create-summary video1.mp4 video2.mp4 video3.mp4
   - Format: "EN: Hawfinch / DE: Kernbeißer / 75%"
   - Three-line display for better readability
   - Unicode text rendering using PIL/Pillow
-  - Support for German bird classifier model (kamera-linux/german-bird-classifier)
+  - Support for German bird classifier model (kamera-linux/german-bird-classifier-v2)
   - Reverse mapping: German labels → English keys → translations
   
 - **Enhanced Bird Species Database**
