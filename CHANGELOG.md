@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-01-27
+
+### Added
+- **Code Quality Improvements**: Introduced module constants for magic numbers
+  - `COCO_CLASS_BIRD = 14` - COCO dataset class ID for birds
+  - `DEFAULT_DETECTION_THRESHOLD = 0.3` - Default confidence threshold
+  - `DEFAULT_SPECIES_THRESHOLD = 0.3` - Default species classification threshold
+  - `DEFAULT_SAMPLE_RATE = 5` - Default frame sampling rate
+  - `DEFAULT_FLAG_SIZE = 24` - Default flag icon size
+  - `DEFAULT_FONT_SIZE = 20` - Default annotation font size
+  - All constants exported in public API for external use
+
+- **Enhanced Test Suite**: pytest-compatible unit tests
+  - `test_version.py` - Module version and import validation
+  - `test_constants_exist()` - Verifies all module constants
+  - Tests can run standalone or with pytest
+  - Added tests/README.md documentation
+
+- **Submodule Update**: Updated training submodule to v0.1.25
+  - New classifier, deduplicator, and evaluator modules
+  - Enhanced documentation and release notes
+  - Japanese README translation
+
+### Changed
+- Refactored `VideoAnalyzer.__init__()` to use named constants instead of magic numbers
+- Improved code maintainability and readability
+
 ## [0.5.1] - 2025-12-13
 
 ### Fixed

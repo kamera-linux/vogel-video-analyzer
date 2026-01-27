@@ -28,6 +28,15 @@ except ImportError:
     BirdSpeciesClassifier = None
     aggregate_species_detections = None
 
+# Constants
+COCO_CLASS_BIRD = 14  # COCO dataset class ID for birds
+DEFAULT_DETECTION_THRESHOLD = 0.3  # Default confidence threshold for bird detection
+DEFAULT_SPECIES_THRESHOLD = 0.3  # Default confidence threshold for species classification
+DEFAULT_SAMPLE_RATE = 5  # Default frame sampling rate for analysis
+DEFAULT_FLAG_SIZE = 24  # Default size for flag icons in pixels
+DEFAULT_FONT_SIZE = 20  # Default font size for annotations
+
+
 def render_emoji_icon(emoji, size=24):
     """
     Render flag emoji with accurate flag designs
@@ -354,14 +363,14 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
 class VideoAnalyzer:
     """Analyzes videos for bird content using YOLOv8"""
     
-    def __init__(self, model_path="yolov8n.pt", threshold=0.3, target_class=14, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=0.3):
+    def __init__(self, model_path="yolov8n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=COCO_CLASS_BIRD, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=DEFAULT_SPECIES_THRESHOLD):
         """
         Initialize the analyzer
         
         Args:
             model_path: Path to YOLO model (searches: models/, config/models/, current dir, auto-download)
             threshold: Confidence threshold (0.0-1.0), default 0.3 for bird detection
-            target_class: COCO class for bird (14=bird)
+            target_class: COCO class for bird (14=bird, use COCO_CLASS_BIRD constant)
             identify_species: Enable bird species classification (requires species dependencies)
             species_model: Hugging Face model for species classification (default: dima806/bird_species_image_detection)
             species_threshold: Minimum confidence threshold for species classification (default: 0.3)
