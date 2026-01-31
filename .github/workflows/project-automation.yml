@@ -1,0 +1,176 @@
+name: Project Board Automation
+
+on:
+  issues:
+    types: [assigned, opened, closed, reopened]
+  pull_request:
+    types: [assigned, opened, closed, reopened]
+
+jobs:
+  update-project-status:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: write
+      contents: read
+      
+    steps:
+      - name: Get Project Data
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ORGANIZATION: kamera-linux
+          PROJECT_NUMBER: 3
+        id: get_project_data
+        run: |
+          gh api graphql -f query='
+            query($org: String!, $number: Int!) {
+              user(login: $org) {
+                projectV2(number: $number) {
+                  id
+                  fields(first: 20) {
+                    nodes {
+                      ... on ProjectV2SingleSelectField {
+                        id
+                        name
+                        options {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+          
+          cat project_data.json
+          PROJECT_ID=$(jq -r '.data.user.projectV2.id' project_data.json)
+          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          
+          STATUS_FIELD_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .id' project_data.json)
+          echo "status_field_id=$STATUS_FIELD_ID" >> $GITHUB_OUTPUT
+          
+          TODO_OPTION_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name | contains("Todo")) | .id' project_data.json)
+          echo "todo_option_id=$TODO_OPTION_ID" >> $GITHUB_OUTPUT
+          
+          IN_PROGRESS_OPTION_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name | contains("Progress")) | .id' project_data.json)
+          echo "in_progress_option_id=$IN_PROGRESS_OPTION_ID" >> $GITHUB_OUTPUT
+          
+          DONE_OPTION_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name | contains("Done")) | .id' project_data.json)
+          echo "done_option_id=$DONE_OPTION_ID" >> $GITHUB_OUTPUT
+
+      - name: Add to project
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
+          ITEM_ID: ${{ github.event.issue.node_id || github.event.pull_request.node_id }}
+        run: |
+          # Check if item is already in project
+          ITEM_IN_PROJECT=$(gh api graphql -f query='
+            query($projectId: ID!, $itemId: ID!) {
+              node(id: $projectId) {
+                ... on ProjectV2 {
+                  items(first: 100) {
+                    nodes {
+                      id
+                      content {
+                        ... on Issue {
+                          id
+                        }
+                        ... on PullRequest {
+                          id
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }' -f projectId=$PROJECT_ID -f itemId=$ITEM_ID | jq -r '.data.node.items.nodes[] | select(.content.id == env.ITEM_ID) | .id')
+          
+          if [ -z "$ITEM_IN_PROJECT" ]; then
+            echo "Adding item to project..."
+            gh api graphql -f query='
+              mutation($projectId: ID!, $contentId: ID!) {
+                addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                  item {
+                    id
+                  }
+                }
+              }' -f projectId=$PROJECT_ID -f contentId=$ITEM_ID > add_result.json
+            
+            ITEM_IN_PROJECT=$(jq -r '.data.addProjectV2ItemById.item.id' add_result.json)
+          fi
+          
+          echo "PROJECT_ITEM_ID=$ITEM_IN_PROJECT" >> $GITHUB_ENV
+
+      - name: Set status to In Progress (when assigned)
+        if: github.event.action == 'assigned'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
+          STATUS_FIELD_ID: ${{ steps.get_project_data.outputs.status_field_id }}
+          OPTION_ID: ${{ steps.get_project_data.outputs.in_progress_option_id }}
+        run: |
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: {singleSelectOptionId: $optionId}
+              }) {
+                projectV2Item {
+                  id
+                }
+              }
+            }' -f projectId=$PROJECT_ID -f itemId=$PROJECT_ITEM_ID -f fieldId=$STATUS_FIELD_ID -f optionId=$OPTION_ID
+          
+          echo "✅ Status set to In Progress"
+
+      - name: Set status to Todo (when opened/reopened)
+        if: github.event.action == 'opened' || github.event.action == 'reopened'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
+          STATUS_FIELD_ID: ${{ steps.get_project_data.outputs.status_field_id }}
+          OPTION_ID: ${{ steps.get_project_data.outputs.todo_option_id }}
+        run: |
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: {singleSelectOptionId: $optionId}
+              }) {
+                projectV2Item {
+                  id
+                }
+              }
+            }' -f projectId=$PROJECT_ID -f itemId=$PROJECT_ITEM_ID -f fieldId=$STATUS_FIELD_ID -f optionId=$OPTION_ID
+          
+          echo "✅ Status set to Todo"
+
+      - name: Set status to Done (when closed)
+        if: github.event.action == 'closed'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
+          STATUS_FIELD_ID: ${{ steps.get_project_data.outputs.status_field_id }}
+          OPTION_ID: ${{ steps.get_project_data.outputs.done_option_id }}
+        run: |
+          gh api graphql -f query='
+            mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
+              updateProjectV2ItemFieldValue(input: {
+                projectId: $projectId
+                itemId: $itemId
+                fieldId: $fieldId
+                value: {singleSelectOptionId: $optionId}
+              }) {
+                projectV2Item {
+                  id
+                }
+              }
+            }' -f projectId=$PROJECT_ID -f itemId=$PROJECT_ITEM_ID -f fieldId=$STATUS_FIELD_ID -f optionId=$OPTION_ID
+          
+          echo "✅ Status set to Done"
