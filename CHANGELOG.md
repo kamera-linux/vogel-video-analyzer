@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-01-31
+
+### Added
+- **Issue Board System**: Complete local issue management for project tracking
+  - CLI command `vogel-issues` for creating, listing, updating, and deleting issues
+  - Status tracking: `todo`, `in_progress`, `done`, `blocked`
+  - Priority levels: `low`, `medium`, `high`, `critical`
+  - Flexible labeling and assignee support
+  - JSON-based local storage in `~/.vogel_issues.json`
+  - Statistics and filtering capabilities
+  - Rich terminal output with colors and emojis
+
+- **GitHub Issues Synchronization**: Optional bidirectional sync with GitHub
+  - Push local issues to GitHub (`vogel-issues sync --direction push`)
+  - Pull GitHub issues locally (`vogel-issues sync --direction pull`)
+  - Bidirectional sync (`vogel-issues sync`)
+  - Automatic label conversion (status/priority → GitHub labels)
+  - Automatic repository detection from Git config
+  - Multiple token storage methods (environment variable, config file, CLI parameter)
+  - Interactive token setup wizard (`vogel-issues setup`)
+  - Non-destructive synchronization (never deletes issues)
+
+- **Python API**: Programmatic issue management
+  - `IssueBoard` class for local issue management
+  - `GitHubSync` class for GitHub integration
+  - Full API documentation in `docs/ISSUE_BOARD.md`
+
+- **Documentation**: Comprehensive guides
+  - `docs/ISSUE_BOARD.md` - Complete feature documentation
+  - `docs/GITHUB_SYNC_QUICKSTART.md` - Quick setup and examples
+  - Token security best practices
+
+- **Tests**: Full test coverage
+  - `tests/test_issue_board.py` - Issue board unit tests
+  - `tests/test_github_sync.py` - GitHub sync tests with mocks
+
+### Changed
+- **pyproject.toml**: Added `vogel-issues` CLI entry point
+- **pyproject.toml**: Added `github` optional dependency group for PyGithub
+- **Version**: Bumped to 0.5.3
+
 ## [0.5.2] - 2026-01-27
 
 ### Added

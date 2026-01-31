@@ -59,6 +59,9 @@ species = [
     "torchvision>=0.15.0",
     "pillow>=10.0.0",
 ]
+github = [
+    "PyGithub>=2.1.0",
+]
 
 [project.urls]
 Homepage = "https://github.com/kamera-linux/vogel-video-analyzer"
@@ -69,6 +72,7 @@ Issues = "https://github.com/kamera-linux/vogel-video-analyzer/issues"
 
 [project.scripts]
 vogel-analyze = "vogel_video_analyzer.cli:main"
+vogel-issues = "vogel_video_analyzer.issue_cli:main"
 
 [tool.setuptools]
 package-dir = {"" = "src"}

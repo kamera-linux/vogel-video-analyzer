@@ -6,6 +6,7 @@ We release patches for security vulnerabilities in the following versions:
 
 | Version | Supported          |
 | ------- | ------------------ |
+| 0.5.x   | :white_check_mark: |
 | 0.4.x   | :white_check_mark: |
 | 0.3.x   | :white_check_mark: |
 | 0.2.x   | :x:                |
@@ -88,6 +89,16 @@ Please include as much of the following information as possible:
 7. **Unicode Text Rendering (v0.3.0+)**: PIL/Pillow is used for text rendering
    - Vulnerabilities in Pillow could affect video annotation
    - Keep Pillow updated
+
+8. **GitHub Token Security (v0.5.3+)**: Issue Board with GitHub sync
+   - **NEVER** commit GitHub tokens to Git repositories
+   - **NEVER** share tokens publicly or in logs
+   - Use environment variables or secure config file (`~/.vogel_config.json`)
+   - Config file is automatically chmod 600 for security
+   - Add `.vogel_config.json` to `.gitignore`
+   - Tokens need `repo` scope - limit to specific repositories if possible
+   - Rotate tokens regularly
+   - Revoke tokens immediately if compromised: https://github.com/settings/tokens
 
 ## 🔍 Known Security Considerations
 
