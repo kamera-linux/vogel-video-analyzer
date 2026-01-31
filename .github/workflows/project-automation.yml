@@ -17,7 +17,7 @@ jobs:
     steps:
       - name: Get Project Data
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           ORGANIZATION: kamera-linux
           PROJECT_NUMBER: 3
         id: get_project_data
@@ -61,7 +61,7 @@ jobs:
 
       - name: Add to project
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
           ITEM_ID: ${{ github.event.issue.node_id || github.event.pull_request.node_id }}
         run: |
@@ -106,7 +106,7 @@ jobs:
       - name: Set status to In Progress (when assigned)
         if: github.event.action == 'assigned'
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
           STATUS_FIELD_ID: ${{ steps.get_project_data.outputs.status_field_id }}
           OPTION_ID: ${{ steps.get_project_data.outputs.in_progress_option_id }}
@@ -130,7 +130,7 @@ jobs:
       - name: Set status to Todo (when opened/reopened)
         if: github.event.action == 'opened' || github.event.action == 'reopened'
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
           STATUS_FIELD_ID: ${{ steps.get_project_data.outputs.status_field_id }}
           OPTION_ID: ${{ steps.get_project_data.outputs.todo_option_id }}
@@ -154,7 +154,7 @@ jobs:
       - name: Set status to Done (when closed)
         if: github.event.action == 'closed'
         env:
-          GITHUB_TOKEN: ${{ secrets.PROJECT_TOKEN }}
+          GH_TOKEN: ${{ secrets.PROJECT_TOKEN }}
           PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
           STATUS_FIELD_ID: ${{ steps.get_project_data.outputs.status_field_id }}
           OPTION_ID: ${{ steps.get_project_data.outputs.done_option_id }}
