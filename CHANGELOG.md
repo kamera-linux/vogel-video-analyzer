@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-01-31
+
+### Added
+- **GitHub Project Board Integration**: Full synchronization with GitHub Projects v2
+  - Automatic status updates from Project Board to local issues
+  - GraphQL API integration for fetching project board data
+  - Support for custom Status and Priority fields
+  - Emoji-based status indicators (📋 Todo, ⚙️ In Progress, ✅ Done, 🚫 Blocked)
+
+### Fixed
+- **GitHub Sync Improvements**:
+  - Fixed duplicate issue creation during synchronization
+  - Improved GitHub Issue Number tracking with URL links in descriptions
+  - Fixed handling of closed GitHub issues (now correctly mapped to "done" status)
+  - Fixed `assignee=None` error when pushing issues without assignees
+  - Better issue matching using GitHub issue links instead of titles only
+  - Local issues are now updated with GitHub links after initial push
+
+### Changed
+- Enhanced `vogel-issues sync` to include Project Board status synchronization by default
+- Improved error handling and debug output during synchronization
+- Status priority: Project Board > Issue State > Labels
+
 ## [0.5.3] - 2026-01-31
 
 ### Added

@@ -235,6 +235,8 @@ def cmd_sync(args):
             print(f"   ⬆️  {stats['pushed']} Issues zu GitHub gepusht")
         if stats['pulled'] > 0:
             print(f"   ⬇️  {stats['pulled']} Issues von GitHub geholt")
+        if stats.get('project_synced', 0) > 0:
+            print(f"   📊 {stats['project_synced']} Issue Status vom Project Board aktualisiert")
         
         if stats['errors']:
             print(f"\n{Colors.YELLOW}⚠️  Warnungen:{Colors.RESET}")
