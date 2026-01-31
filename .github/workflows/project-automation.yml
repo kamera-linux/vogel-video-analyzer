@@ -67,7 +67,7 @@ jobs:
         run: |
           # Check if item is already in project
           ITEM_IN_PROJECT=$(gh api graphql -f query='
-            query($projectId: ID!, $itemId: ID!) {
+            query($projectId: ID!) {
               node(id: $projectId) {
                 ... on ProjectV2 {
                   items(first: 100) {
@@ -85,7 +85,7 @@ jobs:
                   }
                 }
               }
-            }' -f projectId=$PROJECT_ID -f itemId=$ITEM_ID | jq -r '.data.node.items.nodes[] | select(.content.id == env.ITEM_ID) | .id')
+            }' -f projectId=$PROJECT_ID | jq -r --arg ITEM_ID "$ITEM_ID" '.data.node.items.nodes[] | select(.content.id == $ITEM_ID) | .id')
           
           if [ -z "$ITEM_IN_PROJECT" ]; then
             echo "Adding item to project..."
