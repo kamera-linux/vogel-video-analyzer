@@ -1,0 +1,71 @@
+---
+name: Question / Support
+description: Ask a question or seek help with vogel-video-analyzer
+title: "[QUESTION] "
+labels: ["question", "documentation"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Have a question about vogel-video-analyzer? We're happy to help! Please
+        check the documentation first.
+
+  - type: textarea
+    id: question
+    attributes:
+      label: Your Question
+      description: What would you like to know?
+      placeholder: "Example: How can I use a custom YOLO model for detection?"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: topic
+    attributes:
+      label: Topic
+      description: What is your question about?
+      options:
+        - Installation
+        - Getting Started
+        - Usage / Features
+        - Video Processing
+        - Model / Detection
+        - Output / Export
+        - Troubleshooting
+        - Performance
+        - Compatibility
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: tried
+    attributes:
+      label: What Have You Tried?
+      description: What solutions or documentation have you already checked?
+      placeholder: |
+        - Checked README.md
+        - Ran with --help
+        - Checked existing issues
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional Context
+      description: Any relevant system information or error messages
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Resources
+        - 📖 [Documentation](
+          https://github.com/jmayrbaeuerl/vogel-video-analyzer#readme)
+        - 🇩🇪 [Deutsche Dokumentation](
+          https://github.com/jmayrbaeuerl/vogel-video-analyzer/blob/main/README.de.md)
+        - 💬 [GitHub Discussions](
+          https://github.com/jmayrbaeuerl/vogel-video-analyzer/discussions)
+        - 🐛 [Known Issues](
+          https://github.com/jmayrbaeuerl/vogel-video-analyzer/issues)

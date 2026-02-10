@@ -1,0 +1,81 @@
+---
+name: Feature Request
+description: Suggest an idea for vogel-video-analyzer
+title: "[FEATURE] "
+labels: ["enhancement", "feature-request"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a new feature! Please provide details below.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: Clear description of the feature you'd like to see
+      placeholder: >
+        Example: Add the ability to detect multiple bird species in a single frame
+    validations:
+      required: true
+
+  - type: textarea
+    id: use_case
+    attributes:
+      label: Use Case
+      description: Explain why this feature would be useful
+      placeholder: >
+        Example: This would improve data quality for bird watchers and ornithologists
+        studying local bird populations...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution (Optional)
+      description: If you have an idea on how to implement this, share it
+      placeholder: "Example: Implement multi-class detection using YOLO..."
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      description: What aspect of vogel-video-analyzer does this relate to?
+      options:
+        - Detection / Classification
+        - Video Processing
+        - Data Export
+        - Configuration
+        - Reporting / Analysis
+        - Performance
+        - User Interface / CLI
+        - Documentation
+        - Other
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: alternatives
+    attributes:
+      label: Have you considered...
+      options:
+        - label: Are there alternative solutions you've tried?
+          required: false
+        - label: Is this related to an existing issue?
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information or examples
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Notes
+        - Features should align with vogel-video-analyzer's core purpose (bird video analysis)
+        - We consider user feedback seriously
+        - Performance and accuracy improvements are prioritized

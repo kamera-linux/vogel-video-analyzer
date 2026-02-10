@@ -1,0 +1,123 @@
+---
+name: Bug Report
+description: Report a bug or issue with vogel-video-analyzer
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping us improve! Please complete the form below to
+        report this bug.
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Version
+      description: Which version of vogel-video-analyzer are you using?
+      options:
+        - 0.8.x
+        - 0.9.x
+        - Latest (main branch)
+        - Other (please specify)
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is.
+      placeholder: "Example: The analyzer crashes when processing certain video formats"
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Run vogel-video-analyzer with command: 
+        2. Input video file: 
+        3. Configure settings: 
+        4. Observe the error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should happen?
+      placeholder: "Example: The video should be analyzed and display detected birds"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happens?
+      placeholder: "Example: The application crashes or produces incorrect detection results"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: system
+    attributes:
+      label: Operating System
+      description: What is your operating system?
+      options:
+        - Linux (Ubuntu/Debian)
+        - Linux (Gentoo)
+        - Linux (Fedora/RHEL)
+        - Linux (other)
+        - Windows
+        - macOS
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: python
+    attributes:
+      label: Python Version
+      description: Output of `python3 --version`
+      render: shell
+
+  - type: textarea
+    id: video_info
+    attributes:
+      label: Video Information
+      description: >
+        Video format, resolution, frame rate, and codec information
+      placeholder: "Example: MP4, 1920x1080, 30fps, H.264"
+      render: shell
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Messages or Logs
+      description: Please paste any error messages or logs (use --verbose flag for detailed output)
+      description: Please paste any error messages or relevant output
+      render: bash
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+
+  - type: checkboxes
+    id: verification
+    attributes:
+      label: Verification
+      options:
+        - label: I've tested with `--dry-run` mode
+          required: false
+        - label: I'm using the latest version
+          required: false
+        - label: The issue is reproducible
+          required: true
