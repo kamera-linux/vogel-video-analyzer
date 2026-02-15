@@ -160,3 +160,6 @@ training/*_video*/
 test_batch_processing.py
 test_html_report.py
 report.json
+
+# Local security scan outputs
+security-reports/
