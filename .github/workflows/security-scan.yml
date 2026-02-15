@@ -32,7 +32,7 @@ jobs:
           pip install bandit pip-audit
 
       - name: Run Bandit
-        run: bandit -r src -f txt
+        run: bandit -r src -ll -f txt
 
       - name: Run pip-audit
         run: pip-audit
