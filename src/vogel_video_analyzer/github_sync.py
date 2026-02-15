@@ -383,7 +383,8 @@ class GitHubSync:
         response = requests.post(
             'https://api.github.com/graphql',
             headers=headers,
-            json=payload
+            json=payload,
+            timeout=30
         )
         
         if response.status_code != 200:

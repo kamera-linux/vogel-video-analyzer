@@ -41,6 +41,19 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
   - CLI-Befehl `vogel-issues` für den kompletten Issue-Lebenszyklus
 - �🐍 **Bibliothek & CLI** - Als eigenständiges Tool oder in Python-Projekten integrierbar
 
+## 🔐 Security-Audit (v0.5.5)
+
+Letztes Audit-Datum: **2026-02-15**
+
+- **Bandit (Code-Scan):** 16 Low, 0 Medium, 0 High
+- **pip-audit (Dependency-Scan):** Keine bekannten Schwachstellen gefunden
+- **Wichtigste Security-Fixes in v0.5.5:**
+  - Expliziter Timeout für GitHub-GraphQL-Requests ergänzt
+  - Validierung für externen Chart.js-Download gehärtet (HTTPS + Allowlist-Host)
+  - Mindestversion von `pillow` auf `12.1.1` angehoben
+
+Siehe [SECURITY.md](SECURITY.md) für Meldung und Sicherheitsrichtlinie.
+
 ---
 
 ## 🎓 Möchten Sie Ihren eigenen Arten-Klassifikator trainieren?

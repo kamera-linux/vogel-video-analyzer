@@ -16,12 +16,14 @@ from typing import Dict, List, Optional, Tuple
 import cv2
 import numpy as np
 import urllib.request
+import urllib.parse
 
 from .i18n import t, get_language
 from .species_classifier import BirdSpeciesClassifier
 
 # Chart.js library will be embedded inline for HTMLPreview compatibility
 CHARTJS_CDN_URL = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
+CHARTJS_ALLOWED_HOST = "cdn.jsdelivr.net"
 _CHARTJS_CACHE = None
 
 
@@ -46,7 +48,11 @@ class HTMLReporter:
         
         if _CHARTJS_CACHE is None:
             try:
-                with urllib.request.urlopen(CHARTJS_CDN_URL, timeout=10) as response:
+                parsed_url = urllib.parse.urlparse(CHARTJS_CDN_URL)
+                if parsed_url.scheme != "https" or parsed_url.netloc != CHARTJS_ALLOWED_HOST:
+                    raise ValueError("Invalid Chart.js CDN URL configuration")
+
+                with urllib.request.urlopen(CHARTJS_CDN_URL, timeout=10) as response:  # nosec B310
                     _CHARTJS_CACHE = response.read().decode('utf-8')
             except Exception as e:
                 print(f"⚠️  Warning: Could not download Chart.js: {e}")

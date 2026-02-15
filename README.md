@@ -54,6 +54,19 @@ A powerful command-line tool and Python library for analyzing videos to detect a
   - CLI command `vogel-issues` for full issue lifecycle
 - �🐍 **Library & CLI** - Use as standalone tool or integrate into your Python projects
 
+## 🔐 Security Audit (v0.5.5)
+
+Latest audit date: **2026-02-15**
+
+- **Bandit (code scan):** 16 low, 0 medium, 0 high
+- **pip-audit (dependency scan):** No known vulnerabilities found
+- **Key fixes in v0.5.5:**
+  - Added explicit timeout for GitHub GraphQL requests
+  - Hardened external Chart.js download validation (HTTPS + allowlisted host)
+  - Updated minimum `pillow` version to `12.1.1`
+
+See [SECURITY.md](SECURITY.md) for reporting and policy details.
+
 ---
 
 ## 🎓 Want to Train Your Own Species Classifier?

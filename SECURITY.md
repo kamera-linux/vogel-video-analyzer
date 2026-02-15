@@ -136,6 +136,30 @@ Please include as much of the following information as possible:
    - Special characters from species names
    - Input validation in place
 
+## 📊 Security Audit Reports
+
+### Latest Audit: v0.5.5 (2026-02-15)
+
+**Tools Used:**
+- `bandit` - Python security issue scanner
+- `pip-audit` - Package vulnerability scanner
+
+**Executive Summary:**
+✅ **PASSED** - Zero medium/high code findings and no known dependency vulnerabilities in the audited release environment.
+
+**Code Security (Bandit):**
+- **Total Lines Scanned**: 3,561
+- **Issues Found**: 16 Low, 0 Medium, 0 High
+- **Key v0.5.5 Security Fixes:**
+   1. Added explicit timeout for GitHub GraphQL requests in `github_sync.py`
+   2. Hardened Chart.js download validation in `reporter.py` (HTTPS + allowlisted host)
+
+**Dependency Security (pip-audit):**
+- **Result**: No known vulnerabilities found
+- **Notable Updates**:
+   - `pillow` minimum version raised to `12.1.1`
+   - `cryptography` updated in audited environment to patched release
+
 ## 📚 Security Resources
 
 - [OpenCV Security](https://opencv.org/)
