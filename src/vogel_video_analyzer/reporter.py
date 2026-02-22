@@ -18,6 +18,7 @@ import numpy as np
 import urllib.request
 import urllib.parse
 
+from . import __version__
 from .i18n import t, get_language
 from .species_classifier import BirdSpeciesClassifier
 
@@ -146,7 +147,7 @@ class HTMLReporter:
         </section>
         
         <footer>
-            <p>{t('html_footer')} v0.5.0</p>
+            <p>{t('html_footer')} v{__version__}</p>
         </footer>
     </div>
     
