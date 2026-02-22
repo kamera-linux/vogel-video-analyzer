@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.8] - 2026-02-22
+
+### Fixed
+- **Critical Dependency Issue**: Updated ultralytics minimum version from 8.0.0 to **8.4.14+**
+  - Fixes FileNotFoundError when yolo26n.pt attempts auto-download from Ultralytics Hub
+  - Ensures YOLOv26 model auto-download works correctly for all users
+  - Resolves compatibility issues with older ultralytics versions
+
+### Details
+- The v0.5.7 release introduced YOLOv26 support but had a dependency constraint issue
+- pyproject.toml specified ultralytics>=8.0.0, but YOLOv26 requires >=8.4.14
+- Users with older ultralytics versions experienced model loading failures
+- This fix ensures correct automatic installation of compatible ultralytics version
+
 ## [0.5.7] - 2026-02-22
 
 ### Improved
