@@ -35,11 +35,11 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
 - 📄 **JSON-Export** - Strukturierte Berichte zur Archivierung und Weiterverarbeitung
 - 🗑️ **Intelligentes Auto-Löschen** - Entfernt Videodateien oder Ordner ohne Vogelinhalt
 - 📝 **Logging-Unterstützung** - Strukturierte Logs für Batch-Verarbeitungs-Workflows
-- � **Issue Board (v0.5.3+)** - Integriertes Projektmanagement und Issue-Tracking
+- 📋 **Issue Board (v0.5.3+)** - Integriertes Projektmanagement und Issue-Tracking
   - Lokale Issue-Verwaltung mit Status, Priorität und Labels
   - Optionale GitHub Issues Synchronisation
   - CLI-Befehl `vogel-issues` für den kompletten Issue-Lebenszyklus
-- �🐍 **Bibliothek & CLI** - Als eigenständiges Tool oder in Python-Projekten integrierbar
+- 📚 **Bibliothek & CLI** - Als eigenständiges Tool oder in Python-Projekten integrierbar
 
 ## 🔐 Security-Audit (v0.5.5)
 

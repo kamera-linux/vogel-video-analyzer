@@ -48,11 +48,11 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 - 🗑️ **Smart Auto-Delete** - Remove video files or folders without bird content
 - 📝 **Logging Support** - Structured logs for batch processing workflows
 - 🌐 **i18n Support** - English, German, and Japanese interface translations
-- � **Issue Board (v0.5.3+)** - Integrated project management and issue tracking
+- 📋 **Issue Board (v0.5.3+)** - Integrated project management and issue tracking
   - Local issue management with status, priority, and labels
   - Optional GitHub Issues synchronization
   - CLI command `vogel-issues` for full issue lifecycle
-- �🐍 **Library & CLI** - Use as standalone tool or integrate into your Python projects
+- 📚 **Library & CLI** - Use as standalone tool or integrate into your Python projects
 
 ## 🔐 Security Audit (v0.5.5)
 
