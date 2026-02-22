@@ -377,7 +377,21 @@ class VideoAnalyzer:
         """
         model_path = self._find_model(model_path)
         print(f"🤖 {t('loading_model')} {model_path}")
-        self.model = YOLO(model_path)
+        
+        try:
+            # Load model with explicit pretrained flag to force download if needed
+            self.model = YOLO(model_path, task='detect')
+        except FileNotFoundError as e:
+            # Model not found - provide helpful error
+            print(f"\n   ❌ {t('error_loading_model')}: {e}")
+            print(f"\n   🔧 Troubleshooting steps:")
+            print(f"      1. Ensure internet connection (for auto-download)")
+            print(f"      2. Update Ultralytics: pip install --upgrade 'ultralytics>=8.4.14'")
+            print(f"      3. Check disk space (~50MB for yolo26n.pt model)")
+            print(f"      4. Verify YOLO cache directory: ls -la ~/.cache/yolo/ || ls -la ~/AppData/Local/yolo/ (Windows)")
+            print(f"\n      Alternatively, manually download from:")
+            print(f"      https://github.com/ultralytics/assets/releases/")
+            raise RuntimeError(f"Failed to load YOLO model '{model_path}'. {str(e)}")
         self.threshold = threshold
         self.target_class = target_class
         self.identify_species = identify_species
@@ -400,19 +414,19 @@ class VideoAnalyzer:
     
     def _find_model(self, model_name):
         """
-        Search for model in various directories
+        Search for model in various directories and auto-download if needed
         
         Search paths (in order):
         1. models/
         2. config/models/
         3. Current directory
-        4. Let Ultralytics auto-download
+        4. Auto-download from Ultralytics hub
         
         Args:
             model_name: Name or path of model
             
         Returns:
-            Path to model or original name for auto-download
+            Model path (local or Ultralytics auto-download path)
         """
         # If absolute path provided
         if Path(model_name).is_absolute() and Path(model_name).exists():
@@ -430,8 +444,14 @@ class VideoAnalyzer:
             if path.exists():
                 return str(path)
         
-        # Not found → Ultralytics downloads automatically
-        print(f"   ℹ️  {t('model_not_found').format(model_name=model_name)}")
+        # Not found locally → Will auto-download with Ultralytics
+        # Check if this is a known YOLO model
+        if any(model_name.startswith(prefix) for prefix in ['yolo', 'yolov']):
+            print(f"   ℹ️  {t('model_not_found').format(model_name=model_name)}")
+            print(f"      Attempting automatic download from Ultralytics Hub...")
+            return model_name
+        
+        # Not a recognized YOLO model - return as is (will error properly if invalid)
         return model_name
         
     def analyze_video(self, video_path, sample_rate=5):

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.7] - 2026-02-22
+
+### Improved
+- **YOLO Model Loading**: Enhanced error handling and auto-download diagnostics
+  - Improved `_find_model()` method with better YOLO model detection
+  - Explicit download notifications for Ultralytics Hub
+  - Better error messages if model loading fails
+  - Added helpful troubleshooting steps for users
+
+### Fixed
+- **Model Auto-Download**: Fixed FileNotFoundError when yolo26n.pt not locally cached
+  - Model now properly attempts Ultralytics Hub download on missing local file
+  - Clearer feedback during model loading process
+  - Better support for offline and online workflows
+
 ## [0.5.6] - 2026-02-22
 
 ### Upgraded

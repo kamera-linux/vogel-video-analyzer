@@ -4,7 +4,7 @@ Vogel Video Analyzer - YOLOv26-based video analysis for bird content detection
 A command-line tool and Python library for analyzing videos to detect and quantify bird presence.
 """
 
-__version__ = "0.5.6"
+__version__ = "0.5.7"
 __author__ = "Vogel-Kamera-Linux Team"
 __license__ = "MIT"
 
