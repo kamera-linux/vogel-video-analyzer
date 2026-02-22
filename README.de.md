@@ -12,15 +12,15 @@
   <a href="https://pepy.tech/project/vogel-video-analyzer"><img alt="Downloads" src="https://static.pepy.tech/badge/vogel-video-analyzer"></a>
 </p>
 
-**YOLOv8-basiertes Videoanalyse-Tool zur automatisierten Erkennung und Quantifizierung von Vogelinhalten.**
+**YOLOv26-basiertes Videoanalyse-Tool zur automatisierten Erkennung und Quantifizierung von Vogelinhalten.**
 
-Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von Videos, um Vogelvorkommen mithilfe modernster YOLOv8-Objekterkennung zu erkennen und zu quantifizieren.
+Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von Videos, um Vogelvorkommen mithilfe modernster YOLOv26-Objekterkennung zu erkennen und zu quantifizieren.
 
 ---
 
 ## ✨ Funktionen
 
-- 🤖 **YOLOv8-basierte Erkennung** - Präzise Vogelerkennung mit vortrainierten Modellen
+- 🤖 **YOLOv26-basierte Erkennung** - Präzise Vogelerkennung mit vortrainierten Modellen
 - 🦜 **Artenerkennung** - Identifiziert Vogelarten mit Hugging Face Modellen (optional)
 - 📊 **HTML-Berichte (v0.5.0+)** - Interaktive visuelle Berichte mit Diagrammen und Thumbnails
   - Aktivitäts-Timeline zeigt Vogelerkennungen über Zeit
@@ -362,13 +362,13 @@ from vogel_video_analyzer import VideoAnalyzer
 
 # Analyzer initialisieren (Basis)
 analyzer = VideoAnalyzer(
-    model_path="yolov8n.pt",
+    model_path="yolo26n.pt",
     threshold=0.3
 )
 
 # Analyzer mit Artenerkennung initialisieren
 analyzer = VideoAnalyzer(
-    model_path="yolov8n.pt",
+    model_path="yolo26n.pt",
     threshold=0.3,
     identify_species=True
 )
@@ -402,7 +402,7 @@ from vogel_video_analyzer import VideoAnalyzer
 
 # Analyzer initialisieren
 analyzer = VideoAnalyzer(
-    model_path="yolov8n.pt",
+    model_path="yolo26n.pt",
     threshold=0.3
 )
 
@@ -475,7 +475,7 @@ else:
 
 | Option | Beschreibung | Standard | Werte |
 |--------|-------------|---------|--------|
-| `--model` | Zu verwendendes YOLO-Modell | `yolov8n.pt` | Beliebiges YOLO-Modell |
+| `--model` | Zu verwendendes YOLO-Modell | `yolo26n.pt` | Beliebiges YOLO-Modell |
 | `--threshold` | Konfidenz-Schwellenwert | `0.3` | `0.0` - `1.0` |
 | `--sample-rate` | Jedes N-te Frame analysieren | `5` | `1` - `∞` |
 | `--output` | JSON-Bericht speichern | - | Dateipfad |
@@ -506,7 +506,7 @@ else:
 
 ### Modell-Such-Hierarchie
 
-Der Analyzer sucht YOLOv8-Modelle in dieser Reihenfolge:
+Der Analyzer sucht YOLOv26-Modelle in dieser Reihenfolge:
 
 1. `models/` Verzeichnis (lokal)
 2. `config/models/` Verzeichnis
@@ -516,7 +516,7 @@ Der Analyzer sucht YOLOv8-Modelle in dieser Reihenfolge:
 ### Erkennungs-Algorithmus
 
 - **Zielklasse:** Vogel (COCO-Klasse 14)
-- **Inferenz:** Frame-für-Frame YOLOv8-Erkennung
+- **Inferenz:** Frame-für-Frame YOLOv26-Erkennung
 - **Segment-Erkennung:** Gruppiert aufeinanderfolgende Vogel-Frames mit max. 2-Sekunden-Lücken
 - **Performance:** ~5x Beschleunigung mit sample-rate=5 bei 30fps-Videos
 
@@ -652,7 +652,7 @@ Dieses Projekt ist unter der MIT-Lizenz lizenziert - siehe die [LICENSE](LICENSE
 
 ## 🙏 Danksagungen
 
-- **Ultralytics YOLOv8** - Leistungsstarkes Objekterkennungs-Framework
+- **Ultralytics YOLOv26** - Leistungsstarkes Objekterkennungs-Framework
 - **OpenCV** - Computer-Vision-Bibliothek
 - **Vogel-Kamera-Linux** - Elternprojekt für automatisierte Vogelbeobachtung
 

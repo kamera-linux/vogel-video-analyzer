@@ -12,15 +12,15 @@
   <a href="https://pepy.tech/project/vogel-video-analyzer"><img alt="Downloads" src="https://static.pepy.tech/badge/vogel-video-analyzer"></a>
 </p>
 
-**YOLOv8ベースの鳥コンテンツ検出・定量化のための動画解析ツール**
+**YOLOv26ベースの鳥コンテンツ検出・定量化のための動画解析ツール**
 
-最先端のYOLOv8物体検出を使用して、動画内の鳥の存在を検出・定量化するための強力なコマンドラインツールおよびPythonライブラリ。
+最先端のYOLOv26物体検出を使用して、動画内の鳥の存在を検出・定量化するための強力なコマンドラインツールおよびPythonライブラリ。
 
 ---
 
 ## ✨ 特徴
 
-- 🤖 **YOLOv8による検出** - 事前学習済みモデルによる正確な鳥検出
+- 🤖 **YOLOv26による検出** - 事前学習済みモデルによる正確な鳥検出
 - 🦜 **種の識別** - Hugging Faceモデルを使用した鳥の種の識別（オプション）
 - 📊 **HTMLレポート（v0.5.0+）** - チャートとサムネイル付きのインタラクティブなビジュアルレポート
   - 時系列の鳥検出を示すアクティビティタイムライン
@@ -431,7 +431,7 @@ vogel-analyze --identify-species \
 **コア：**
 - Python ≥ 3.8
 - OpenCV (cv2)
-- Ultralytics YOLOv8
+- Ultralytics YOLOv26
 - NumPy
 
 **種の識別（オプション）：**
@@ -460,7 +460,7 @@ vogel-analyze --identify-species \
 ### 検出アルゴリズム
 
 - **対象クラス:** 鳥（COCOクラス14）
-- **推論:** フレームごとのYOLOv8検出
+- **推論:** フレームごとのYOLOv26検出
 - **セグメント検出:** 最大2秒の間隔で連続する鳥フレームをグループ化
 - **パフォーマンス:** 30fps動画でsample-rate=5の場合、約5倍の高速化
 
@@ -500,7 +500,7 @@ vogel-analyze --identify-species \
 
 ## 🙏 謝辞
 
-- **YOLOv8** - [Ultralytics](https://github.com/ultralytics/ultralytics)による物体検出
+- **YOLOv26** - [Ultralytics](https://github.com/ultralytics/ultralytics)による物体検出
 - **事前学習済み鳥種モデル** - [Hugging Face](https://huggingface.co/)コミュニティ
 - **vogel-kamera-linux** - 親プロジェクト
 

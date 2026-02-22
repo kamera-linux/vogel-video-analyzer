@@ -81,7 +81,7 @@ gh repo view --json name,description,stargazerCount,forkCount,pushedAt
 
 ```bash
 # Beschreibung ändern
-gh repo edit --description "YOLOv8-based video analysis tool for automated bird content detection"
+gh repo edit --description "YOLOv26-based video analysis tool for automated bird content detection"
 
 # Topics/Tags setzen
 gh repo edit --add-topic machine-learning,bird-recognition,yolo

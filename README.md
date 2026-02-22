@@ -12,15 +12,15 @@
   <a href="https://pepy.tech/project/vogel-video-analyzer"><img alt="Downloads" src="https://static.pepy.tech/badge/vogel-video-analyzer"></a>
 </p>
 
-**YOLOv8-based video analysis tool for automated bird content detection and quantification.**
+**YOLOv26-based video analysis tool for automated bird content detection and quantification.**
 
-A powerful command-line tool and Python library for analyzing videos to detect and quantify bird presence using state-of-the-art YOLOv8 object detection.
+A powerful command-line tool and Python library for analyzing videos to detect and quantify bird presence using state-of-the-art YOLOv26 object detection.
 
 ---
 
 ## ✨ Features
 
-- 🤖 **YOLOv8-powered Detection** - Accurate bird detection using pre-trained models
+- 🤖 **YOLOv26-powered Detection** - Accurate bird detection using pre-trained models
 - 🦜 **Species Identification** - Identify bird species using Hugging Face models (optional)
 - 📊 **HTML Reports (v0.5.0+)** - Interactive visual reports with charts and thumbnails
   - Activity timeline showing bird detections over time
@@ -445,13 +445,13 @@ from vogel_video_analyzer import VideoAnalyzer
 
 # Initialize analyzer (basic)
 analyzer = VideoAnalyzer(
-    model_path="yolov8n.pt",
+    model_path="yolo26n.pt",
     threshold=0.3
 )
 
 # Initialize analyzer with species identification
 analyzer = VideoAnalyzer(
-    model_path="yolov8n.pt",
+    model_path="yolo26n.pt",
     threshold=0.3,
     identify_species=True
 )
@@ -485,7 +485,7 @@ from vogel_video_analyzer import VideoAnalyzer
 
 # Initialize analyzer
 analyzer = VideoAnalyzer(
-    model_path="yolov8n.pt",
+    model_path="yolo26n.pt",
     threshold=0.3
 )
 
@@ -560,7 +560,7 @@ else:
 
 | Option | Description | Default | Values |
 |--------|-------------|---------|--------|
-| `--model` | YOLO model to use | `yolov8n.pt` | Any YOLO model |
+| `--model` | YOLO model to use | `yolo26n.pt` | Any YOLO model |
 | `--threshold` | Bird detection confidence | `0.3` | `0.0` - `1.0` |
 | `--sample-rate` | Analyze every Nth frame | `5` | `1` - `∞` |
 | `--output` | Save JSON report | - | File path |
@@ -610,7 +610,7 @@ else:
 
 ### Model Search Hierarchy
 
-The analyzer searches for YOLOv8 models in this order:
+The analyzer searches for YOLOv26 models in this order:
 
 1. `models/` directory (local)
 2. `config/models/` directory
@@ -620,7 +620,7 @@ The analyzer searches for YOLOv8 models in this order:
 ### Detection Algorithm
 
 - **Target Class:** Bird (COCO class 14)
-- **Inference:** Frame-by-frame YOLOv8 detection
+- **Inference:** Frame-by-frame YOLOv26 detection
 - **Segment Detection:** Groups consecutive bird frames with max 2-second gaps
 - **Performance:** ~5x speedup with sample-rate=5 on 30fps videos
 
@@ -756,7 +756,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Ultralytics YOLOv8** - Powerful object detection framework
+- **Ultralytics YOLOv26** - Powerful object detection framework
 - **OpenCV** - Computer vision library
 - **Vogel-Kamera-Linux** - Parent project for automated bird observation
 

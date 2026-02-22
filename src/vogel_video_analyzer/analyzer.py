@@ -1,5 +1,5 @@
 """
-Video analyzer core module for bird detection in videos using YOLOv8
+Video analyzer core module for bird detection in videos using YOLOv26
 """
 
 import cv2
@@ -361,9 +361,9 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
 
 
 class VideoAnalyzer:
-    """Analyzes videos for bird content using YOLOv8"""
+    """Analyzes videos for bird content using YOLOv26"""
     
-    def __init__(self, model_path="yolov8n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=COCO_CLASS_BIRD, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=DEFAULT_SPECIES_THRESHOLD):
+    def __init__(self, model_path="yolo26n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=COCO_CLASS_BIRD, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=DEFAULT_SPECIES_THRESHOLD):
         """
         Initialize the analyzer
         

@@ -67,7 +67,7 @@ Please include as much of the following information as possible:
    - Malicious video files could potentially exploit vulnerabilities in OpenCV or other dependencies
 
 3. **Model Files**: Only use models from trusted sources
-   - YOLOv8 models from Ultralytics
+   - YOLOv26 models from Ultralytics
    - Hugging Face models from verified publishers (e.g., kamera-linux/german-bird-classifier-v2)
    - Ensure model files haven't been tampered with
 
@@ -110,7 +110,7 @@ Please include as much of the following information as possible:
    - Ensure proper file permissions
 
 2. **Model Loading**: Models are loaded from disk or Hugging Face
-   - YOLOv8 models from untrusted sources could be malicious
+   - YOLOv26 models from untrusted sources could be malicious
    - Hugging Face transformers models are cached locally
    - Use models from official/verified sources only
 
@@ -163,7 +163,7 @@ Please include as much of the following information as possible:
 ## 📚 Security Resources
 
 - [OpenCV Security](https://opencv.org/)
-- [Ultralytics YOLOv8 Security](https://github.com/ultralytics/ultralytics/security)
+- [Ultralytics YOLOv26 Security](https://github.com/ultralytics/ultralytics/security)
 - [Python Security](https://www.python.org/news/security/)
 - [NumPy Security](https://numpy.org/doc/stable/release.html)
 - [Pillow Security](https://pillow.readthedocs.io/en/stable/releasenotes/index.html)

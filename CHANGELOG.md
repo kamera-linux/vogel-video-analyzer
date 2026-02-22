@@ -5,6 +5,38 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.6] - 2026-02-22
+
+### Upgraded
+- **YOLO Model Framework**: Upgraded from YOLOv8 to **YOLOv26** for significantly improved performance
+  - 43% faster CPU inference (critical for real-time video processing)
+  - Better small object detection (important for bird detection)
+  - NMS-free end-to-end architecture for simpler deployment
+  - Reduced model size (yolo26n.pt is only 5.3 MB)
+  - New MuSGD optimizer inspired by Moonshot AI's Kimi K2
+
+### Changed
+- **Default Detection Model**: Changed from `yolov8n.pt` to `yolo26n.pt`
+- **Ultralytics Package**: Updated to 8.4.14+ (supports YOLOv26)
+- **Documentation**: All README files updated to reflect YOLOv26
+  - [README.md](README.md) - English
+  - [README.de.md](README.de.md) - Deutsch
+  - [README.ja.md](README.ja.md) - 日本語
+  - All code examples use `yolo26n.pt`
+
+### Performance Benefits
+YOLOv26 offers:
+- ⚡ **43% faster on CPU** - Better for edge devices
+- 👁️ **Better small-object detection** - Critical for birds in video
+- 🚀 **Simpler inference pipeline** - No NMS post-processing
+- 💾 **Smaller footprint** - Easier deployment
+- 🔧 **More stable training** - New MuSGD optimizer
+
+### Backward Compatibility
+- Users can still specify custom YOLO models via `--model` flag or `model_path` parameter
+- Existing workflows will automatically use YOLOv26 unless otherwise specified
+- API is fully compatible with previous versions
+
 ## [0.5.5] - 2026-02-15
 
 ### Fixed
@@ -695,7 +727,7 @@ vogel-analyze --identify-species video.mp4
 
 ### Added
 - Initial release of vogel-video-analyzer
-- YOLOv8-based bird detection in videos
+- YOLOv26-based bird detection in videos
 - Command-line interface (`vogel-analyze`)
 - Python library API (`VideoAnalyzer` class)
 - Configurable sample rate for performance optimization
@@ -717,7 +749,7 @@ vogel-analyze --identify-species video.mp4
 ### Technical
 - Python 3.8+ support
 - OpenCV integration
-- Ultralytics YOLOv8 integration
+- Ultralytics YOLOv26 integration
 - MIT License
 - PyPI package structure with modern pyproject.toml
 

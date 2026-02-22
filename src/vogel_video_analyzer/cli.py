@@ -17,7 +17,7 @@ from .i18n import init_i18n, t
 def main():
     """Main CLI entry point"""
     parser = argparse.ArgumentParser(
-        description='YOLOv8-based video analysis for bird content detection',
+        description='YOLOv26-based video analysis for bird content detection',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -31,7 +31,7 @@ Examples:
   vogel-analyze ~/Videos/Birds/*/*.mp4
   
   # Custom threshold and model
-  vogel-analyze --threshold 0.3 --model yolov8n.pt video.mp4
+  vogel-analyze --threshold 0.3 --model yolo26n.pt video.mp4
   
   # Faster analysis (every 5th frame)
   vogel-analyze --sample-rate 5 video.mp4
@@ -53,7 +53,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     )
     
     parser.add_argument('videos', nargs='+', help='Video file(s) to analyze')
-    parser.add_argument('--model', default='yolov8n.pt', help='YOLO model (default: yolov8n.pt)')
+    parser.add_argument('--model', default='yolo26n.pt', help='YOLO model (default: yolo26n.pt)')
     parser.add_argument('--threshold', type=float, default=0.3, help='Confidence threshold (default: 0.3)')
     parser.add_argument('--sample-rate', type=int, default=5, help='Analyze every Nth frame (default: 5)')
     parser.add_argument('--identify-species', action='store_true', help='Identify bird species (requires: pip install vogel-video-analyzer[species])')
