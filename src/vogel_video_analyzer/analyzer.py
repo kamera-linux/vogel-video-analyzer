@@ -41,7 +41,7 @@ DEFAULT_FONT_SIZE = 20  # Default font size for annotations
 # Embedded flag images (PNG as Base64) - Public Domain from Wikimedia Commons
 EMBEDDED_FLAGS = {
     'de': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABaAgMAAAAnRUe+AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAADFBMVEUAAADdAAD/zgD///9i/kqcAAAAAWJLR0QDEQxM8gAAAAd0SU1FB+gGDQYME2dvbFIAAAAtSURBVEjH7cohEQBACAAwImLo9/pTUgHFITa9CIAzaiI1TdM22p94mqZpC60BT6JuB4jW/Q4AAAAldEVYdGRhdGU6Y3JlYXRlADIwMjQtMDYtMTNUMDY6MTI6MTkrMDA6MDBfIxQ9AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDI0LTA2LTEzVDA2OjEyOjE5KzAwOjAwLn6sgQAAAABJRU5ErkJggg==',
-    'gb': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABLCAMAAAClf44hAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAYFBMVEXVR17wv8f////9/f6qtc0oQ4ABIWmAkLTjh5bIEC4iPnyZpsP7/P3//f3ut8DTPlbWS2LxxMvsrbjROFH8/P2irsgnQn+UocCRn77+/v79/v7yx87XUGbRN1Drp7L+/P2W58cQAAAAAWJLR0QCZgt8ZAAAAAd0SU1FB+kBGw4GFAH5RzUAAAIESURBVGje7drrUsIwEAXgQ0GhKsq13vX935Kq0GkhTXbPaR1nTH4wDDTZj5CmbbLApOiU6ezq2l7mdZVF2SmL+rO5o5Gb27uiWN4/NC1ggvqFhw3ACqCKAqc3HExmBVFHFg8TWT2ohlWWqzUDk1g/qM22vDQg9KEdJrAiqAMr1IWnsttXY7Gq/S789x1ZsS/TPUayesdUw4qrUz1Gsap0TKTlsR4jWKZ4sB44EMsYC56DZZY5DrwVBJYjBphKFMvVPtiKTpazbSiVzSx3u9B+lYlF/AvQxoCBRY1ZaGdMkkWe4dDmlwSLng+hzcZRlnD1gHbtirCkay2U24/p7LGP9aSg4iwD7LmP9aLdx4F9CGiVEEtCHViFXoIsrWRWZo3GKv9kyazMyqzMyqzMyqzMIlj5NjCz/hnL8lTdLq9vTfz3j08b67yO4alaQ8XWIBQYFFRqxYaHQUGl17dYGBSUZTWQg0FB2dZOGRgUlHWl2Q+DgrKvy3thUFCeXQwfDArKt+fjaRfar/LtkNnbhjYGvPuJ1vahnTH+3VdbDGjzC7NXbYkDbTbmdvbTsaBdu9g8iFS876yR2EFjZY3EY0K7L1JybGJxwfeUnpHUH7vFWq+aL7ab5e/kb7VLOz74++1hst3CPQYFNUxuYAgGBTVUJuUlDApquLzTcxiYgT5Glm538H8BX3ghBth92asAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjUtMDEtMjdUMTQ6MDY6MTkrMDA6MDCwqMcyAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDI1LTAxLTI3VDE0OjA2OjE5KzAwOjAwwfV/jgAAAABJRU5ErkJggg==',
+    'gb': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABLCAIAAAAdw+lEAAACpUlEQVR4nO3cQW6jQBCF4WLEjSanmKwnh0zWk1M4Z2IWT4kqxna66a7uV0X9K4wMtPTJFjSCZds2ERGR5eVdInZ5exaRp7//Zg+kf9vrHxFZrz5HhQwWsNAKs69VCUmexhOR5eV9/VqShORuj4eFdb82Idm6h4dW2ZWQPD3GQzcI9bcTclYleOguod4yIUdWjod+INR7SUjravFQEaHeY0JadAwPVRDqvSdkr1rwUDWhPlJCttSOhw4S6qMmZG298FAToR5BQpbUFw91IEQJ+TgLPNSNECXkPjs81JkQJSSyxkMmhOjMkGPwkCEhOhvkSDxkTojOADkeDw0iRFEhZ+GhoYQoEuRcPDSBEHmHZMBD0wiRR0gePDSZEHmBZMNDFISIGZITDxERIjZIZjxER4gYIPnxECkhmgXpBQ9RE6KRkL7wkANCZA3pEQ+5IUQWkH7xkDNC1AvSOx5ySYhaIGPgIceEqBYyEh5yT4hKIOPhoUXCPYR+RfWxLCLy+/OVAhIIDy2X2SPIGvs1ewBZa/lH6r4gpzPo5gnL5XOZ5+5H34IQlpxtMtz9sMg9Ye2lQjxIx4Qt13mRIF0S9rpIjwHpjNBihsU7pBtC6+kxv5AOCEfObXqEpCacNTHtC5KUkOGughdIOkIGvP0AmCGJCNnwdMyQFITMeDpOyMmEXvB0bJDTCD3i6XggJxB6x9MxQA4ljISnmws5iDAqnm4WpDnhGfB04yENCc+GpxsJaUJ4ZjzdGMjOhIm3zxqyG2HiPc4OsgNh4pVnAdlEmHjH6gt5kDDx2usFWU2YeH1rh6wgTDy7WiCLCBNvTMcgfyBMvPHVQt4lTLy5lUPeIEw8nkogvxEmHmePIVe99mqbjKp7kMumnmCWiHiXt2cReYr1PLr+yf0HIsqL04ZwpEsAAAAASUVORK5CYII=',
     'jp': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABkCAMAAABThTnCAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABHVBMVEX////89Pbst8TfhZvVXnrKN1rFIknAETu+BjLVX3vfhpvsuMX45urhjaHLO169BTG8AC3MPF7hjqL55+vuvsnPSmq9Ay/QS2vuv8rtu8fLOl3uvcnUXXrQTGz34ufop7fADjnADznpqrn99/jXZ4LYaoT9+Pn88/XORWbNQGL78PP56e3JMFXJMVX78fPJMlbILVL77/LNQmPXZoHYa4XoqbjnpbX45OnTVnTUWnfLOVzvwcz56Oy9BDDhi5/ikKTMPmDtusbgiJ3VYX3EH0fBEjzBFD2+BzPLOFv89ffNP2HikaTQTWzvws28AS7TWHXAEDrprLvYaYPZbojORGX9+fr88vTILlPJM1fORmfZbYfprbv44+jMPV/fh5xFfYOhAAAAAWJLR0QAiAUdSAAAAAd0SU1FB+gGDQYINKYJHD0AAAHiSURBVGje7dn7MwJRFMDxS7UWqZNHKkWFwnrLq4Qk6YG83/7/P8P0I0P2HnPO7syez1/wndk7ex9HKSGEEEIIIYRX9fX7/AFjwDQHjMDg0HCfG5qCI6EwfBGOjI45HDU+EYUfRCdjDkbFE/Cr0JRTny8JPaWmnaiaScMfMln2qNk5sGE+x1uVXwBbFpc4q6xlsGnF4qtaXQPb1jfY1tUiaNjkWl9boKXAU7UNmnY4qnbTulmZIEPWHmjbZ9gHAYF+4w5hsorkJxlAKRFnTeCyUrRVB2VcVvmANOsQkI7ct+C7jknvOCY2y6S8Dw0DWoUwy4fPOiHM8uOzqoRZAXwW5Y/+FJ9lEGbV8FlnhFkmPqvuvSyXfkSXLvlzfFbCe79Tl24+/9iq44RZDfzBpkF54Ipgs5qkp9MRbFbLi1cMNYnLahPfE2O4rAvqa3XEfQu+awpRdVkiz1JX+llJjuFFRreqwzKZyupmXfM8nt7oVd0yvTTnNnWq7u65HuYfNMYFj4zjFWvFbtUT43BFqfyzzRHGqmKVK9iperlX3LJ//r86r8oBY8nL3s+4b8oZsfcer5Il5ZxS6sdzYbl9oZxlHR3Xv702NFuWcoFG5aNaNGqmWTOK1Y9KQwkhhBBCCCG86hO6R8yX3rWbLwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNi0xM1QwNjowODo1MSswMDowMD4qG6kAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDYtMTNUMDY6MDg6NTErMDA6MDBPd6MVAAAAAElFTkSuQmCC',
 }
 
@@ -69,12 +69,24 @@ def _get_embedded_flag_image(country_code, size=24):
         png_data = base64.b64decode(EMBEDDED_FLAGS[country_code_lower])
         img = Image.open(io.BytesIO(png_data))
         
+        # Convert to RGB if needed, handle palette and RGBA modes
+        # Note: Don't call img.load() as it can fail for some palette PNGs
+        if img.mode == 'P':
+            # Palette mode: convert to RGB (PIL will load data during convert)
+            img = img.convert('RGB')
+        elif img.mode in ('RGBA', 'LA', 'PA'):
+            # Transparent modes: convert to RGB with white background
+            rgb = Image.new('RGB', img.size, (255, 255, 255))
+            rgb.paste(img, mask=img.split()[-1] if img.mode in ('RGBA', 'LA', 'PA') else None)
+            img = rgb
+        elif img.mode != 'RGB':
+            # Other modes: convert to RGB
+            img = img.convert('RGB')
+        
         # Resize to target size
         width = int(size * 1.5)
-        if img.mode != 'RGB':
-            img = img.convert('RGB')
         return img.resize((width, size), Image.Resampling.LANCZOS)
-    except Exception:
+    except Exception as e:
         return None
 
 
@@ -224,7 +236,7 @@ def render_flag_icon(source, size=24, flag_dir=None):
             # Map country codes to emojis (for fallback)
             country_code_to_emoji = {
                 'de': '🇩🇪',
-                'gb': '🇬🇧',
+                'gb': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABLCAIAAAAdw+lEAAACpUlEQVR4nO3cQW6jQBCF4WLEjSanmKwnh0zWk1M4Z2IWT4kqxna66a7uV0X9K4wMtPTJFjSCZds2ERGR5eVdInZ5exaRp7//Zg+kf9vrHxFZrz5HhQwWsNAKs69VCUmexhOR5eV9/VqShORuj4eFdb82Idm6h4dW2ZWQPD3GQzcI9bcTclYleOguod4yIUdWjod+INR7SUjravFQEaHeY0JadAwPVRDqvSdkr1rwUDWhPlJCttSOhw4S6qMmZG298FAToR5BQpbUFw91IEQJ+TgLPNSNECXkPjs81JkQJSSyxkMmhOjMkGPwkCEhOhvkSDxkTojOADkeDw0iRFEhZ+GhoYQoEuRcPDSBEHmHZMBD0wiRR0gePDSZEHmBZMNDFISIGZITDxERIjZIZjxER4gYIPnxECkhmgXpBQ9RE6KRkL7wkANCZA3pEQ+5IUQWkH7xkDNC1AvSOx5ySYhaIGPgIceEqBYyEh5yT4hKIOPhoUXCPYR+RfWxLCLy+/OVAhIIDy2X2SPIGvs1ewBZa/lH6r4gpzPo5gnL5XOZ5+5H34IQlpxtMtz9sMg9Ye2lQjxIx4Qt13mRIF0S9rpIjwHpjNBihsU7pBtC6+kxv5AOCEfObXqEpCacNTHtC5KUkOGughdIOkIGvP0AmCGJCNnwdMyQFITMeDpOyMmEXvB0bJDTCD3i6XggJxB6x9MxQA4ljISnmws5iDAqnm4WpDnhGfB04yENCc+GpxsJaUJ4ZjzdGMjOhIm3zxqyG2HiPc4OsgNh4pVnAdlEmHjH6gt5kDDx2usFWU2YeH1rh6wgTDy7WiCLCBNvTMcgfyBMvPHVQt4lTLy5lUPeIEw8nkogvxEmHmePIVe99mqbjKp7kMumnmCWiHiXt2cReYr1PLr+yf0HIsqL04ZwpEsAAAAASUVORK5CYII=',
                 'en': '🇬🇧',
                 'uk': '🇬🇧',
                 'jp': '🇯🇵',
