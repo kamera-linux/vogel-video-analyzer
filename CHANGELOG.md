@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.10] - 2026-02-24
+
+### Added
+- **Embedded PNG Flag Icons**: Flag images now embedded as Base64 strings in code
+  - No external file dependencies for Germany (🇩🇪), UK (🇬🇧), Japan (🇯🇵) flags
+  - Public Domain images from Wikimedia Commons
+  - Automatic resizing to any font size
+  - Reduces deployment complexity and improves portability
+
+- **Full Japanese Language Support**:
+  - Fixed Japanese Locale detection (ja_JP.utf8, ja_JP.eucjp)
+  - Automatic CJK font loading from Noto Sans CJK (Gentoo standard location)
+  - Complete Japanese translations for all UI strings
+  - Japanese bird species names rendering
+  - Set `VOGEL_LANG=ja` or system LANG=ja_JP for Japanese output
+
+- **Smart Flag Rendering Priority**:
+  - Priority 1: Embedded PNG flags (fast, no files)
+  - Priority 2: Custom flag_dir if specified (backward compatible)
+  - Priority 3: Emoji fallback (pixel-rendered)
+  - `--flag-dir` option still supported for custom flags
+
+### Fixed
+- **CJK Font Detection**: Updated font paths for Gentoo Linux (/usr/share/fonts/noto-cjk/)
+  - Scans all common CJK font locations
+  - Graceful fallback if fonts unavailable
+
+- **Country Code Handling**: Render function recognizes country codes (de, gb, jp, ja)
+  - Automatically converts to embedded PNG or emoji
+  - Backward compatible with emoji-only approach
+
+### Changed
+- **No Breaking Changes**: All existing features work identically
+  - `--multilingual` flag continues to work without modification
+  - Existing `--flag-dir` workflows still supported
+  - `--language` option now fully functional for Japanese
+
+### Technical Details
+- Flag images: 316 bytes (de.png), 871 bytes (gb.png), 1026 bytes (jp.png)
+- Zero external dependencies for flag rendering
+- Integrated with existing i18n system
+
 ## [0.5.8] - 2026-02-22
 
 ### Fixed

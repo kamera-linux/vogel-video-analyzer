@@ -28,7 +28,22 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
   - Thumbnail-Galerie der besten Erkennungen
   - Responsives Design für Desktop und Mobil
   - Eigenständige HTML-Dateien (keine externen Abhängigkeiten)
-- 🎬 **Video-Annotation** - Erstellen Sie annotierte Videos mit Bounding Boxes und Artenlabels (v0.3.0+)
+- 🎬 **Video-Annotation (v0.3.0+)** - Erstellen Sie annotierte Videos mit Bounding Boxes und Artenlabels
+  - Automatische Ausgabepfad-Generierung mit Zeitstempel (`video.mp4` → `video_annotated_YYYYMMDD_HHMMSS.mp4`)
+  - Mehrsprachige Artenlabels mit Flaggensymbolen (🇬🇧 🇩🇪 🇯🇵)
+  - 🏴 **Eingebettete Flaggen-Darstellung (v0.5.10+)** - PNG-Flaggen im Code, null Dateiabhängigkeiten
+  - 🏴 **Hybrid-Flaggen-Darstellung (v0.4.2+)** - PNG-Bilder mit automatischem Fallback zu eigenem --flag-dir
+  - Konfigurierbare Schriftgrößen für optimale Lesbarkeit
+  - Audiokonservierung aus dem Original-Video
+  - Flimmerfreie Bounding Boxes mit Erkennungs-Caching
+  - Batch-Verarbeitung für mehrere Videos
+  - Rechts positionierte semi-transparente Beschriftungsfelder
+- 🌍 **Multilingual-Support (v0.3.0+)** - Vogelnamen auf Englisch, Deutsch und Japanisch mit vollständiger Gebietserkennung
+  - 39 Vogelarten mit vollständigen Übersetzungen
+  - Alle 8 deutschen Modellvögel unterstützt (kamera-linux/german-bird-classifier-v2)
+  - **Japanisch (v0.5.10+)**: Auto-Erkennung von `ja_JP.utf8` und `ja_JP.eucjp` Gebietsschemata
+  - Anzeigeformat: "EN: Kernbeißer / DE: Kernbeißer / 75%" oder "🇬🇧 Hawfinch / 🇩🇪 Kernbeißer / 🇯🇵 アオガラ / 72%"
+  - Sprache einstellen über `--language ja` oder `VOGEL_LANG=ja` Umgebungsvariable
 - 📊 **Detaillierte Statistiken** - Frame-für-Frame-Analyse mit Vogelinhalt in Prozent
 - 🎯 **Segment-Erkennung** - Identifiziert zusammenhängende Zeitperioden mit Vogelvorkommen
 - ⚡ **Performance-Optimiert** - Konfigurierbare Sample-Rate für schnellere Verarbeitung

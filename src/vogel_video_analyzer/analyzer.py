@@ -6,6 +6,8 @@ import cv2
 import subprocess
 import tempfile
 import os
+import base64
+import io
 import numpy as np
 from pathlib import Path
 from datetime import timedelta
@@ -35,6 +37,45 @@ DEFAULT_SPECIES_THRESHOLD = 0.3  # Default confidence threshold for species clas
 DEFAULT_SAMPLE_RATE = 5  # Default frame sampling rate for analysis
 DEFAULT_FLAG_SIZE = 24  # Default size for flag icons in pixels
 DEFAULT_FONT_SIZE = 20  # Default font size for annotations
+
+# Embedded flag images (PNG as Base64) - Public Domain from Wikimedia Commons
+EMBEDDED_FLAGS = {
+    'de': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABaAgMAAAAnRUe+AAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAADFBMVEUAAADdAAD/zgD///9i/kqcAAAAAWJLR0QDEQxM8gAAAAd0SU1FB+gGDQYME2dvbFIAAAAtSURBVEjH7cohEQBACAAwImLo9/pTUgHFITa9CIAzaiI1TdM22p94mqZpC60BT6JuB4jW/Q4AAAAldEVYdGRhdGU6Y3JlYXRlADIwMjQtMDYtMTNUMDY6MTI6MTkrMDA6MDBfIxQ9AAAAJXRFWHRkYXRlOm1vZGlmeQAyMDI0LTA2LTEzVDA2OjEyOjE5KzAwOjAwLn6sgQAAAABJRU5ErkJggg==',
+    'gb': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABLCAMAAAClf44hAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAAAYFBMVEXVR17wv8f////9/f6qtc0oQ4ABIWmAkLTjh5bIEC4iPnyZpsP7/P3//f3ut8DTPlbWS2LxxMvsrbjROFH8/P2irsgnQn+UocCRn77+/v79/v7yx87XUGbRN1Drp7L+/P2W58cQAAAAAWJLR0QCZgt8ZAAAAAd0SU1FB+kBGw4GFAH5RzUAAAIESURBVGje7drrUsIwEAXgQ0GhKsq13vX935Kq0GkhTXbPaR1nTH4wDDTZj5CmbbLApOiU6ezq2l7mdZVF2SmL+rO5o5Gb27uiWN4/NC1ggvqFhw3ACqCKAqc3HExmBVFHFg8TWT2ohlWWqzUDk1g/qM22vDQg9KEdJrAiqAMr1IWnsttXY7Gq/S789x1ZsS/TPUayesdUw4qrUz1Gsap0TKTlsR4jWKZ4sB44EMsYC56DZZY5DrwVBJYjBphKFMvVPtiKTpazbSiVzSx3u9B+lYlF/AvQxoCBRY1ZaGdMkkWe4dDmlwSLng+hzcZRlnD1gHbtirCkay2U24/p7LGP9aSg4iwD7LmP9aLdx4F9CGiVEEtCHViFXoIsrWRWZo3GKv9kyazMyqzMyqzMyqzMIlj5NjCz/hnL8lTdLq9vTfz3j08b67yO4alaQ8XWIBQYFFRqxYaHQUGl17dYGBSUZTWQg0FB2dZOGRgUlHWl2Q+DgrKvy3thUFCeXQwfDArKt+fjaRfar/LtkNnbhjYGvPuJ1vahnTH+3VdbDGjzC7NXbYkDbTbmdvbTsaBdu9g8iFS876yR2EFjZY3EY0K7L1JybGJxwfeUnpHUH7vFWq+aL7ab5e/kb7VLOz74++1hst3CPQYFNUxuYAgGBTVUJuUlDApquLzTcxiYgT5Glm538H8BX3ghBth92asAAAAldEVYdGRhdGU6Y3JlYXRlADIwMjUtMDEtMjdUMTQ6MDY6MTkrMDA6MDCwqMcyAAAAJXRFWHRkYXRlOm1vZGlmeQAyMDI1LTAxLTI3VDE0OjA2OjE5KzAwOjAwwfV/jgAAAABJRU5ErkJggg==',
+    'jp': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABkCAMAAABThTnCAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABHVBMVEX////89Pbst8TfhZvVXnrKN1rFIknAETu+BjLVX3vfhpvsuMX45urhjaHLO169BTG8AC3MPF7hjqL55+vuvsnPSmq9Ay/QS2vuv8rtu8fLOl3uvcnUXXrQTGz34ufop7fADjnADznpqrn99/jXZ4LYaoT9+Pn88/XORWbNQGL78PP56e3JMFXJMVX78fPJMlbILVL77/LNQmPXZoHYa4XoqbjnpbX45OnTVnTUWnfLOVzvwcz56Oy9BDDhi5/ikKTMPmDtusbgiJ3VYX3EH0fBEjzBFD2+BzPLOFv89ffNP2HikaTQTWzvws28AS7TWHXAEDrprLvYaYPZbojORGX9+fr88vTILlPJM1fORmfZbYfprbv44+jMPV/fh5xFfYOhAAAAAWJLR0QAiAUdSAAAAAd0SU1FB+gGDQYINKYJHD0AAAHiSURBVGje7dn7MwJRFMDxS7UWqZNHKkWFwnrLq4Qk6YG83/7/P8P0I0P2HnPO7syez1/wndk7ex9HKSGEEEIIIYRX9fX7/AFjwDQHjMDg0HCfG5qCI6EwfBGOjI45HDU+EYUfRCdjDkbFE/Cr0JRTny8JPaWmnaiaScMfMln2qNk5sGE+x1uVXwBbFpc4q6xlsGnF4qtaXQPb1jfY1tUiaNjkWl9boKXAU7UNmnY4qnbTulmZIEPWHmjbZ9gHAYF+4w5hsorkJxlAKRFnTeCyUrRVB2VcVvmANOsQkI7ct+C7jknvOCY2y6S8Dw0DWoUwy4fPOiHM8uOzqoRZAXwW5Y/+FJ9lEGbV8FlnhFkmPqvuvSyXfkSXLvlzfFbCe79Tl24+/9iq44RZDfzBpkF54Ipgs5qkp9MRbFbLi1cMNYnLahPfE2O4rAvqa3XEfQu+awpRdVkiz1JX+llJjuFFRreqwzKZyupmXfM8nt7oVd0yvTTnNnWq7u65HuYfNMYFj4zjFWvFbtUT43BFqfyzzRHGqmKVK9iperlX3LJ//r86r8oBY8nL3s+4b8oZsfcer5Il5ZxS6sdzYbl9oZxlHR3Xv702NFuWcoFG5aNaNGqmWTOK1Y9KQwkhhBBCCCG86hO6R8yX3rWbLwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNi0xM1QwNjowODo1MSswMDowMD4qG6kAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDYtMTNUMDY6MDg6NTErMDA6MDBPd6MVAAAAAElFTkSuQmCC',
+}
+
+
+def _get_embedded_flag_image(country_code, size=24):
+    """
+    Load embedded flag PNG image from Base64
+    
+    Args:
+        country_code: Country code ('de', 'gb', 'jp')
+        size: Target height in pixels
+        
+    Returns:
+        PIL Image or None if not found
+    """
+    if not PIL_AVAILABLE:
+        return None
+    
+    try:
+        country_code_lower = country_code.lower()
+        if country_code_lower not in EMBEDDED_FLAGS:
+            return None
+        
+        # Decode Base64 PNG
+        png_data = base64.b64decode(EMBEDDED_FLAGS[country_code_lower])
+        img = Image.open(io.BytesIO(png_data))
+        
+        # Resize to target size
+        width = int(size * 1.5)
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
+        return img.resize((width, size), Image.Resampling.LANCZOS)
+    except Exception:
+        return None
 
 
 def render_emoji_icon(emoji, size=24):
@@ -139,27 +180,34 @@ def render_flag_icon(source, size=24, flag_dir=None):
     """
     Flexible flag rendering supporting multiple input types
     
+    Priority:
+    1. Embedded PNG flags (de, gb, jp) - Public Domain from Wikimedia Commons
+    2. Custom flag_dir path (if specified)
+    3. Direct file path
+    4. Emoji rendering (fallback)
+    
     Args:
         source: Can be:
+            - Country code ('de', 'gb', 'jp') -> embedded PNG or fallback to emoji
             - Emoji string ('🇩🇪', '🇬🇧', '🇯🇵') -> pixel rendering
             - Path to image file (str or Path)
             - PIL Image object
             - numpy array (BGR or RGB)
         size: Icon height in pixels
-        flag_dir: Optional directory to search for flag files (e.g., 'assets/flags/')
+        flag_dir: Optional directory to search for custom flag files (lower priority than embedded)
         
     Returns:
         PIL Image with flag icon, or None if rendering fails
         
     Examples:
+        # Country code (uses embedded PNG)
+        icon = render_flag_icon('de', size=24)  # -> Embedded de.png
+        
         # Emoji (pixel-rendered)
         icon = render_flag_icon('🇩🇪', size=24)
         
         # File path
         icon = render_flag_icon('assets/flags/de.png', size=24)
-        
-        # Auto-detect from directory
-        icon = render_flag_icon('de', size=24, flag_dir='assets/flags/')
         
         # PIL Image
         img = Image.open('flag.png')
@@ -171,25 +219,47 @@ def render_flag_icon(source, size=24, flag_dir=None):
     try:
         # String input
         if isinstance(source, str):
-            # Check if it's an emoji
+            source_lower = source.lower()
+            
+            # Map country codes to emojis (for fallback)
+            country_code_to_emoji = {
+                'de': '🇩🇪',
+                'gb': '🇬🇧',
+                'en': '🇬🇧',
+                'uk': '🇬🇧',
+                'jp': '🇯🇵',
+                'ja': '🇯🇵',
+            }
+            
+            # Priority 1: Try embedded flag PNG (de, gb, jp)
+            if source_lower in EMBEDDED_FLAGS:
+                embedded_img = _get_embedded_flag_image(source_lower, size)
+                if embedded_img:
+                    return embedded_img
+            
+            # Priority 2: Try to find custom file in flag_dir if specified
+            if flag_dir and source_lower in country_code_to_emoji:
+                flag_dir_path = Path(flag_dir)
+                # Try different extensions
+                for ext in ['.png', '.jpg', '.jpeg', '.svg']:
+                    flag_file = flag_dir_path / f"{source_lower}{ext}"
+                    if flag_file.exists():
+                        return render_flag_from_file(flag_file, size)
+            
+            # Priority 3: Check if it's an emoji
             if source in ['🇩🇪', '🇬🇧', '🇯🇵']:
                 return render_emoji_icon(source, size)
             
-            # Check if it's a file path
+            # Priority 4: Check if it's a direct file path
             source_path = Path(source)
             if source_path.exists() and source_path.is_file():
                 return render_flag_from_file(source_path, size)
             
-            # Try to find file in flag_dir
-            if flag_dir:
-                flag_dir = Path(flag_dir)
-                # Try different extensions
-                for ext in ['.png', '.jpg', '.jpeg', '.svg']:
-                    flag_file = flag_dir / f"{source}{ext}"
-                    if flag_file.exists():
-                        return render_flag_from_file(flag_file, size)
+            # Priority 5: If country code, fallback to emoji rendering
+            if source_lower in country_code_to_emoji:
+                return render_emoji_icon(country_code_to_emoji[source_lower], size)
             
-            # Fallback to emoji rendering if string looks like emoji
+            # Fallback: Try emoji rendering if string looks like emoji
             if len(source) <= 4 and not source.isalpha():
                 return render_emoji_icon(source, size)
         
@@ -275,6 +345,7 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
         
         # CJK font paths (for Japanese)
         cjk_font_paths = [
+            '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',  # Noto CJK (Gentoo)
             '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',  # Noto CJK
             '/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc',
             '/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf',  # Takao

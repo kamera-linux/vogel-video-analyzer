@@ -416,7 +416,7 @@ class I18n:
         4. Fallback to 'en'
         
         Returns:
-            Language code ('en' or 'de')
+            Language code ('en', 'de', or 'ja')
         """
         # Check VOGEL_LANG first
         vogel_lang = os.environ.get('VOGEL_LANG', '').lower()
@@ -427,6 +427,8 @@ class I18n:
         lang = os.environ.get('LANG', '').lower()
         if 'de' in lang:
             return 'de'
+        elif 'ja' in lang:
+            return 'ja'
         elif 'en' in lang:
             return 'en'
         
@@ -436,6 +438,8 @@ class I18n:
             if default_locale:
                 if default_locale.lower().startswith('de'):
                     return 'de'
+                elif default_locale.lower().startswith('ja'):
+                    return 'ja'
                 elif default_locale.lower().startswith('en'):
                     return 'en'
         except:

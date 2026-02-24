@@ -31,16 +31,19 @@ A powerful command-line tool and Python library for analyzing videos to detect a
 - 🎬 **Video Annotation (v0.3.0+)** - Create annotated videos with bounding boxes and species labels
   - Automatic output path generation with timestamp (`video.mp4` → `video_annotated_YYYYMMDD_HHMMSS.mp4`)
   - Multilingual species labels with flag icons (🇬🇧 🇩🇪 🇯🇵)
-  - 🏴 **Hybrid flag rendering (v0.4.2+)** - PNG images with automatic fallback
+  - 🏴 **Embedded flag rendering (v0.5.10+)** - PNG flags in code, zero file dependencies
+  - 🏴 **Hybrid flag rendering (v0.4.2+)** - PNG images with automatic fallback to custom --flag-dir
   - Configurable font sizes for optimal readability
   - Audio preservation from original video
   - Flicker-free bounding boxes with detection caching
   - Batch processing support for multiple videos
   - Right-positioned semi-transparent label boxes
-- 🌍 **Multilingual Support (v0.3.0+)** - Bird names in English, German, and Japanese
+- 🌍 **Multilingual Support (v0.3.0+)** - Bird names in English, German, and Japanese with full locale detection
   - 39 bird species with full translations
   - All 8 German model birds supported (kamera-linux/german-bird-classifier-v2)
-  - Display format: "EN: Hawfinch / DE: Kernbeißer / 75%"
+  - **Japanese (v0.5.10+)**: Auto-detect `ja_JP.utf8` and `ja_JP.eucjp` locales
+  - Display format: "EN: Hawfinch / DE: Kernbeißer / 75%" or "🇬🇧 Hawfinch / 🇩🇪 Kernbeißer / 🇯🇵 アオガラ / 72%"
+  - Set language via `--language ja` or `VOGEL_LANG=ja` environment variable
 - 📊 **Detailed Statistics** - Frame-by-frame analysis with bird content percentage
 - 🎯 **Segment Detection** - Identifies continuous time periods with bird presence
 - ⚡ **Performance Optimized** - Configurable sample rate for faster processing
