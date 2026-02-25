@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.11] - 2026-02-25
+
+### Fixed
+- **Union Jack Flag Optimization**: Enhanced GB flag PNG rendering
+  - Improved Union Jack design with proper cross patterns
+  - Better visual clarity in video annotations at small sizes
+  - Optimized PNG file size while maintaining quality
+
 ## [0.5.10] - 2026-02-24
 
 ### Added
