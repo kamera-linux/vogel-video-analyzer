@@ -176,7 +176,7 @@ def create_github_release(tag, notes_file, title=None, draft=False, prerelease=F
     return True
 
 
-def wait_for_workflow_trigger(tag, workflow_name="publish-pypi.yml", timeout=60):
+def wait_for_workflow_trigger(tag, workflow_name="publish-to-pypi.yml", timeout=60):
     """Wait for workflow to be triggered after release creation."""
     print(f"\n⏳ Waiting for '{workflow_name}' workflow to start for {tag}...")
     
@@ -216,7 +216,7 @@ def wait_for_workflow_trigger(tag, workflow_name="publish-pypi.yml", timeout=60)
     return None
 
 
-def watch_workflow_completion(run_id, workflow_name="publish-pypi.yml", timeout=600):
+def watch_workflow_completion(run_id, workflow_name="publish-to-pypi.yml", timeout=600):
     """Watch workflow until completion with live status updates."""
     print(f"\n🔄 Watching workflow completion (timeout: {timeout}s)...")
     
@@ -280,7 +280,7 @@ def watch_workflow_completion(run_id, workflow_name="publish-pypi.yml", timeout=
     return status, conclusion
 
 
-def check_workflow_status(run_id=None, workflow_name="publish-pypi.yml"):
+def check_workflow_status(run_id=None, workflow_name="publish-to-pypi.yml"):
     """Check and display workflow status."""
     if not run_id:
         # Get latest workflow run
@@ -544,7 +544,7 @@ Examples:
             print("=" * 60)
             
             # Wait for workflow to be triggered
-            run_id = wait_for_workflow_trigger(tag, "publish-pypi.yml", timeout=60)
+            run_id = wait_for_workflow_trigger(tag, "publish-to-pypi.yml", timeout=60)
             
             if run_id:
                 print(f"✅ Workflow triggered for {tag}")
@@ -553,7 +553,7 @@ Examples:
                     # Watch workflow until completion
                     status, conclusion = watch_workflow_completion(
                         run_id, 
-                        "publish-pypi.yml", 
+                        "publish-to-pypi.yml", 
                         timeout=args.watch_timeout
                     )
                     
@@ -578,7 +578,7 @@ Examples:
             else:
                 # Check if there's a recent workflow run anyway
                 print(f"⚠️  No workflow found for {tag}, showing latest run:")
-                check_workflow_status(workflow_name="publish-pypi.yml")
+                check_workflow_status(workflow_name="publish-to-pypi.yml")
 
 
 if __name__ == "__main__":
