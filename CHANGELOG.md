@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.12] - 2026-03-31
+
+### Added
+- **Raspberry Pi AI HAT+ Support (Hailo-8 NPU)** — new `--engine hailo` inference backend
+  - `HailoDetector` class in `hailo_engine.py` as drop-in replacement for ultralytics YOLO
+  - Supports both NMS-integrated and raw feature-map HEF output modes
+  - `--hef-model PATH` to specify the compiled HEF file
+  - `--hailo-num-classes N` for custom model class count (default: 80 COCO classes)
+  - `--engine auto` (default) falls back to ultralytics when Hailo is not present
+- **ONNX Export CLI** — `--export-onnx MODEL_PATH` converts `.pt` → `.onnx` for Hailo DFC compilation
+  - `--export-onnx-output PATH` for custom output path
+  - Prints step-by-step next-steps guide for `hailo compiler` workflow
+- **i18n**: All Hailo strings fully translated for EN, DE, JA
+
+### Technical Details
+- Requires `hailo-all` metapackage: `sudo apt install hailo-all` (Raspberry Pi, Debian Trixie/Bookworm)
+- HEF compilation requires Hailo Dataflow Compiler on an x86 PC
+- Tested with HailoRT 4.23.0, TAPPAS Core 5.1.0, Hailo-8 AI HAT+ (26 TOPS)
+
 ## [0.5.11] - 2026-02-25
 
 ### Fixed

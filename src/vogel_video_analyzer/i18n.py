@@ -135,7 +135,40 @@ TRANSLATIONS = {
         'html_images': 'images',
         'html_no_thumbnails': 'No thumbnails available (species identification required)',
         'html_footer': 'Generated with vogel-video-analyzer',
+
+        # Hailo NPU engine (v0.5.12+)
+        'loading_hailo_model': 'Loading Hailo HEF model:',
+        'hailo_engine_info': 'Hailo NPU │ {model} │ input {w}×{h} │ {mode}',
+        'hailo_nms_mode': 'NMS-integrated',
+        'hailo_raw_mode': 'raw outputs',
+        'hailo_not_installed': (
+            'Hailo engine requested but hailo_platform is not installed.\n'
+            'On Raspberry Pi OS run:  sudo apt install hailo-all\n'
+            'Then verify:             python3 -c "import hailo_platform"'
+        ),
+        'hailo_hef_required': (
+            '--hef-model PATH is required when --engine hailo is used.\n'
+            'Download a pre-compiled HEF from the Hailo Model Zoo:\n'
+            '  https://github.com/hailo-ai/hailo_model_zoo\n'
+            'Recommended: yolov8n.hef (80 COCO classes, 640×640)'
+        ),
+        'hailo_hef_not_found': "HEF model '{name}' not found.\nSearched: models/, config/models/, current directory.\nDownload from https://github.com/hailo-ai/hailo_model_zoo",
+        'hailo_export_start': 'Exporting {model} → {output}',
+        'hailo_export_input_size': 'Input size : {size}×{size}',
+        'hailo_export_opset': 'ONNX opset : {opset}',
+        'hailo_export_hint': '(Next step: compile to HEF with Hailo Dataflow Compiler)',
+        'hailo_export_complete': 'ONNX export complete: {path}',
+        'hailo_export_next_steps': 'Next steps:',
+        'hailo_export_step1': '1. Copy {file} to an x86 PC with Hailo Dataflow Compiler',
+        'hailo_export_step2': '2. Run: hailo compiler --hw-arch hailo8 {file}',
+        'hailo_export_step3': '3. Copy the resulting .hef back to the Raspberry Pi',
+        'hailo_export_step4': '4. Run: vogel-analyze --engine hailo --hef-model {stem}.hef video.mp4',
+        'hailo_export_dfc_link': 'Hailo Dataflow Compiler: https://hailo.ai/developer-zone/',
+        'hailo_export_zoo_link': 'Hailo Model Zoo (pre-compiled HEFs): https://github.com/hailo-ai/hailo_model_zoo',
+        'hailo_onnx_not_installed': 'ultralytics is required for ONNX export.\nInstall with: pip install \'ultralytics>=8.4.14\'',
+        'hailo_model_not_found': 'Model not found: {path}',
     },
+
     'de': {
         # Loading and initialization
         'loading_model': 'Lade YOLO-Modell:',
@@ -262,6 +295,38 @@ TRANSLATIONS = {
         'html_images': 'Bilder',
         'html_no_thumbnails': 'Keine Thumbnails verfügbar (Artenerkennung erforderlich)',
         'html_footer': 'Generiert mit vogel-video-analyzer',
+
+        # Hailo NPU engine (v0.5.12+)
+        'loading_hailo_model': 'Lade Hailo-HEF-Modell:',
+        'hailo_engine_info': 'Hailo NPU │ {model} │ Eingabe {w}×{h} │ {mode}',
+        'hailo_nms_mode': 'NMS-integriert',
+        'hailo_raw_mode': 'Rohdaten-Ausgaben',
+        'hailo_not_installed': (
+            'Hailo-Engine angefordert, aber hailo_platform ist nicht installiert.\n'
+            'Auf Raspberry Pi OS ausführen:  sudo apt install hailo-all\n'
+            'Danach prüfen:                  python3 -c "import hailo_platform"'
+        ),
+        'hailo_hef_required': (
+            '--hef-model PFAD ist erforderlich wenn --engine hailo verwendet wird.\n'
+            'Vorcompiliertes HEF vom Hailo Model Zoo herunterladen:\n'
+            '  https://github.com/hailo-ai/hailo_model_zoo\n'
+            'Empfohlen: yolov8n.hef (80 COCO-Klassen, 640×640)'
+        ),
+        'hailo_hef_not_found': "HEF-Modell '{name}' nicht gefunden.\nGesucht in: models/, config/models/, aktuelles Verzeichnis.\nHerunterladen von https://github.com/hailo-ai/hailo_model_zoo",
+        'hailo_export_start': 'Exportiere {model} → {output}',
+        'hailo_export_input_size': 'Eingabegröße  : {size}×{size}',
+        'hailo_export_opset': 'ONNX-Opset    : {opset}',
+        'hailo_export_hint': '(Nächster Schritt: mit Hailo Dataflow Compiler zu HEF kompilieren)',
+        'hailo_export_complete': 'ONNX-Export abgeschlossen: {path}',
+        'hailo_export_next_steps': 'Nächste Schritte:',
+        'hailo_export_step1': '1. {file} auf einen x86-PC mit Hailo Dataflow Compiler kopieren',
+        'hailo_export_step2': '2. Ausführen: hailo compiler --hw-arch hailo8 {file}',
+        'hailo_export_step3': '3. Erstelltes .hef zurück auf den Raspberry Pi kopieren',
+        'hailo_export_step4': '4. Ausführen: vogel-analyze --engine hailo --hef-model {stem}.hef video.mp4',
+        'hailo_export_dfc_link': 'Hailo Dataflow Compiler: https://hailo.ai/developer-zone/',
+        'hailo_export_zoo_link': 'Hailo Model Zoo (vorcompilierte HEFs): https://github.com/hailo-ai/hailo_model_zoo',
+        'hailo_onnx_not_installed': 'ultralytics wird für den ONNX-Export benötigt.\nInstallieren mit: pip install \'ultralytics>=8.4.14\'',
+        'hailo_model_not_found': 'Modell nicht gefunden: {path}',
     },
     'ja': {
         # Loading and initialization
@@ -389,6 +454,38 @@ TRANSLATIONS = {
         'html_images': '枚',
         'html_no_thumbnails': 'サムネイルなし（種の識別が必要）',
         'html_footer': 'vogel-video-analyzerで生成',
+
+        # Hailo NPU engine (v0.5.12+)
+        'loading_hailo_model': 'Hailo HEFモデルを読み込んでいます：',
+        'hailo_engine_info': 'Hailo NPU │ {model} │ 入力 {w}×{h} │ {mode}',
+        'hailo_nms_mode': 'NMS統合',
+        'hailo_raw_mode': '生の出力',
+        'hailo_not_installed': (
+            'Hailoエンジンが要求されましたが、hailo_platformがインストールされていません。\n'
+            'Raspberry Pi OSで実行：  sudo apt install hailo-all\n'
+            '確認：                    python3 -c "import hailo_platform"'
+        ),
+        'hailo_hef_required': (
+            '--engine hailoを使用する場合は--hef-model PATHが必要です。\n'
+            'Hailo Model ZooからプレコンパイルされたHEFをダウンロード：\n'
+            '  https://github.com/hailo-ai/hailo_model_zoo\n'
+            '推奨：yolov8n.hef（80 COCOクラス、640×640）'
+        ),
+        'hailo_hef_not_found': "HEFモデル '{name}' が見つかりません。\n検索場所：models/、config/models/、カレントディレクトリ。\nhttps://github.com/hailo-ai/hailo_model_zoo からダウンロード",
+        'hailo_export_start': '{model} → {output} にエクスポート中',
+        'hailo_export_input_size': '入力サイズ ：{size}×{size}',
+        'hailo_export_opset': 'ONNXオプセット：{opset}',
+        'hailo_export_hint': '（次のステップ：Hailo Dataflow CompilerでHEFにコンパイル）',
+        'hailo_export_complete': 'ONNXエクスポート完了：{path}',
+        'hailo_export_next_steps': '次のステップ：',
+        'hailo_export_step1': '1. {file} をHailo Dataflow Compilerが入ったx86 PCにコピー',
+        'hailo_export_step2': '2. 実行：hailo compiler --hw-arch hailo8 {file}',
+        'hailo_export_step3': '3. 生成された.hefをRaspberry Piにコピー',
+        'hailo_export_step4': '4. 実行：vogel-analyze --engine hailo --hef-model {stem}.hef video.mp4',
+        'hailo_export_dfc_link': 'Hailo Dataflow Compiler: https://hailo.ai/developer-zone/',
+        'hailo_export_zoo_link': 'Hailo Model Zoo（プレコンパイルHEF）: https://github.com/hailo-ai/hailo_model_zoo',
+        'hailo_onnx_not_installed': 'ONNXエクスポートにはultralytics が必要です。\nインストール：pip install \'ultralytics>=8.4.14\'',
+        'hailo_model_not_found': 'モデルが見つかりません：{path}',
     }
 }
 

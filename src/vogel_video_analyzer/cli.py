@@ -89,6 +89,21 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--delete', action='store_true', help='(Deprecated) Use --delete-file or --delete-folder instead')
     parser.add_argument('--log', action='store_true', help='Save console output to log file')
     parser.add_argument('--language', choices=['en', 'de', 'ja'], help='Set output language (default: auto-detect from system)')
+    parser.add_argument('--engine', choices=['auto', 'hailo'], default='auto',
+                        help='Inference backend: "auto" uses ultralytics/CPU/GPU (default), '
+                             '"hailo" uses Raspberry Pi AI HAT+ (Hailo-8 NPU)')
+    parser.add_argument('--hef-model', metavar='PATH',
+                        help='Path to HEF model file for Hailo NPU (required with --engine hailo). '
+                             'Download from https://github.com/hailo-ai/hailo_model_zoo')
+    parser.add_argument('--hailo-num-classes', type=int, default=80, metavar='N',
+                        help='Number of output classes in the HEF model (default: 80 for COCO). '
+                             'Use 1 if HEF was compiled from a single-class bird model.')
+    parser.add_argument('--export-onnx', metavar='MODEL_PATH',
+                        help='Export a YOLO .pt model to ONNX format (first step for Hailo HEF '
+                             'compilation). Example: --export-onnx yolov26n.pt')
+    parser.add_argument('--export-onnx-output', metavar='PATH',
+                        help='Output path for the exported ONNX file (optional, default: same '
+                             'directory as the .pt file)')
     parser.add_argument('--version', action='version', version=f'%(prog)s {__version__}')
     
     args = parser.parse_args()
@@ -153,13 +168,22 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             return 1
     
     try:
+        # Handle --export-onnx before initialising the analyzer
+        if args.export_onnx:
+            from .hailo_engine import export_to_onnx
+            export_to_onnx(args.export_onnx, output_path=args.export_onnx_output)
+            return 0
+
         # Initialize analyzer
         analyzer = VideoAnalyzer(
             model_path=args.model,
             threshold=args.threshold,
             identify_species=args.identify_species,
             species_model=args.species_model,
-            species_threshold=args.species_threshold
+            species_threshold=args.species_threshold,
+            engine=args.engine,
+            hef_model=args.hef_model,
+            hailo_num_classes=args.hailo_num_classes,
         )
         
         # Analyze videos

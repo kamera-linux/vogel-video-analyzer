@@ -54,6 +54,11 @@ Ein leistungsstarkes Kommandozeilen-Tool und Python-Bibliothek zur Analyse von V
   - Lokale Issue-Verwaltung mit Status, Priorität und Labels
   - Optionale GitHub Issues Synchronisation
   - CLI-Befehl `vogel-issues` für den kompletten Issue-Lebenszyklus
+- ⚡ **Raspberry Pi AI HAT+ / Hailo-8 NPU (v0.5.12+)** - Hardware-beschleunigtes Inferencing auf dem Raspberry Pi 5
+  - Drop-in `--engine hailo` Backend, keine Code-Änderungen nötig
+  - `--hef-model` für kompilierte HEF-Dateien
+  - `--export-onnx` konvertiert `.pt` → `.onnx` für den Hailo Dataflow Compiler
+  - Getestet mit HailoRT 4.23.0 und Hailo-8 AI HAT+ (26 TOPS)
 - 📚 **Bibliothek & CLI** - Als eigenständiges Tool oder in Python-Projekten integrierbar
 
 ## 🔐 Security-Audit (v0.5.5)
@@ -146,6 +151,12 @@ vogel-analyze --delete-folder ~/Videos/*/*.mp4
 
 # Verzeichnis batch-verarbeiten
 vogel-analyze ~/Videos/Birds/**/*.mp4
+
+# Raspberry Pi AI HAT+ / Hailo-8 NPU (v0.5.12+)
+# HailoRT-Treiber installieren: sudo apt install hailo-all
+vogel-analyze --export-onnx yolov8n.pt                # .pt → .onnx exportieren
+# (.onnx → .hef mit Hailo Dataflow Compiler auf x86 kompilieren)
+vogel-analyze --engine hailo --hef-model yolov8n.hef video.mp4
 ```
 
 ---

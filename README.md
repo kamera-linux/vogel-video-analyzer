@@ -55,6 +55,11 @@ A powerful command-line tool and Python library for analyzing videos to detect a
   - Local issue management with status, priority, and labels
   - Optional GitHub Issues synchronization
   - CLI command `vogel-issues` for full issue lifecycle
+- ⚡ **Raspberry Pi AI HAT+ / Hailo-8 NPU (v0.5.12+)** - Hardware-accelerated inference on Raspberry Pi 5
+  - Drop-in `--engine hailo` backend, no code changes needed
+  - `--hef-model` for specifying compiled HEF files
+  - `--export-onnx` converts `.pt` → `.onnx` for Hailo Dataflow Compiler
+  - Tested with HailoRT 4.23.0 and Hailo-8 AI HAT+ (26 TOPS)
 - 📚 **Library & CLI** - Use as standalone tool or integrate into your Python projects
 
 ## 🔐 Security Audit (v0.5.5)
@@ -159,6 +164,13 @@ vogel-analyze --delete-folder ~/Videos/*/*.mp4
 
 # Batch process directory
 vogel-analyze ~/Videos/Birds/**/*.mp4
+
+# Raspberry Pi AI HAT+ / Hailo-8 NPU (v0.5.12+)
+# Install HailoRT driver first: sudo apt install hailo-all
+# Then export and analyze:
+vogel-analyze --export-onnx yolov8n.pt                # export .pt → .onnx
+# (compile .onnx → .hef with Hailo Dataflow Compiler on x86)
+vogel-analyze --engine hailo --hef-model yolov8n.hef video.mp4
 ```
 
 ---

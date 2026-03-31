@@ -62,6 +62,13 @@ species = [
 github = [
     "PyGithub>=2.1.0",
 ]
+hailo = [
+    # hailo_platform is NOT available on PyPI.
+    # Install HailoRT on Raspberry Pi OS (Trixie / Bookworm) with:
+    #   sudo apt install hailo-all
+    # This installs hailort >= 4.17.0 and the hailo_platform Python package.
+    # See: https://github.com/hailo-ai/hailort
+]
 
 [project.urls]
 Homepage = "https://github.com/kamera-linux/vogel-video-analyzer"

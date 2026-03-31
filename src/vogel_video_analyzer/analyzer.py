@@ -30,6 +30,13 @@ except ImportError:
     BirdSpeciesClassifier = None
     aggregate_species_detections = None
 
+# Optional Hailo NPU engine (Raspberry Pi AI HAT+)
+try:
+    from .hailo_engine import HailoDetector, HAILO_AVAILABLE
+except ImportError:
+    HAILO_AVAILABLE = False
+    HailoDetector = None
+
 # Constants
 COCO_CLASS_BIRD = 14  # COCO dataset class ID for birds
 DEFAULT_DETECTION_THRESHOLD = 0.3  # Default confidence threshold for bird detection
@@ -446,7 +453,7 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
 class VideoAnalyzer:
     """Analyzes videos for bird content using YOLOv26"""
     
-    def __init__(self, model_path="yolo26n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=COCO_CLASS_BIRD, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=DEFAULT_SPECIES_THRESHOLD):
+    def __init__(self, model_path="yolo26n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=COCO_CLASS_BIRD, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=DEFAULT_SPECIES_THRESHOLD, engine="auto", hef_model=None, hailo_num_classes=80):
         """
         Initialize the analyzer
         
@@ -457,28 +464,35 @@ class VideoAnalyzer:
             identify_species: Enable bird species classification (requires species dependencies)
             species_model: Hugging Face model for species classification (default: dima806/bird_species_image_detection)
             species_threshold: Minimum confidence threshold for species classification (default: 0.3)
+            engine: Inference backend – "auto" (ultralytics default), "hailo" (Raspberry Pi AI HAT+)
+            hef_model: Path to HEF model file (required when engine="hailo")
+            hailo_num_classes: Number of classes in HEF model (default: 80 for COCO).
+                               Use 1 for a single-class bird model compiled from yolov26n.pt.
         """
-        model_path = self._find_model(model_path)
-        print(f"🤖 {t('loading_model')} {model_path}")
-        
-        try:
-            # Load model with explicit pretrained flag to force download if needed
-            self.model = YOLO(model_path, task='detect')
-        except FileNotFoundError as e:
-            # Model not found - provide helpful error
-            print(f"\n   ❌ {t('error_loading_model')}: {e}")
-            print(f"\n   🔧 Troubleshooting steps:")
-            print(f"      1. Ensure internet connection (for auto-download)")
-            print(f"      2. Update Ultralytics: pip install --upgrade 'ultralytics>=8.4.14'")
-            print(f"      3. Check disk space (~50MB for yolo26n.pt model)")
-            print(f"      4. Verify YOLO cache directory: ls -la ~/.cache/yolo/ || ls -la ~/AppData/Local/yolo/ (Windows)")
-            print(f"\n      Alternatively, manually download from:")
-            print(f"      https://github.com/ultralytics/assets/releases/")
-            raise RuntimeError(f"Failed to load YOLO model '{model_path}'. {str(e)}")
         self.threshold = threshold
         self.target_class = target_class
         self.identify_species = identify_species
         self.species_classifier = None
+
+        # ── Select inference engine ──────────────────────────────────────────
+        if engine == "hailo":
+            self._init_hailo_engine(hef_model)
+        else:
+            # "auto": use ultralytics YOLO (CPU/GPU)
+            model_path = self._find_model(model_path)
+            print(f"🤖 {t('loading_model')} {model_path}")
+            try:
+                self.model = YOLO(model_path, task='detect')
+            except FileNotFoundError as e:
+                print(f"\n   ❌ {t('error_loading_model')}: {e}")
+                print(f"\n   🔧 Troubleshooting steps:")
+                print(f"      1. Ensure internet connection (for auto-download)")
+                print(f"      2. Update Ultralytics: pip install --upgrade 'ultralytics>=8.4.14'")
+                print(f"      3. Check disk space (~50MB for yolo26n.pt model)")
+                print(f"      4. Verify YOLO cache directory: ls -la ~/.cache/yolo/ || ls -la ~/AppData/Local/yolo/ (Windows)")
+                print(f"\n      Alternatively, manually download from:")
+                print(f"      https://github.com/ultralytics/assets/releases/")
+                raise RuntimeError(f"Failed to load YOLO model '{model_path}'. {str(e)}")
         
         # Initialize species classifier if requested
         if self.identify_species:
@@ -495,6 +509,61 @@ class VideoAnalyzer:
                     print(f"   Continuing with basic bird detection only.\n")
                     self.identify_species = False
     
+    def _init_hailo_engine(self, hef_model, num_classes: int = 80):
+        """
+        Initialise the Hailo NPU inference engine.
+
+        Sets self.model to a HailoDetector so the rest of VideoAnalyzer can
+        call self.model(frame, verbose=False) without any further changes.
+
+        Args:
+            hef_model:   Path to the HEF model file.
+            num_classes: Number of output classes in the HEF (default 80 = COCO).
+                         Pass 1 when using a single-class bird model.
+
+        Raises:
+            RuntimeError: hailo_platform not installed or device not found.
+            ValueError:   hef_model is None.
+        """
+        if not HAILO_AVAILABLE:
+            raise RuntimeError(t('hailo_not_installed'))
+
+        if hef_model is None:
+            raise ValueError(t('hailo_hef_required'))
+
+        hef_path = self._find_hef_model(hef_model)
+        print(f"⚡ {t('loading_hailo_model')} {hef_path}")
+        self.model = HailoDetector(hef_path, num_classes=num_classes)
+
+    def _find_hef_model(self, hef_name: str) -> str:
+        """
+        Search for an HEF model file in the usual locations.
+
+        Search order:
+          1. Absolute path
+          2. models/
+          3. config/models/
+          4. Current directory
+
+        Args:
+            hef_name: File name or path of the HEF file.
+
+        Returns:
+            Resolved path string.
+
+        Raises:
+            FileNotFoundError: Model not found in any location.
+        """
+        if Path(hef_name).is_absolute() and Path(hef_name).exists():
+            return hef_name
+
+        for directory in [Path("models"), Path("config/models"), Path(".")]:
+            candidate = directory / hef_name
+            if candidate.exists():
+                return str(candidate)
+
+        raise FileNotFoundError(t('hailo_hef_not_found').format(name=hef_name))
+
     def _find_model(self, model_name):
         """
         Search for model in various directories and auto-download if needed

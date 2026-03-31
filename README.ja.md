@@ -54,6 +54,11 @@
   - ステータス、優先度、ラベル付きのローカルイシュー管理
   - オプションのGitHub Issuesシンク
   - 完全なイシューライフサイクル用のCLIコマンド `vogel-issues`
+- ⚡ **Raspberry Pi AI HAT+ / Hailo-8 NPU（v0.5.12+）** - Raspberry Pi 5でのハードウェアアクセラレーション推論
+  - コード変更不要のドロップイン `--engine hailo` バックエンド
+  - `--hef-model` でコンパイル済みHEFファイルを指定
+  - `--export-onnx` で `.pt` → `.onnx` 変換（Hailo Dataflow Compiler用）
+  - HailoRT 4.23.0 および Hailo-8 AI HAT+（26 TOPS）でテスト済み
 - 📚 **ライブラリ & CLI** - スタンドアロンツールとして、またはPythonプロジェクトに統合
 
 ## 🔐 セキュリティ監査（v0.5.5）
@@ -149,6 +154,12 @@ vogel-analyze --delete-folder ~/Videos/*/*.mp4
 
 # ディレクトリのバッチ処理
 vogel-analyze ~/Videos/Birds/**/*.mp4
+
+# Raspberry Pi AI HAT+ / Hailo-8 NPU（v0.5.12+）
+# HailoRTドライバーをインストール: sudo apt install hailo-all
+vogel-analyze --export-onnx yolov8n.pt                # .pt → .onnx 変換
+# （x86 PC で Hailo Dataflow Compiler を使って .onnx → .hef にコンパイル）
+vogel-analyze --engine hailo --hef-model yolov8n.hef video.mp4
 ```
 
 ---
