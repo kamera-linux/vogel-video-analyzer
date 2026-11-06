@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """
-Test script to verify YOLOv26 upgrade
+Manual check script to verify the YOLOv26 upgrade (downloads yolo26n.pt).
+Run: python scripts/check_yolov26_upgrade.py
 Tests model loading, configuration, and basic functionality
 """
 
@@ -11,14 +12,14 @@ def test_imports():
     """Test that all imports work"""
     print("✅ Testing imports...")
     try:
-        from ultralytics import YOLO
+        from ultralytics import YOLO  # noqa: F401 - import check
         print("  ✓ Ultralytics YOLO imported")
     except ImportError as e:
         print(f"  ✗ Failed to import YOLO: {e}")
         return False
     
     try:
-        from vogel_video_analyzer import VideoAnalyzer, __version__
+        from vogel_video_analyzer import VideoAnalyzer, __version__  # noqa: F401 - import check
         print(f"  ✓ VideoAnalyzer imported (v{__version__})")
     except ImportError as e:
         print(f"  ✗ Failed to import VideoAnalyzer: {e}")
@@ -51,7 +52,7 @@ def test_analyzer_config():
         
         # Check default config
         analyzer = VideoAnalyzer(model_path="yolo26n.pt", threshold=0.3)
-        print(f"  ✓ VideoAnalyzer initialized with yolo26n.pt")
+        print("  ✓ VideoAnalyzer initialized with yolo26n.pt")
         print(f"  ✓ Threshold: {analyzer.threshold}")
         print(f"  ✓ Target class: {analyzer.target_class} (bird)")
         

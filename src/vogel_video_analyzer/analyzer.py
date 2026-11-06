@@ -3,12 +3,15 @@ Video analyzer core module for bird detection in videos using YOLOv26
 """
 
 import cv2
+import math
+import shutil
 import subprocess
+import sys
 import tempfile
-import os
 import base64
 import io
 import numpy as np
+from functools import lru_cache
 from pathlib import Path
 from datetime import timedelta
 from ultralytics import YOLO
@@ -41,6 +44,9 @@ except ImportError:
 COCO_CLASS_BIRD = 14  # COCO dataset class ID for birds
 DEFAULT_DETECTION_THRESHOLD = 0.3  # Default confidence threshold for bird detection
 DEFAULT_SPECIES_THRESHOLD = 0.3  # Default confidence threshold for species classification
+DEFAULT_SPECIES_MODEL = "chriamue/bird-species-classifier"  # Default Hugging Face species model
+SEGMENT_MAX_GAP_SECONDS = 2.0  # Max gap between detections belonging to the same segment
+MAX_OUTPUT_FPS = 60.0  # MPEG4 timebase limit (~65 FPS); higher rates are reduced by dropping frames
 DEFAULT_SAMPLE_RATE = 5  # Default frame sampling rate for analysis
 DEFAULT_FLAG_SIZE = 24  # Default size for flag icons in pixels
 DEFAULT_FONT_SIZE = 20  # Default font size for annotations
@@ -51,6 +57,26 @@ EMBEDDED_FLAGS = {
     'gb': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABLCAMAAAClf44hAAAAUVBMVEXVR17wv8f////U2uZfc6AEJGsBIWnIEC4CImpOZJbN0+L99fbnl6TNJkLWS2LxxMv89PXlj53MIz7S2OVVapoDI2ryx87XUGbMIj7jh5b88fO85m4uAAABtUlEQVR42u3ayWrEMBAE0MID9iGXQP7/XxMmnsVjLbVoIBD11bL00MnuLmzLa61CXV/YjiVv8rvLx/MWuO3jwUawzqjlygpgOauEurFsWMoqox4sE5axaqhnlgVLWNd1n+XzcdhVhvms+k3trATmstqoneXDPFYPtVywLzJhDquPWlfcF1owncWgdpYPU1kc6s5yYRqLRT2xPJjC4lEHlgPjWQrqhaXDWJaGOrFUGMdSUQWWBmNYOqrIUmB9loOqsHhYj+WhqiwW1ma5qAaLg7VYPqrJYmB1VoLqsEhYiRWhuiwKVmYFqB/WklfttoKarMl6G2v7kzVZkzVZkzVZkzVZk2Ww5mfgZP0zFvdXXUbQrNPT7l91jOJuS4QhQl06HRsbhgRF9LdMGBIU1Q20YEhQZO/UgCFB0Z1mGYYEJfTlRRgSlDTFkGBIUOLMR4AhQckTMhqGBGXME0kYEpQ1faVgSFDmrJqAIUHZk/0uDAkqyEF0YOgu+npTaqQJg39TccamcS4SVJxIqp6NBDUgv1WBIUENSbsVYUhQg7KBBRgS1LAk5QmGBDUwd/oCQ4IamtI9wL4BOVHcMbiJNEEAAAAASUVORK5CYII=',
     'jp': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABkCAMAAABThTnCAAAABGdBTUEAALGPC/xhBQAAACBjSFJNAAB6JgAAgIQAAPoAAACA6AAAdTAAAOpgAAA6mAAAF3CculE8AAABHVBMVEX////89Pbst8TfhZvVXnrKN1rFIknAETu+BjLVX3vfhpvsuMX45urhjaHLO169BTG8AC3MPF7hjqL55+vuvsnPSmq9Ay/QS2vuv8rtu8fLOl3uvcnUXXrQTGz34ufop7fADjnADznpqrn99/jXZ4LYaoT9+Pn88/XORWbNQGL78PP56e3JMFXJMVX78fPJMlbILVL77/LNQmPXZoHYa4XoqbjnpbX45OnTVnTUWnfLOVzvwcz56Oy9BDDhi5/ikKTMPmDtusbgiJ3VYX3EH0fBEjzBFD2+BzPLOFv89ffNP2HikaTQTWzvws28AS7TWHXAEDrprLvYaYPZbojORGX9+fr88vTILlPJM1fORmfZbYfprbv44+jMPV/fh5xFfYOhAAAAAWJLR0QAiAUdSAAAAAd0SU1FB+gGDQYINKYJHD0AAAHiSURBVGje7dn7MwJRFMDxS7UWqZNHKkWFwnrLq4Qk6YG83/7/P8P0I0P2HnPO7syez1/wndk7ex9HKSGEEEIIIYRX9fX7/AFjwDQHjMDg0HCfG5qCI6EwfBGOjI45HDU+EYUfRCdjDkbFE/Cr0JRTny8JPaWmnaiaScMfMln2qNk5sGE+x1uVXwBbFpc4q6xlsGnF4qtaXQPb1jfY1tUiaNjkWl9boKXAU7UNmnY4qnbTulmZIEPWHmjbZ9gHAYF+4w5hsorkJxlAKRFnTeCyUrRVB2VcVvmANOsQkI7ct+C7jknvOCY2y6S8Dw0DWoUwy4fPOiHM8uOzqoRZAXwW5Y/+FJ9lEGbV8FlnhFkmPqvuvSyXfkSXLvlzfFbCe79Tl24+/9iq44RZDfzBpkF54Ipgs5qkp9MRbFbLi1cMNYnLahPfE2O4rAvqa3XEfQu+awpRdVkiz1JX+llJjuFFRreqwzKZyupmXfM8nt7oVd0yvTTnNnWq7u65HuYfNMYFj4zjFWvFbtUT43BFqfyzzRHGqmKVK9iperlX3LJ//r86r8oBY8nL3s+4b8oZsfcer5Il5ZxS6sdzYbl9oZxlHR3Xv702NFuWcoFG5aNaNGqmWTOK1Y9KQwkhhBBCCCG86hO6R8yX3rWbLwAAACV0RVh0ZGF0ZTpjcmVhdGUAMjAyNC0wNi0xM1QwNjowODo1MSswMDowMD4qG6kAAAAldEVYdGRhdGU6bW9kaWZ5ADIwMjQtMDYtMTNUMDY6MDg6NTErMDA6MDBPd6MVAAAAAElFTkSuQmCC',
 }
+
+
+def _validate_sample_rate(sample_rate):
+    """Raise ValueError if sample_rate is not a positive integer."""
+    if not isinstance(sample_rate, int) or isinstance(sample_rate, bool) or sample_rate < 1:
+        raise ValueError(f"sample_rate must be an integer >= 1, got {sample_rate!r}")
+
+
+def compute_output_frame_step(fps, max_fps=MAX_OUTPUT_FPS):
+    """
+    Determine how many input frames map to one output frame so that the
+    output frame rate stays within max_fps while keeping real-time speed.
+
+    Returns:
+        (frame_step, output_fps)
+    """
+    if fps <= max_fps:
+        return 1, fps
+    frame_step = math.ceil(fps / max_fps)
+    return frame_step, fps / frame_step
 
 
 def _get_embedded_flag_image(country_code, size=24):
@@ -93,7 +119,7 @@ def _get_embedded_flag_image(country_code, size=24):
         # Resize to target size
         width = int(size * 1.5)
         return img.resize((width, size), Image.Resampling.LANCZOS)
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -158,7 +184,7 @@ def render_emoji_icon(emoji, size=24):
         # Convert BGR to RGB for PIL
         flag_rgb = cv2.cvtColor(flag_array, cv2.COLOR_BGR2RGB)
         return Image.fromarray(flag_rgb)
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -191,7 +217,7 @@ def render_flag_from_file(flag_path, size=24):
         img = img.resize((width, size), Image.Resampling.LANCZOS)
         
         return img
-    except Exception as e:
+    except Exception:
         return None
 
 
@@ -243,7 +269,7 @@ def render_flag_icon(source, size=24, flag_dir=None):
             # Map country codes to emojis (for fallback)
             country_code_to_emoji = {
                 'de': '🇩🇪',
-                'gb': 'iVBORw0KGgoAAAANSUhEUgAAAJYAAABLCAIAAAAdw+lEAAACpUlEQVR4nO3cQW6jQBCF4WLEjSanmKwnh0zWk1M4Z2IWT4kqxna66a7uV0X9K4wMtPTJFjSCZds2ERGR5eVdInZ5exaRp7//Zg+kf9vrHxFZrz5HhQwWsNAKs69VCUmexhOR5eV9/VqShORuj4eFdb82Idm6h4dW2ZWQPD3GQzcI9bcTclYleOguod4yIUdWjod+INR7SUjravFQEaHeY0JadAwPVRDqvSdkr1rwUDWhPlJCttSOhw4S6qMmZG298FAToR5BQpbUFw91IEQJ+TgLPNSNECXkPjs81JkQJSSyxkMmhOjMkGPwkCEhOhvkSDxkTojOADkeDw0iRFEhZ+GhoYQoEuRcPDSBEHmHZMBD0wiRR0gePDSZEHmBZMNDFISIGZITDxERIjZIZjxER4gYIPnxECkhmgXpBQ9RE6KRkL7wkANCZA3pEQ+5IUQWkH7xkDNC1AvSOx5ySYhaIGPgIceEqBYyEh5yT4hKIOPhoUXCPYR+RfWxLCLy+/OVAhIIDy2X2SPIGvs1ewBZa/lH6r4gpzPo5gnL5XOZ5+5H34IQlpxtMtz9sMg9Ye2lQjxIx4Qt13mRIF0S9rpIjwHpjNBihsU7pBtC6+kxv5AOCEfObXqEpCacNTHtC5KUkOGughdIOkIGvP0AmCGJCNnwdMyQFITMeDpOyMmEXvB0bJDTCD3i6XggJxB6x9MxQA4ljISnmws5iDAqnm4WpDnhGfB04yENCc+GpxsJaUJ4ZjzdGMjOhIm3zxqyG2HiPc4OsgNh4pVnAdlEmHjH6gt5kDDx2usFWU2YeH1rh6wgTDy7WiCLCBNvTMcgfyBMvPHVQt4lTLy5lUPeIEw8nkogvxEmHmePIVe99mqbjKp7kMumnmCWiHiXt2cReYr1PLr+yf0HIsqL04ZwpEsAAAAASUVORK5CYII=',
+                'gb': '🇬🇧',
                 'en': '🇬🇧',
                 'uk': '🇬🇧',
                 'jp': '🇯🇵',
@@ -307,13 +333,84 @@ def render_flag_icon(source, size=24, flag_dir=None):
         
         return None
         
-    except Exception as e:
+    except Exception:
         return None
+
+
+# Font search paths - Latin font (for English/German)
+LATIN_FONT_PATHS = [
+    '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',  # Noto Sans
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',      # DejaVu
+    '/usr/share/fonts/TTF/DejaVuSans.ttf',                  # Arch
+    '/usr/share/fonts/dejavu/DejaVuSans.ttf',               # Gentoo / Fedora
+    '/System/Library/Fonts/Helvetica.ttc',                  # macOS
+    'C:\\Windows\\Fonts\\arial.ttf',                        # Windows
+]
+
+# CJK font paths (for Japanese)
+CJK_FONT_PATHS = [
+    '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',              # Noto CJK (Gentoo)
+    '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',         # Noto CJK
+    '/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc',
+    '/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf',        # Takao
+    '/usr/share/fonts/truetype/vlgothic/VL-Gothic-Regular.ttf',       # VL Gothic
+    '/System/Library/Fonts/Hiragino Sans GB.ttc',                     # macOS
+    'C:\\Windows\\Fonts\\msgothic.ttc',                               # MS Gothic (Windows)
+]
+
+
+def _load_first_font(paths, font_size):
+    """Return the first loadable TrueType font from paths, or None."""
+    for font_path in paths:
+        if Path(font_path).exists():
+            try:
+                return ImageFont.truetype(font_path, font_size)
+            except (OSError, ValueError):
+                continue
+    return None
+
+
+@lru_cache(maxsize=32)
+def _get_fonts(font_size):
+    """
+    Load (and cache) the Latin and CJK fonts for a given size.
+
+    Loading TrueType fonts from disk is expensive; annotate_video() draws
+    several labels per frame, so fonts are cached per size.
+
+    Returns:
+        (latin_font, cjk_font) - cjk_font may be None
+    """
+    latin_font = _load_first_font(LATIN_FONT_PATHS, font_size)
+    if latin_font is None:
+        try:
+            latin_font = ImageFont.load_default(size=font_size)
+        except TypeError:  # Pillow < 10.1 has no size parameter
+            latin_font = ImageFont.load_default()
+    cjk_font = _load_first_font(CJK_FONT_PATHS, font_size)
+    return latin_font, cjk_font
+
+
+@lru_cache(maxsize=64)
+def _get_flag_icon_cached(source, size, flag_dir):
+    """Cached wrapper around render_flag_icon for string sources."""
+    return render_flag_icon(source, size=size, flag_dir=flag_dir)
+
+
+def _contains_cjk(text):
+    """Check if text contains CJK (Chinese/Japanese/Korean) characters"""
+    for char in text:
+        if '\u4e00' <= char <= '\u9fff' or '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff':
+            return True
+    return False
 
 
 def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), bg_color=None, emoji_prefix=None, flag_dir=None):
     """
     Draw Unicode text (including emojis) on image using PIL
+    
+    Only the region covered by the text (plus padding) is converted to PIL
+    and back, which is much faster than converting the whole frame.
     
     Args:
         img: OpenCV image (numpy array, BGR)
@@ -326,149 +423,109 @@ def put_unicode_text(img, text, position, font_size=30, color=(255, 255, 255), b
         flag_dir: Directory containing flag image files (optional)
         
     Returns:
-        Modified image with text
+        Modified image with text (a copy; the input image is not modified)
     """
     if not PIL_AVAILABLE:
         # Fallback to cv2.putText if PIL not available
-        print("WARNING: PIL not available, using cv2.putText fallback")
-        cv2.putText(img, text, position, cv2.FONT_HERSHEY_SIMPLEX, 
-                   font_size/30, color, 2, cv2.LINE_AA)
+        img = img.copy()
+        cv2.putText(img, text, position, cv2.FONT_HERSHEY_SIMPLEX,
+                    font_size / 30, color, 2, cv2.LINE_AA)
         return img
     
-    # Make a copy to avoid modifying original
     img = img.copy()
+    img_h, img_w = img.shape[:2]
     
-    # Convert BGR to RGB for PIL
-    img_pil = Image.fromarray(cv2.cvtColor(img, cv2.COLOR_BGR2RGB))
-    draw = ImageDraw.Draw(img_pil)
-    
-    # Render flag icon if specified (now using hybrid system)
+    # Render flag icon if specified (hybrid system, cached)
     emoji_icon = None
     emoji_width = 0
     if emoji_prefix:
-        # Use hybrid render_flag_icon function
-        emoji_icon = render_flag_icon(emoji_prefix, size=font_size, flag_dir=flag_dir)
+        if isinstance(emoji_prefix, (str, Path)):
+            emoji_icon = _get_flag_icon_cached(
+                str(emoji_prefix), font_size, str(flag_dir) if flag_dir else None
+            )
+        else:
+            emoji_icon = render_flag_icon(emoji_prefix, size=font_size, flag_dir=flag_dir)
         if emoji_icon:
+            if emoji_icon.mode != 'RGB':
+                emoji_icon = emoji_icon.convert('RGB')
             emoji_width = emoji_icon.width + 4  # Add spacing
     
-    # Try to load fonts - we need TWO: one for Latin and one for CJK (Japanese)
-    try:
-        # Latin font paths (for English/German)
-        latin_font_paths = [
-            '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',  # Noto Sans
-            '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # DejaVu
-            '/usr/share/fonts/TTF/DejaVuSans.ttf',              # Arch
-            '/System/Library/Fonts/Helvetica.ttc',              # macOS
-            'C:\\Windows\\Fonts\\arial.ttf',                    # Windows
-        ]
-        
-        # CJK font paths (for Japanese)
-        cjk_font_paths = [
-            '/usr/share/fonts/noto-cjk/NotoSansCJK-Regular.ttc',  # Noto CJK (Gentoo)
-            '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',  # Noto CJK
-            '/usr/share/fonts/truetype/noto-cjk/NotoSansCJK-Regular.ttc',
-            '/usr/share/fonts/truetype/takao-gothic/TakaoPGothic.ttf',  # Takao
-            '/usr/share/fonts/truetype/vlgothic/VL-Gothic-Regular.ttf',  # VL Gothic
-            '/System/Library/Fonts/Hiragino Sans GB.ttc',       # macOS
-            'C:\\Windows\\Fonts\\msgothic.ttc',                 # MS Gothic (Windows)
-        ]
-        
-        # Load Latin font
-        latin_font = None
-        for font_path in latin_font_paths:
-            if Path(font_path).exists():
-                try:
-                    latin_font = ImageFont.truetype(font_path, font_size)
-                    break
-                except:
-                    continue
-        
-        # Load CJK font
-        cjk_font = None
-        for font_path in cjk_font_paths:
-            if Path(font_path).exists():
-                try:
-                    cjk_font = ImageFont.truetype(font_path, font_size)
-                    break
-                except:
-                    continue
-        
-        # Use Latin font as primary, fallback to default if both fail
-        font = latin_font if latin_font else ImageFont.load_default()
-    except:
-        font = ImageFont.load_default()
-        cjk_font = None
+    font, cjk_font = _get_fonts(font_size)
+    active_font = cjk_font if (cjk_font and _contains_cjk(text)) else font
     
-    # Detect if text contains CJK characters and choose appropriate font
-    def contains_cjk(text):
-        """Check if text contains CJK (Chinese/Japanese/Korean) characters"""
-        for char in text:
-            if '\u4e00' <= char <= '\u9fff' or '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff':
-                return True
-        return False
+    # Text position (shifted right if an icon is drawn)
+    x, y = int(position[0]), int(position[1])
+    text_x = x + emoji_width
     
-    # Choose font based on text content
-    active_font = cjk_font if (cjk_font and contains_cjk(text)) else font
-    
-    # Adjust position for emoji icon
-    text_position = (position[0] + emoji_width, position[1])
-    
-    # Get text bounding box for background
-    bbox = draw.textbbox(text_position, text, font=active_font)
-    
-    # Adjust bbox to include emoji if present
+    # Text bounding box in absolute image coordinates
+    left, top, right, bottom = active_font.getbbox(text) if text else (0, 0, 0, 0)
+    bbox = [text_x + left, y + top, text_x + right, y + bottom]
     if emoji_icon:
-        bbox = (position[0], bbox[1], bbox[2], bbox[3])
+        emoji_y = y + (font_size - emoji_icon.height) // 2
+        bbox[0] = x
+        bbox[1] = min(bbox[1], emoji_y)
+        bbox[3] = max(bbox[3], emoji_y + emoji_icon.height)
     
-    # Draw background if specified
+    # Region of interest (with padding for the background box), clipped to the image
+    padding = 5
+    rx1 = max(0, bbox[0] - padding)
+    ry1 = max(0, bbox[1] - padding)
+    rx2 = min(img_w, bbox[2] + padding + 1)
+    ry2 = min(img_h, bbox[3] + padding + 1)
+    if rx1 >= rx2 or ry1 >= ry2:
+        return img  # Text completely outside the image
+    
+    roi = img[ry1:ry2, rx1:rx2]
+    roi_pil = Image.fromarray(cv2.cvtColor(roi, cv2.COLOR_BGR2RGB))
+    draw = ImageDraw.Draw(roi_pil)
+    
+    # Draw background if specified (BGR -> RGB)
     if bg_color is not None:
-        # Convert BGR to RGB
         bg_rgb = (bg_color[2], bg_color[1], bg_color[0])
-        padding = 5
         draw.rectangle(
-            [bbox[0] - padding, bbox[1] - padding, 
-             bbox[2] + padding, bbox[3] + padding],
+            [bbox[0] - padding - rx1, bbox[1] - padding - ry1,
+             bbox[2] + padding - rx1, bbox[3] + padding - ry1],
             fill=bg_rgb
         )
     
-    # Paste emoji icon if available (no transparency, direct paste)
+    # Paste flag icon (no transparency, direct paste)
     if emoji_icon:
-        # Calculate vertical centering
-        emoji_y = position[1] + (font_size - emoji_icon.height) // 2
-        # Convert emoji icon to RGB if needed and paste without mask
-        if emoji_icon.mode == 'RGBA':
-            emoji_icon = emoji_icon.convert('RGB')
-        img_pil.paste(emoji_icon, (position[0], emoji_y))
+        roi_pil.paste(emoji_icon, (x - rx1, emoji_y - ry1))
     
-    # Draw text (convert BGR to RGB) - use the appropriate font
-    text_rgb = (color[2], color[1], color[0])
-    draw.text(text_position, text, font=active_font, fill=text_rgb)
+    # Draw text (BGR -> RGB)
+    if text:
+        text_rgb = (color[2], color[1], color[0])
+        draw.text((text_x - rx1, y - ry1), text, font=active_font, fill=text_rgb)
     
-    # Convert back to BGR for OpenCV
-    img_cv = cv2.cvtColor(np.array(img_pil), cv2.COLOR_RGB2BGR)
-    
-    return img_cv
+    img[ry1:ry2, rx1:rx2] = cv2.cvtColor(np.array(roi_pil), cv2.COLOR_RGB2BGR)
+    return img
 
 
 class VideoAnalyzer:
     """Analyzes videos for bird content using YOLOv26"""
     
-    def __init__(self, model_path="yolo26n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=COCO_CLASS_BIRD, identify_species=False, species_model="dima806/bird_species_image_detection", species_threshold=DEFAULT_SPECIES_THRESHOLD, engine="auto", hef_model=None, hailo_num_classes=80):
+    def __init__(self, model_path="yolo26n.pt", threshold=DEFAULT_DETECTION_THRESHOLD, target_class=None, identify_species=False, species_model=DEFAULT_SPECIES_MODEL, species_threshold=DEFAULT_SPECIES_THRESHOLD, engine="auto", hef_model=None, hailo_num_classes=80):
         """
         Initialize the analyzer
-        
+
         Args:
             model_path: Path to YOLO model (searches: models/, config/models/, current dir, auto-download)
             threshold: Confidence threshold (0.0-1.0), default 0.3 for bird detection
-            target_class: COCO class for bird (14=bird, use COCO_CLASS_BIRD constant)
+            target_class: Class ID for bird. Default (None): COCO_CLASS_BIRD (14), or 0 when
+                          engine="hailo" and hailo_num_classes=1 (single-class bird model)
             identify_species: Enable bird species classification (requires species dependencies)
-            species_model: Hugging Face model for species classification (default: dima806/bird_species_image_detection)
+            species_model: Hugging Face model for species classification (default: chriamue/bird-species-classifier)
             species_threshold: Minimum confidence threshold for species classification (default: 0.3)
             engine: Inference backend – "auto" (ultralytics default), "hailo" (Raspberry Pi AI HAT+)
             hef_model: Path to HEF model file (required when engine="hailo")
             hailo_num_classes: Number of classes in HEF model (default: 80 for COCO).
                                Use 1 for a single-class bird model compiled from yolov26n.pt.
         """
+        if not 0.0 <= threshold <= 1.0:
+            raise ValueError(f"threshold must be between 0.0 and 1.0, got {threshold}")
+        if target_class is None:
+            target_class = 0 if (engine == "hailo" and hailo_num_classes == 1) else COCO_CLASS_BIRD
+
         self.threshold = threshold
         self.target_class = target_class
         self.identify_species = identify_species
@@ -476,7 +533,7 @@ class VideoAnalyzer:
 
         # ── Select inference engine ──────────────────────────────────────────
         if engine == "hailo":
-            self._init_hailo_engine(hef_model)
+            self._init_hailo_engine(hef_model, num_classes=hailo_num_classes)
         else:
             # "auto": use ultralytics YOLO (CPU/GPU)
             model_path = self._find_model(model_path)
@@ -485,28 +542,28 @@ class VideoAnalyzer:
                 self.model = YOLO(model_path, task='detect')
             except FileNotFoundError as e:
                 print(f"\n   ❌ {t('error_loading_model')}: {e}")
-                print(f"\n   🔧 Troubleshooting steps:")
-                print(f"      1. Ensure internet connection (for auto-download)")
-                print(f"      2. Update Ultralytics: pip install --upgrade 'ultralytics>=8.4.14'")
-                print(f"      3. Check disk space (~50MB for yolo26n.pt model)")
-                print(f"      4. Verify YOLO cache directory: ls -la ~/.cache/yolo/ || ls -la ~/AppData/Local/yolo/ (Windows)")
-                print(f"\n      Alternatively, manually download from:")
-                print(f"      https://github.com/ultralytics/assets/releases/")
+                print(f"\n   🔧 {t('troubleshoot_title')}")
+                print(f"      1. {t('troubleshoot_internet')}")
+                print("      2. pip install --upgrade 'ultralytics>=8.4.14'")
+                print(f"      3. {t('troubleshoot_disk')}")
+                print(f"      4. {t('troubleshoot_cache')} ls -la ~/.cache/yolo/ || ls -la ~/AppData/Local/yolo/ (Windows)")
+                print(f"\n      {t('troubleshoot_manual')}")
+                print("      https://github.com/ultralytics/assets/releases/")
                 raise RuntimeError(f"Failed to load YOLO model '{model_path}'. {str(e)}")
-        
+
         # Initialize species classifier if requested
         if self.identify_species:
             if not SPECIES_AVAILABLE:
-                print(f"   ⚠️  Species identification requires additional dependencies.")
-                print(f"   Install with: pip install vogel-video-analyzer[species]")
-                print(f"   Continuing with basic bird detection only.\n")
+                print(f"   ⚠️  {t('species_dependencies_missing')}")
+                print("   pip install vogel-video-analyzer[species]")
+                print(f"   {t('species_continue_basic')}\n")
                 self.identify_species = False
             else:
                 try:
                     self.species_classifier = BirdSpeciesClassifier(model_name=species_model, confidence_threshold=species_threshold)
                 except Exception as e:
-                    print(f"   ⚠️  Could not load species classifier: {e}")
-                    print(f"   Continuing with basic bird detection only.\n")
+                    print(f"   ⚠️  {t('species_classifier_load_failed')} {e}")
+                    print(f"   {t('species_continue_basic')}\n")
                     self.identify_species = False
     
     def _init_hailo_engine(self, hef_model, num_classes: int = 80):
@@ -600,7 +657,7 @@ class VideoAnalyzer:
         # Check if this is a known YOLO model
         if any(model_name.startswith(prefix) for prefix in ['yolo', 'yolov']):
             print(f"   ℹ️  {t('model_not_found').format(model_name=model_name)}")
-            print(f"      Attempting automatic download from Ultralytics Hub...")
+            print("      Attempting automatic download from Ultralytics Hub...")
             return model_name
         
         # Not a recognized YOLO model - return as is (will error properly if invalid)
@@ -617,6 +674,7 @@ class VideoAnalyzer:
         Returns:
             dict with statistics
         """
+        _validate_sample_rate(sample_rate)
         video_path = Path(video_path)
         if not video_path.exists():
             raise FileNotFoundError(t('video_not_found').format(path=str(video_path)))
@@ -700,11 +758,9 @@ class VideoAnalyzer:
                             })
                 except Exception as e:
                     # Log error for debugging
-                    import sys
-                    print(f"   ⚠️  Species classification error (frame {current_frame}): {e}", file=sys.stderr)
+                    print(f"   ⚠️  {t('species_classification_error').format(frame=current_frame)} {e}", file=sys.stderr)
                     import traceback
                     traceback.print_exc()
-                    pass
                         
             if birds_in_frame > 0:
                 frames_with_birds += 1
@@ -721,10 +777,13 @@ class VideoAnalyzer:
                 
                 bird_detections.append(detection_entry)
                 
-            # Progress every 30 analyzed frames
+            # Progress every 30 analyzed frames (total_frames may be 0 for some containers)
             if frames_analyzed % 30 == 0:
-                progress = (frames_analyzed * sample_rate / total_frames) * 100
-                print(f"   ⏳ {progress:.1f}% ({frames_analyzed}/{total_frames//sample_rate} {t('frames')})", end='\r')
+                if total_frames > 0:
+                    progress = min(100.0, (frames_analyzed * sample_rate / total_frames) * 100)
+                    print(f"   ⏳ {progress:.1f}% ({frames_analyzed}/{total_frames//sample_rate} {t('frames')})", end='\r')
+                else:
+                    print(f"   ⏳ {frames_analyzed} {t('frames')}", end='\r')
                 
         cap.release()
         
@@ -784,7 +843,11 @@ class VideoAnalyzer:
             
         segments = []
         current_segment = None
-        max_gap = 2.0 * sample_rate  # Max 2 second gap
+        # Max gap in seconds between two detections of the same segment.
+        # It must be at least two sampling intervals, otherwise consecutive
+        # samples of long sampling intervals would never be joined.
+        sample_interval = (sample_rate / fps) if fps and fps > 0 else 0.0
+        max_gap = max(SEGMENT_MAX_GAP_SECONDS, 2.0 * sample_interval)
         
         for detection in detections:
             timestamp = detection['timestamp']
@@ -836,11 +899,10 @@ class VideoAnalyzer:
             for i, segment in enumerate(stats['bird_segments'], 1):
                 start = timedelta(seconds=int(segment['start']))
                 end = timedelta(seconds=int(segment['end']))
-                duration = segment['end'] - segment['start']
                 bird_pct = (segment['detections'] / stats['frames_analyzed']) * 100
                 print(f"  {'┌' if i == 1 else '├'} {t('report_segment')} {i}: {start} - {end} ({bird_pct:.0f}% {t('report_bird_frames_short')})")
                 if i == len(stats['bird_segments']):
-                    print(f"  └")
+                    print("  └")
         
         # Status
         if stats['bird_percentage'] >= 50:
@@ -891,6 +953,7 @@ class VideoAnalyzer:
         Returns:
             dict with processing statistics
         """
+        _validate_sample_rate(sample_rate)
         video_path = Path(video_path)
         output_path = Path(output_path)
         
@@ -921,12 +984,17 @@ class VideoAnalyzer:
         width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
         
+        if not fps or fps <= 0:
+            cap.release()
+            raise RuntimeError(t('invalid_fps').format(path=str(video_path)))
+        
         # Handle high framerates that exceed codec limits
-        # MPEG4 timebase denominator max is 65535, which limits FPS to ~65
-        output_fps = fps
-        if fps > 60:
-            output_fps = 30.0  # Reduce to standard 30 FPS for compatibility
-            print(f"   ℹ️  Original FPS ({fps:.1f}) exceeds codec limits, reducing output to {output_fps} FPS")
+        # (MPEG4 timebase denominator max is 65535, which limits FPS to ~65).
+        # Keep the real-time speed by writing only every Nth frame instead of
+        # writing all frames at a lower FPS (which would create slow motion).
+        frame_step, output_fps = compute_output_frame_step(fps)
+        if frame_step > 1:
+            print(f"   ℹ️  {t('annotation_fps_reduced').format(fps=f'{fps:.1f}', output_fps=f'{output_fps:.1f}')}")
         
         # Create output video writer
         # Try different codecs for better compatibility
@@ -936,14 +1004,15 @@ class VideoAnalyzer:
         # Check if writer opened successfully
         if not out.isOpened():
             # Fallback to XVID with AVI container
-            print(f"   ⚠️  MP4V codec not available, trying XVID with AVI...")
+            print(f"   ⚠️  {t('annotation_codec_fallback')}")
             fourcc = cv2.VideoWriter_fourcc(*'XVID')
             output_path_avi = output_path.parent / (output_path.stem + '.avi')
             out = cv2.VideoWriter(str(output_path_avi), fourcc, output_fps, (width, height))
             if not out.isOpened():
-                raise RuntimeError(f"Could not open video writer. Try installing ffmpeg: sudo apt install ffmpeg")
+                cap.release()
+                raise RuntimeError(t('annotation_writer_failed'))
             output_path = output_path_avi
-            print(f"   ℹ️  Output changed to: {output_path}")
+            print(f"   ℹ️  {t('annotation_output_changed')} {output_path}")
         
         print(f"   📊 {t('annotation_video_info').format(width=width, height=height, fps=f'{fps:.1f}', output_fps=f'{output_fps:.1f}', frames=total_frames)}")
         print(f"   🔍 {t('annotation_processing').format(n=sample_rate)}")
@@ -965,7 +1034,6 @@ class VideoAnalyzer:
                 break
                 
             current_frame += 1
-            annotated_frame = frame.copy()
             
             # Process frame if matches sample rate
             if current_frame % sample_rate == 0:
@@ -1008,7 +1076,7 @@ class VideoAnalyzer:
                             frame, bird_bboxes, top_k=1
                         )
                         
-                        for idx, (predictions, box_info) in enumerate(zip(batch_predictions, bird_boxes_info)):
+                        for predictions, box_info in zip(batch_predictions, bird_boxes_info):
                             species_label = None
                             skip_detection = False
                             
@@ -1052,6 +1120,7 @@ class VideoAnalyzer:
                                 })
                     except Exception as e:
                         # On error, fall back to generic bird labels
+                        print(f"   ⚠️  {t('species_classification_error').format(frame=current_frame)} {e}", file=sys.stderr)
                         for box_info in bird_boxes_info:
                             if show_confidence:
                                 species_label = f"Bird {box_info['conf']:.0%}"
@@ -1074,6 +1143,20 @@ class VideoAnalyzer:
                         })
                 
                 last_birds_count = birds_in_frame
+            
+            # Progress indicator (total_frames may be 0 for some containers)
+            if current_frame % 100 == 0:
+                if total_frames > 0:
+                    progress = min(100.0, (current_frame / total_frames) * 100)
+                    print(f"   {t('progress')}: {progress:.1f}% ({current_frame}/{total_frames})", end='\r')
+                else:
+                    print(f"   {t('progress')}: {current_frame} {t('frames')}", end='\r')
+            
+            # Frames dropped to stay within the codec FPS limit are not drawn/written
+            if (current_frame - 1) % frame_step != 0:
+                continue
+            
+            annotated_frame = frame.copy()
             
             # Draw all cached detections (even on non-processed frames)
             for detection in last_detections:
@@ -1117,7 +1200,7 @@ class VideoAnalyzer:
                             ]
                         else:
                             lines = [(label, None)]
-                    except:
+                    except Exception:
                         lines = [(label, None)]
                     
                     # Draw multiline with configurable font size
@@ -1202,9 +1285,6 @@ class VideoAnalyzer:
                 
                 # Use PIL with same font size as species labels
                 if PIL_AVAILABLE:
-                    # Calculate scale factor from font_size to cv2 scale
-                    cv2_scale = font_size / 30.0  # Approximate conversion
-                    
                     # Use put_unicode_text for consistent styling
                     annotated_frame = put_unicode_text(
                         annotated_frame,
@@ -1239,11 +1319,6 @@ class VideoAnalyzer:
             
             # Write frame to output
             out.write(annotated_frame)
-            
-            # Progress indicator
-            if current_frame % 100 == 0:
-                progress = (current_frame / total_frames) * 100
-                print(f"   Progress: {progress:.1f}% ({current_frame}/{total_frames})", end='\r')
         
         # Cleanup
         cap.release()
@@ -1303,15 +1378,15 @@ class VideoAnalyzer:
                         temp_video.rename(output_path)
                     print(f"{t('annotation_audio_failed')}")
             else:
-                print(f"   ℹ️  Original video has no audio track")
+                print(f"   ℹ️  {t('annotation_no_audio')}")
                 
         except (subprocess.TimeoutExpired, subprocess.CalledProcessError, FileNotFoundError):
             # ffmpeg not available or failed - keep video without audio
-            print(f"   ⚠️  ffmpeg not available - video saved without audio")
-            print(f"   💡 Install ffmpeg to preserve audio: sudo apt install ffmpeg")
+            print(f"   ⚠️  {t('ffmpeg_not_available_no_audio')}")
+            print(f"   💡 {t('ffmpeg_install_hint')} sudo apt install ffmpeg")
         except Exception as e:
             # Any other error - keep video without audio
-            print(f"   ⚠️  Could not merge audio: {e}")
+            print(f"   ⚠️  {t('annotation_audio_error')} {e}")
         
         return {
             'input_video': str(video_path),
@@ -1319,9 +1394,21 @@ class VideoAnalyzer:
             'total_frames': total_frames,
             'frames_processed': frames_processed,
             'birds_detected': total_birds_detected,
-            'fps': fps
+            'fps': fps,
+            'output_fps': output_fps
         }
     
+    def _frame_has_bird(self, results):
+        """True if any detection in the YOLO results is a bird above the threshold."""
+        for result in results:
+            boxes = result.boxes
+            if boxes is None:
+                continue
+            for box in boxes:
+                if int(box.cls[0]) == self.target_class and float(box.conf[0]) >= self.threshold:
+                    return True
+        return False
+
     def create_summary_video(self, video_path, output_path, sample_rate=5, 
                             skip_empty_seconds=3.0, min_activity_duration=2.0):
         """
@@ -1335,91 +1422,69 @@ class VideoAnalyzer:
             min_activity_duration: Minimum duration of bird activity to keep (default: 2.0)
             
         Returns:
-            dict with summary statistics
+            dict with summary statistics, or None if ffmpeg failed
         """
+        _validate_sample_rate(sample_rate)
         video_path = Path(video_path)
         output_path = Path(output_path)
+        
+        if not video_path.exists():
+            raise FileNotFoundError(t('video_not_found').format(path=str(video_path)))
         
         print(f"\n{t('summary_analyzing')} {video_path.name}...")
         
         # Open video
         cap = cv2.VideoCapture(str(video_path))
         if not cap.isOpened():
-            raise ValueError(f"Could not open video: {video_path}")
+            raise RuntimeError(t('cannot_open_video').format(path=str(video_path)))
         
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        total_duration = total_frames / fps
+        if not fps or fps <= 0:
+            cap.release()
+            raise RuntimeError(t('invalid_fps').format(path=str(video_path)))
         
         # Analyze video to find bird activity segments
-        print(f"   📊 Analyzing {total_frames} frames at {fps:.1f} FPS...")
+        print(f"   📊 {t('summary_analyzing_frames').format(frames=total_frames, fps=f'{fps:.1f}')}")
         
-        bird_frames = set()  # Frame numbers with bird detections
-        frame_number = 0
+        bird_frames = set()  # Frame numbers (0-based) with bird detections
+        frame_number = -1
         
-        while frame_number < total_frames:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
+        # Read sequentially: grab() skips frames cheaply, read() only for sampled
+        # frames. This is much faster than seeking with CAP_PROP_POS_FRAMES.
+        while True:
+            frame_number += 1
+            if frame_number % sample_rate != 0:
+                if not cap.grab():
+                    break
+                continue
+            
             ret, frame = cap.read()
             if not ret:
                 break
             
-            # Run detection
             results = self.model(frame, verbose=False)
-            
-            # Check if any birds detected
-            for result in results:
-                boxes = result.boxes
-                if boxes is not None and len(boxes) > 0:
-                    # Bird detected in this frame
-                    bird_frames.add(frame_number)
-                    break
-            
-            frame_number += sample_rate
+            if self._frame_has_bird(results):
+                bird_frames.add(frame_number)
             
             # Progress indicator
-            if frame_number % (sample_rate * 100) == 0:
-                progress = (frame_number / total_frames) * 100
-                print(f"   ⏳ Progress: {progress:.1f}%", end='\r')
+            if frame_number % (sample_rate * 100) == 0 and total_frames > 0:
+                progress = min(100.0, (frame_number / total_frames) * 100)
+                print(f"   ⏳ {t('progress')}: {progress:.1f}%", end='\r')
         
         cap.release()
-        print(f"   ✅ Analysis complete - {len(bird_frames)} frames with birds detected")
+        # Use the number of frames actually read if the container reports none
+        if total_frames <= 0:
+            total_frames = frame_number
+        total_duration = total_frames / fps
+        print(f"   ✅ {t('summary_analysis_done').format(count=len(bird_frames))}")
         
-        # Convert frame numbers to time segments
-        skip_empty_frames = int(skip_empty_seconds * fps)
-        min_activity_frames = int(min_activity_duration * fps)
-        
-        # Find continuous segments with bird activity
-        segments = []  # [(start_time, end_time), ...]
-        current_segment_start = None
-        last_bird_frame = -skip_empty_frames - 1
-        
-        for frame_num in sorted(bird_frames):
-            # Check if this frame is close enough to previous bird frame
-            if frame_num - last_bird_frame <= skip_empty_frames:
-                # Continue current segment
-                if current_segment_start is None:
-                    current_segment_start = max(0, last_bird_frame - min_activity_frames // 2)
-            else:
-                # End previous segment and start new one
-                if current_segment_start is not None:
-                    segment_end = min(total_frames, last_bird_frame + min_activity_frames // 2)
-                    segment_duration = (segment_end - current_segment_start) / fps
-                    if segment_duration >= min_activity_duration:
-                        segments.append((current_segment_start / fps, segment_end / fps))
-                
-                current_segment_start = max(0, frame_num - min_activity_frames // 2)
-            
-            last_bird_frame = frame_num
-        
-        # Don't forget the last segment
-        if current_segment_start is not None:
-            segment_end = min(total_frames, last_bird_frame + min_activity_frames // 2)
-            segment_duration = (segment_end - current_segment_start) / fps
-            if segment_duration >= min_activity_duration:
-                segments.append((current_segment_start / fps, segment_end / fps))
+        segments = compute_summary_segments(
+            bird_frames, total_frames, fps, skip_empty_seconds, min_activity_duration
+        )
         
         if not segments:
-            print(f"   ⚠️  No bird activity segments found - video would be empty")
+            print(f"   ⚠️  {t('summary_no_segments')}")
             return {
                 'input_video': str(video_path),
                 'output_video': None,
@@ -1431,25 +1496,20 @@ class VideoAnalyzer:
             }
         
         summary_duration = sum(end - start for start, end in segments)
+        compression = (1 - summary_duration / total_duration) if total_duration > 0 else 0.0
         print(f"\n{t('summary_segments_found')}")
-        print(f"   📊 Segments to keep: {len(segments)}")
-        print(f"   ⏱️  Original duration: {timedelta(seconds=int(total_duration))}")
-        print(f"   ⏱️  Summary duration: {timedelta(seconds=int(summary_duration))}")
-        print(f"   📉 Compression: {(1 - summary_duration/total_duration) * 100:.1f}% shorter")
+        print(f"   📊 {t('summary_segments_keep')} {len(segments)}")
+        print(f"   ⏱️  {t('summary_original_duration')} {timedelta(seconds=int(total_duration))}")
+        print(f"   ⏱️  {t('summary_summary_duration')} {timedelta(seconds=int(summary_duration))}")
+        print(f"   📉 {t('summary_compression').format(percent=f'{compression * 100:.1f}')}")
         
-        # Create ffmpeg concat file
-        concat_file = output_path.parent / f"{output_path.stem}_concat.txt"
-        
+        temp_dir = Path(tempfile.mkdtemp(prefix='vogel_summary_'))
         try:
             print(f"\n{t('summary_creating')} {output_path.name}...")
             
-            # Create temporary segment files
-            temp_dir = Path(tempfile.mkdtemp())
             segment_files = []
-            
             for idx, (start, end) in enumerate(segments):
                 segment_path = temp_dir / f"segment_{idx:04d}.mp4"
-                segment_files.append(segment_path)
                 
                 # Extract segment with ffmpeg (with audio)
                 cmd = [
@@ -1462,15 +1522,22 @@ class VideoAnalyzer:
                     str(segment_path)
                 ]
                 
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                if result.returncode != 0:
-                    print(f"   ⚠️  Warning: Failed to extract segment {idx}")
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+                if result.returncode != 0 or not segment_path.exists():
+                    print(f"   ⚠️  {t('summary_segment_failed').format(index=idx)}")
+                    continue
+                segment_files.append(segment_path)
             
-            # Create concat file
-            with open(concat_file, 'w') as f:
+            if not segment_files:
+                print(f"   ⚠️  {t('summary_concat_failed')}")
+                return None
+            
+            # Create concat file (ffmpeg concat demuxer syntax, quotes escaped)
+            concat_file = temp_dir / "concat.txt"
+            with open(concat_file, 'w', encoding='utf-8') as f:
                 for seg_file in segment_files:
-                    if seg_file.exists():
-                        f.write(f"file '{seg_file}'\n")
+                    escaped = str(seg_file).replace("'", "'\\''")
+                    f.write(f"file '{escaped}'\n")
             
             # Concatenate segments
             cmd = [
@@ -1487,13 +1554,6 @@ class VideoAnalyzer:
             if result.returncode == 0 and output_path.exists():
                 print(f"   {t('summary_complete')}")
                 print(f"   📁 {output_path}")
-                
-                # Cleanup
-                concat_file.unlink(missing_ok=True)
-                for seg_file in segment_files:
-                    seg_file.unlink(missing_ok=True)
-                temp_dir.rmdir()
-                
                 return {
                     'input_video': str(video_path),
                     'output_video': str(output_path),
@@ -1501,27 +1561,70 @@ class VideoAnalyzer:
                     'summary_duration': summary_duration,
                     'segments_kept': len(segments),
                     'segments_skipped': total_duration - summary_duration,
-                    'compression_ratio': 1 - (summary_duration / total_duration)
+                    'compression_ratio': compression
                 }
-            else:
-                print(f"   ⚠️  ffmpeg concatenation failed")
-                print(f"   Error: {result.stderr}")
-                return None
+            
+            print(f"   ⚠️  {t('summary_concat_failed')}")
+            print(f"   {result.stderr}")
+            return None
                 
         except subprocess.TimeoutExpired:
-            print(f"   ⚠️  ffmpeg timeout - video too long")
+            print(f"   ⚠️  {t('summary_ffmpeg_timeout')}")
             return None
         except FileNotFoundError:
-            print(f"   ⚠️  ffmpeg not found - please install: sudo apt install ffmpeg")
-            return None
-        except Exception as e:
-            print(f"   ⚠️  Error creating summary: {e}")
+            print(f"   ⚠️  {t('summary_ffmpeg_missing')} sudo apt install ffmpeg")
             return None
         finally:
-            # Cleanup temp files
-            if concat_file.exists():
-                concat_file.unlink()
-            if 'temp_dir' in locals():
-                for seg_file in segment_files:
-                    seg_file.unlink(missing_ok=True)
-                temp_dir.rmdir()
+            # Remove all temporary files (segments + concat list) exactly once
+            shutil.rmtree(temp_dir, ignore_errors=True)
+
+
+def compute_summary_segments(bird_frames, total_frames, fps,
+                             skip_empty_seconds=3.0, min_activity_duration=2.0):
+    """
+    Group frames with bird detections into time segments for the summary video.
+
+    Detections closer than skip_empty_seconds are merged into one segment.
+    Each segment is padded by half of min_activity_duration on both sides
+    (clipped to the video) and only kept if it lasts at least
+    min_activity_duration.
+
+    Args:
+        bird_frames: Iterable of 0-based frame numbers with bird detections
+        total_frames: Total number of frames in the video
+        fps: Frames per second (> 0)
+        skip_empty_seconds: Bird-free gaps longer than this split segments
+        min_activity_duration: Minimum segment duration in seconds
+
+    Returns:
+        List of (start_seconds, end_seconds) tuples
+    """
+    if fps <= 0:
+        raise ValueError(f"fps must be > 0, got {fps}")
+
+    skip_empty_frames = int(skip_empty_seconds * fps)
+    pad = int(min_activity_duration * fps) // 2
+
+    segments = []
+
+    def close_segment(first, last):
+        start = max(0, first - pad)
+        end = min(total_frames, last + pad)
+        if (end - start) / fps >= min_activity_duration:
+            segments.append((start / fps, end / fps))
+
+    first_frame = None
+    last_frame = None
+    for frame_num in sorted(bird_frames):
+        if first_frame is None:
+            first_frame = last_frame = frame_num
+        elif frame_num - last_frame <= skip_empty_frames:
+            last_frame = frame_num
+        else:
+            close_segment(first_frame, last_frame)
+            first_frame = last_frame = frame_num
+
+    if first_frame is not None:
+        close_segment(first_frame, last_frame)
+
+    return segments

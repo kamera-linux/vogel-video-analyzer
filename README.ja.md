@@ -152,6 +152,9 @@ vogel-analyze --delete-file *.mp4
 # 鳥コンテンツ0%のフォルダ全体を削除
 vogel-analyze --delete-folder ~/Videos/*/*.mp4
 
+# 削除対象のプレビュー（何も削除されません、v0.6.0+）
+vogel-analyze --delete-folder --dry-run ~/Videos/*/*.mp4
+
 # ディレクトリのバッチ処理
 vogel-analyze ~/Videos/Birds/**/*.mp4
 
@@ -455,7 +458,7 @@ vogel-analyze --identify-species \
 ### 依存関係
 
 **コア：**
-- Python ≥ 3.8
+- Python ≥ 3.10
 - OpenCV (cv2)
 - Ultralytics YOLOv26
 - NumPy

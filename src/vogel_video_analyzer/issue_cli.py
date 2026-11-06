@@ -5,7 +5,6 @@ CLI für das Issue Board System
 import argparse
 import sys
 from pathlib import Path
-from typing import Optional
 
 from .issue_board import IssueBoard, IssueStatus, IssuePriority
 
@@ -220,6 +219,10 @@ def cmd_sync(args):
         GitHubSync.setup_token_interactive()
         return
     
+    if args.github_token:
+        print(f"{Colors.YELLOW}⚠️  --github-token ist sichtbar in Shell-History und Prozessliste. "
+              f"Besser: export GITHUB_TOKEN=... oder 'vogel-issues setup'{Colors.RESET}")
+    
     try:
         # Initialisiere GitHub Sync
         sync = GitHubSync(token=args.github_token, repo=args.repo)
@@ -318,19 +321,21 @@ def main():
     delete_parser.add_argument('-f', '--force', action='store_true', help='Ohne Bestätigung löschen')
     
     # Stats command
-    stats_parser = subparsers.add_parser('stats', help='Zeigt Statistiken')
+    subparsers.add_parser('stats', help='Zeigt Statistiken')
     
     # Sync command
     sync_parser = subparsers.add_parser('sync', help='Synchronisiert mit GitHub Issues')
     sync_parser.add_argument('--direction', choices=['push', 'pull', 'both'], default='both',
                             help='Synchronisationsrichtung (Standard: both)')
-    sync_parser.add_argument('--github-token', help='GitHub Personal Access Token')
+    sync_parser.add_argument('--github-token',
+                            help='GitHub Personal Access Token (nicht empfohlen: landet in Shell-History '
+                                 'und Prozessliste; besser GITHUB_TOKEN setzen oder "vogel-issues setup")')
     sync_parser.add_argument('--repo', help='Repository im Format "owner/repo"')
     sync_parser.add_argument('--setup-token', action='store_true', 
                             help='Interaktive Token-Einrichtung')
     
     # Setup command
-    setup_parser = subparsers.add_parser('setup', help='Richtet GitHub Token ein')
+    subparsers.add_parser('setup', help='Richtet GitHub Token ein')
     
     args = parser.parse_args()
     

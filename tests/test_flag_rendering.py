@@ -19,7 +19,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 from vogel_video_analyzer.analyzer import render_flag_icon
 import numpy as np
 from PIL import Image
-import cv2
 
 def test_flag_rendering():
     """Test all flag rendering methods"""
@@ -50,7 +49,7 @@ def test_flag_rendering():
                 print(f"   ❌ {flag_file.name} -> Failed")
     else:
         print(f"   ⚠️  Flag directory not found: {flag_dir}")
-        print(f"   💡 Create directory and add PNG files to test")
+        print("   💡 Create directory and add PNG files to test")
     
     # Test 3: Country code + directory
     print("\n3️⃣  Country Code + Directory")
@@ -63,7 +62,7 @@ def test_flag_rendering():
             else:
                 print(f"   ⚠️  '{code}' -> Not found (fallback to emoji or gray)")
     else:
-        print(f"   ⚠️  Skipping (no flag directory)")
+        print("   ⚠️  Skipping (no flag directory)")
     
     # Test 4: PIL Image
     print("\n4️⃣  PIL Image Object")
@@ -75,7 +74,7 @@ def test_flag_rendering():
         if icon:
             print(f"   ✅ PIL Image (60x40) -> {icon.size[0]}x{icon.size[1]}px (resized)")
         else:
-            print(f"   ❌ PIL Image -> Failed")
+            print("   ❌ PIL Image -> Failed")
     except Exception as e:
         print(f"   ❌ Error: {e}")
     
@@ -90,7 +89,7 @@ def test_flag_rendering():
         if icon:
             print(f"   ✅ NumPy (40x60x3) -> {icon.size[0]}x{icon.size[1]}px (resized)")
         else:
-            print(f"   ❌ NumPy Array -> Failed")
+            print("   ❌ NumPy Array -> Failed")
     except Exception as e:
         print(f"   ❌ Error: {e}")
     

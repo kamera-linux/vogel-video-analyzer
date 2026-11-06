@@ -3,7 +3,6 @@ Tests für das Issue Board System
 """
 
 import pytest
-import json
 import tempfile
 from pathlib import Path
 from vogel_video_analyzer.issue_board import IssueBoard, Issue

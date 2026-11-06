@@ -13,6 +13,82 @@ from . import __version__
 from .analyzer import VideoAnalyzer
 from .i18n import init_i18n, t
 
+# File extensions treated as videos when checking folders before deletion
+VIDEO_EXTENSIONS = {'.mp4', '.avi', '.mov', '.mkv', '.m4v', '.webm', '.h264', '.mjpeg', '.mjpg'}
+
+
+class Tee:
+    """Write to several streams at once (console + log file).
+
+    Implements the parts of the io.TextIOBase API that third-party libraries
+    (ultralytics, tqdm, transformers) commonly query on sys.stdout/sys.stderr.
+    The first stream is treated as the primary (console) stream.
+    """
+
+    def __init__(self, *files):
+        self.files = files
+        self._primary = files[0]
+
+    def write(self, data):
+        for f in self.files:
+            f.write(data)
+            f.flush()
+        return len(data)
+
+    def flush(self):
+        for f in self.files:
+            f.flush()
+
+    def isatty(self):
+        try:
+            return self._primary.isatty()
+        except Exception:
+            return False
+
+    def fileno(self):
+        return self._primary.fileno()
+
+    @property
+    def encoding(self):
+        return getattr(self._primary, 'encoding', 'utf-8')
+
+    def __getattr__(self, name):
+        # Delegate everything else (errors, buffer, ...) to the console stream
+        return getattr(self._primary, name)
+
+
+def _positive_int(value):
+    """argparse type: integer >= 1"""
+    try:
+        ivalue = int(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid int value: {value!r}")
+    if ivalue < 1:
+        raise argparse.ArgumentTypeError(f"must be >= 1, got {ivalue}")
+    return ivalue
+
+
+def _probability(value):
+    """argparse type: float in [0.0, 1.0]"""
+    try:
+        fvalue = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid float value: {value!r}")
+    if not 0.0 <= fvalue <= 1.0:
+        raise argparse.ArgumentTypeError(f"must be between 0.0 and 1.0, got {fvalue}")
+    return fvalue
+
+
+def _non_negative_float(value):
+    """argparse type: float >= 0"""
+    try:
+        fvalue = float(value)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"invalid float value: {value!r}")
+    if fvalue < 0:
+        raise argparse.ArgumentTypeError(f"must be >= 0, got {fvalue}")
+    return fvalue
+
 
 def main():
     """Main CLI entry point"""
@@ -44,7 +120,10 @@ Examples:
   
   # Delete entire folders with 0% bird content
   vogel-analyze --delete-folder --sample-rate 5 ~/Videos/*/*.mp4
-  
+
+  # Preview what would be deleted without deleting anything
+  vogel-analyze --delete-folder --dry-run ~/Videos/*/*.mp4
+
   # Save output to log file
   vogel-analyze --log *.mp4
 
@@ -52,14 +131,14 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         """
     )
     
-    parser.add_argument('videos', nargs='+', help='Video file(s) to analyze')
+    parser.add_argument('videos', nargs='*', help='Video file(s) to analyze')
     parser.add_argument('--model', default='yolo26n.pt', help='YOLO model (default: yolo26n.pt)')
-    parser.add_argument('--threshold', type=float, default=0.3, help='Confidence threshold (default: 0.3)')
-    parser.add_argument('--sample-rate', type=int, default=5, help='Analyze every Nth frame (default: 5)')
+    parser.add_argument('--threshold', type=_probability, default=0.3, help='Confidence threshold 0.0-1.0 (default: 0.3)')
+    parser.add_argument('--sample-rate', type=_positive_int, default=5, help='Analyze every Nth frame, >= 1 (default: 5)')
     parser.add_argument('--identify-species', action='store_true', help='Identify bird species (requires: pip install vogel-video-analyzer[species])')
     parser.add_argument('--species-model', default='chriamue/bird-species-classifier', 
                         help='Species classification model: Hugging Face model ID or local path (default: chriamue/bird-species-classifier)')
-    parser.add_argument('--species-threshold', type=float, default=0.3,
+    parser.add_argument('--species-threshold', type=_probability, default=0.3,
                         help='Minimum confidence threshold for species classification (default: 0.3)')
     parser.add_argument('--multilingual', action='store_true', 
                         help='Show bird names in all available languages with flag emojis (🇬🇧 🇩🇪 🇯🇵)')
@@ -67,7 +146,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         help='Create annotated video with bounding boxes and species labels, saves as <original>_annotated.mp4 in the same directory')
     parser.add_argument('--annotate-output', metavar='PATH',
                         help='Custom output path for annotated video (requires --annotate-video)')
-    parser.add_argument('--font-size', type=int, default=20,
+    parser.add_argument('--font-size', type=_positive_int, default=20,
                         help='Font size for species labels in annotated video (default: 20)')
     parser.add_argument('--flag-dir', metavar='PATH',
                         help='Directory containing flag image files (PNG/JPG). Falls back to pixel-rendered flags if not specified')
@@ -75,17 +154,22 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         help='Create summary video by skipping segments without bird activity (v0.3.1+)')
     parser.add_argument('--summary-output', metavar='PATH',
                         help='Custom output path for summary video (requires --create-summary)')
-    parser.add_argument('--skip-empty-seconds', type=float, default=3.0,
+    parser.add_argument('--skip-empty-seconds', type=_non_negative_float, default=3.0,
                         help='Skip segments without birds longer than N seconds (default: 3.0, requires --create-summary)')
-    parser.add_argument('--min-activity-duration', type=float, default=2.0,
+    parser.add_argument('--min-activity-duration', type=_non_negative_float, default=2.0,
                         help='Minimum duration for bird activity segments in seconds (default: 2.0, requires --create-summary)')
     parser.add_argument('--output', '-o', help='Save report as JSON')
     parser.add_argument('--html-report', metavar='PATH',
                         help='Generate interactive HTML report with charts and thumbnails (v0.5.0+)')
-    parser.add_argument('--max-thumbnails', type=int, default=50,
+    parser.add_argument('--max-thumbnails', type=_positive_int, default=50,
                         help='Maximum number of thumbnails in HTML report (default: 50)')
     parser.add_argument('--delete-file', action='store_true', help='Delete video files with 0%% bird content')
-    parser.add_argument('--delete-folder', action='store_true', help='Delete parent folders with 0%% bird content')
+    parser.add_argument('--delete-folder', action='store_true',
+                        help='Delete parent folders with 0%% bird content. A folder is only deleted if every '
+                             'video in it was analyzed and none contains birds; the current directory, '
+                             'home directory and filesystem root are never deleted')
+    parser.add_argument('--dry-run', action='store_true',
+                        help='With --delete-file/--delete-folder: only show what would be deleted')
     parser.add_argument('--delete', action='store_true', help='(Deprecated) Use --delete-file or --delete-folder instead')
     parser.add_argument('--log', action='store_true', help='Save console output to log file')
     parser.add_argument('--language', choices=['en', 'de', 'ja'], help='Set output language (default: auto-detect from system)')
@@ -95,7 +179,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
     parser.add_argument('--hef-model', metavar='PATH',
                         help='Path to HEF model file for Hailo NPU (required with --engine hailo). '
                              'Download from https://github.com/hailo-ai/hailo_model_zoo')
-    parser.add_argument('--hailo-num-classes', type=int, default=80, metavar='N',
+    parser.add_argument('--hailo-num-classes', type=_positive_int, default=80, metavar='N',
                         help='Number of output classes in the HEF model (default: 80 for COCO). '
                              'Use 1 if HEF was compiled from a single-class bird model.')
     parser.add_argument('--export-onnx', metavar='MODEL_PATH',
@@ -131,19 +215,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             
             # Open log file and redirect stdout/stderr
             log_file = open(log_file_path, 'w', encoding='utf-8')
-            
-            # Create a Tee class to write to both console and file
-            class Tee:
-                def __init__(self, *files):
-                    self.files = files
-                def write(self, data):
-                    for f in self.files:
-                        f.write(data)
-                        f.flush()
-                def flush(self):
-                    for f in self.files:
-                        f.flush()
-            
+
             # Redirect to both console and file
             sys.stdout = Tee(original_stdout, log_file)
             sys.stderr = Tee(original_stderr, log_file)
@@ -160,11 +232,11 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             from .species_classifier import SPECIES_AVAILABLE
             if not SPECIES_AVAILABLE:
                 print(f"❌ {t('species_dependencies_missing')}", file=sys.stderr)
-                print(f"   pip install vogel-video-analyzer[species]", file=sys.stderr)
+                print("   pip install vogel-video-analyzer[species]", file=sys.stderr)
                 return 1
         except ImportError:
             print(f"❌ {t('species_dependencies_missing')}", file=sys.stderr)
-            print(f"   pip install vogel-video-analyzer[species]", file=sys.stderr)
+            print("   pip install vogel-video-analyzer[species]", file=sys.stderr)
             return 1
     
     try:
@@ -173,6 +245,9 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             from .hailo_engine import export_to_onnx
             export_to_onnx(args.export_onnx, output_path=args.export_onnx_output)
             return 0
+
+        if not args.videos:
+            parser.error('the following arguments are required: videos')
 
         # Initialize analyzer
         analyzer = VideoAnalyzer(
@@ -188,6 +263,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         
         # Analyze videos
         all_stats = []
+        failed_videos = 0
         for video_path in args.videos:
             try:
                 # Create annotated video if requested
@@ -209,7 +285,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                         output_path = video_path_obj.parent / f"{video_path_obj.stem}_annotated_{timestamp}{video_path_obj.suffix}"
                     
-                    annotation_stats = analyzer.annotate_video(
+                    analyzer.annotate_video(
                         video_path, 
                         str(output_path), 
                         sample_rate=args.sample_rate,
@@ -234,7 +310,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                         video_path_obj = Path(video_path)
                         output_path = video_path_obj.parent / f"{video_path_obj.stem}_summary{video_path_obj.suffix}"
                     
-                    summary_stats = analyzer.create_summary_video(
+                    analyzer.create_summary_video(
                         video_path,
                         str(output_path),
                         sample_rate=args.sample_rate,
@@ -247,6 +323,7 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
                     analyzer.print_report(stats)
                     all_stats.append(stats)
             except Exception as e:
+                failed_videos += 1
                 print(f"❌ {t('error_analyzing')} {video_path}: {e}", file=sys.stderr)
                 continue
         
@@ -261,9 +338,9 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
             args.delete_folder = True
         
         if args.delete_file and all_stats:
-            _delete_empty_video_files(all_stats)
+            _delete_empty_video_files(all_stats, dry_run=args.dry_run)
         elif args.delete_folder and all_stats:
-            _delete_empty_video_folders(all_stats)
+            _delete_empty_video_folders(all_stats, dry_run=args.dry_run)
         
         # JSON output
         if args.output:
@@ -273,7 +350,8 @@ For more information: https://github.com/kamera-linux/vogel-video-analyzer
         if args.html_report and all_stats:
             _generate_html_report(all_stats, args.html_report, args.max_thumbnails)
         
-        return 0
+        # Non-zero exit code if at least one video could not be processed
+        return 1 if failed_videos else 0
         
     except KeyboardInterrupt:
         print(f"\n\n⚠️  {t('analysis_interrupted')}")
@@ -322,59 +400,160 @@ def _print_summary(all_stats):
     print("=" * 70)
 
 
+def _is_empty_result(stats):
+    """True if a video was actually analyzed (>= 1 frame) and contains no birds.
+
+    Videos from which no frame could be read are NOT considered empty, so a
+    corrupted or unreadable file is never deleted by accident.
+    """
+    return stats.get('frames_analyzed', 0) > 0 and stats.get('frames_with_birds', 0) == 0
+
+
+def _is_protected_directory(directory):
+    """Directories that must never be deleted by --delete-folder."""
+    directory = Path(directory).resolve()
+    cwd = Path.cwd().resolve()
+    home = Path.home().resolve()
+    if directory.parent == directory:  # filesystem root
+        return True
+    if directory == cwd or directory in cwd.parents:
+        return True
+    if directory == home or directory in home.parents:
+        return True
+    return False
+
+
+def _plan_file_deletion(all_stats):
+    """Return (files_to_delete, skipped) where skipped is a list of (path, reason_key)."""
+    to_delete = []
+    skipped = []
+    for stats in all_stats:
+        video_path = Path(stats['video_path'])
+        if _is_empty_result(stats):
+            to_delete.append(video_path)
+        elif stats.get('frames_analyzed', 0) == 0:
+            skipped.append((video_path, 'delete_skip_unreadable'))
+    return to_delete, skipped
+
+
+def _plan_folder_deletion(all_stats):
+    """Return (folders_to_delete, skipped) where skipped is a list of (path, reason_key).
+
+    A folder is only deleted if
+      * at least one analyzed video in it is empty,
+      * no analyzed video in it contains birds or was unreadable,
+      * it contains no other (not analyzed) video files, and
+      * it is not a protected directory (cwd and its parents, home and its parents, root).
+    """
+    folders = {}
+    for stats in all_stats:
+        directory = Path(stats['video_path']).resolve().parent
+        folders.setdefault(directory, []).append(stats)
+
+    to_delete = []
+    skipped = []
+    for directory, folder_stats in folders.items():
+        if not any(_is_empty_result(s) for s in folder_stats):
+            continue  # nothing to delete in this folder
+
+        if any(s.get('frames_with_birds', 0) > 0 for s in folder_stats):
+            skipped.append((directory, 'delete_skip_mixed'))
+            continue
+        if any(s.get('frames_analyzed', 0) == 0 for s in folder_stats):
+            skipped.append((directory, 'delete_skip_unreadable'))
+            continue
+        if _is_protected_directory(directory):
+            skipped.append((directory, 'delete_skip_protected'))
+            continue
+
+        analyzed = {Path(s['video_path']).resolve() for s in folder_stats}
+        try:
+            other_videos = [
+                p for p in directory.iterdir()
+                if p.is_file() and p.suffix.lower() in VIDEO_EXTENSIONS and p.resolve() not in analyzed
+            ]
+        except OSError:
+            other_videos = []
+        if other_videos:
+            skipped.append((directory, 'delete_skip_unanalyzed'))
+            continue
+
+        to_delete.append(directory)
+    return to_delete, skipped
+
+
+def _print_skipped(skipped):
+    for path, reason_key in skipped:
+        print(f"   ⏭️  {t('delete_skipped')} {path}: {t(reason_key)}")
+
+
 def _delete_empty_videos(all_stats):
     """Delete directories with 0% bird content (deprecated, kept for compatibility)"""
     _delete_empty_video_folders(all_stats)
 
 
-def _delete_empty_video_files(all_stats):
+def _delete_empty_video_files(all_stats, dry_run=False):
     """Delete video files with 0% bird content"""
-    videos_to_delete = [s for s in all_stats if s['bird_percentage'] == 0.0]
-    
-    if videos_to_delete:
+    videos_to_delete, skipped = _plan_file_deletion(all_stats)
+
+    if videos_to_delete or skipped:
         print("\n" + "=" * 70)
         print(f"🗑️  {t('delete_files_title').format(count=len(videos_to_delete))}")
+        if dry_run:
+            print(f"   {t('delete_dry_run_hint')}")
         print("=" * 70)
-        
-        for stats in videos_to_delete:
-            video_path = Path(stats['video_path'])
-            
+
+        deleted = 0
+        for video_path in videos_to_delete:
+            if dry_run:
+                print(f"   🔎 {t('delete_would_delete')} {video_path}")
+                continue
             try:
                 print(f"   🗑️  {t('deleting')} {video_path.name}")
                 video_path.unlink()
+                deleted += 1
                 print(f"      ✅ {t('delete_success')}")
             except Exception as e:
                 print(f"      ❌ {t('delete_error')} {e}")
-                
-        print(f"\n   {t('deleted_files')} {len(videos_to_delete)}")
-        print(f"   {t('remaining_videos')} {len(all_stats) - len(videos_to_delete)}")
+
+        _print_skipped(skipped)
+
+        if not dry_run:
+            print(f"\n   {t('deleted_files')} {deleted}")
+            print(f"   {t('remaining_videos')} {len(all_stats) - deleted}")
         print("=" * 70)
     else:
         print(f"\n✅ {t('no_empty_files')}")
 
 
-def _delete_empty_video_folders(all_stats):
+def _delete_empty_video_folders(all_stats, dry_run=False):
     """Delete parent folders with 0% bird content"""
-    videos_to_delete = [s for s in all_stats if s['bird_percentage'] == 0.0]
-    
-    if videos_to_delete:
+    folders_to_delete, skipped = _plan_folder_deletion(all_stats)
+
+    if folders_to_delete or skipped:
         print("\n" + "=" * 70)
-        print(f"🗑️  {t('delete_folders_title').format(count=len(videos_to_delete))}")
+        print(f"🗑️  {t('delete_folders_title').format(count=len(folders_to_delete))}")
+        if dry_run:
+            print(f"   {t('delete_dry_run_hint')}")
         print("=" * 70)
-        
-        for stats in videos_to_delete:
-            video_path = Path(stats['video_path'])
-            directory = video_path.parent
-            
+
+        deleted = 0
+        for directory in folders_to_delete:
+            if dry_run:
+                print(f"   🔎 {t('delete_would_delete')} {directory}")
+                continue
             try:
                 print(f"   🗑️  {t('deleting_folder')} {directory.name}")
                 shutil.rmtree(directory)
+                deleted += 1
                 print(f"      ✅ {t('delete_success')}")
             except Exception as e:
                 print(f"      ❌ {t('delete_error')} {e}")
-                
-        print(f"\n   {t('deleted_folders')} {len(videos_to_delete)}")
-        print(f"   {t('remaining_videos')} {len(all_stats) - len(videos_to_delete)}")
+
+        _print_skipped(skipped)
+
+        if not dry_run:
+            print(f"\n   {t('deleted_folders')} {deleted}")
         print("=" * 70)
     else:
         print(f"\n✅ {t('no_empty_folders')}")

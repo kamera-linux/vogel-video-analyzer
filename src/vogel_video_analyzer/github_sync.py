@@ -2,12 +2,14 @@
 GitHub Issues Synchronisation für das Issue Board
 """
 
+import getpass
+import json
 import os
-import sys
+import re
+import stat
+import subprocess
 from pathlib import Path
 from typing import Optional, List, Dict
-from datetime import datetime
-import json
 
 try:
     from github import Github, GithubException
@@ -17,7 +19,17 @@ try:
 except ImportError:
     GITHUB_AVAILABLE = False
 
-from .issue_board import IssueBoard, Issue, IssueStatus, IssuePriority
+from .issue_board import IssueBoard, Issue
+
+# Accepted remote URL formats:
+#   git@github.com:owner/repo(.git)
+#   ssh://git@github.com/owner/repo(.git)
+#   https://github.com/owner/repo(.git)  (optionally with user:token@)
+_REMOTE_RE = re.compile(
+    r'github\.com[:/]+(?P<owner>[A-Za-z0-9_.-]+)/(?P<repo>[A-Za-z0-9_.-]+?)(?:\.git)?/?$'
+)
+
+CONFIG_FILE_NAME = '.vogel_config.json'
 
 
 class GitHubSync:
@@ -91,11 +103,14 @@ class GitHubSync:
             return token
         
         # 2. Config-Datei
-        config_path = Path.home() / '.vogel_config.json'
+        config_path = Path.home() / CONFIG_FILE_NAME
         if config_path.exists():
             try:
-                import json
-                with open(config_path, 'r') as f:
+                mode = config_path.stat().st_mode
+                if os.name == 'posix' and mode & (stat.S_IRWXG | stat.S_IRWXO):
+                    print(f"⚠️  Warnung: {config_path} ist für andere Benutzer lesbar. "
+                          f"Bitte ausführen: chmod 600 {config_path}")
+                with open(config_path, 'r', encoding='utf-8') as f:
                     config = json.load(f)
                     token = config.get('github_token')
                     if token:
@@ -113,7 +128,6 @@ class GitHubSync:
             Repository im Format "owner/repo"
         """
         try:
-            import subprocess
             result = subprocess.run(
                 ['git', 'config', '--get', 'remote.origin.url'],
                 capture_output=True,
@@ -121,24 +135,68 @@ class GitHubSync:
                 check=True
             )
             
-            url = result.stdout.strip()
-            
-            # Parse GitHub URL
-            # Formate: git@github.com:owner/repo.git oder https://github.com/owner/repo.git
-            if 'github.com' in url:
-                if url.startswith('git@'):
-                    # git@github.com:owner/repo.git
-                    parts = url.split(':')[1].replace('.git', '')
-                else:
-                    # https://github.com/owner/repo.git
-                    parts = url.split('github.com/')[1].replace('.git', '')
-                return parts
+            parsed = self._parse_remote_url(result.stdout.strip())
+            if parsed:
+                return parsed
         except Exception:
             pass
         
         # Fallback auf vogel-video-analyzer Repository
         return "kamera-linux/vogel-video-analyzer"
     
+    @staticmethod
+    def _parse_remote_url(url: str) -> Optional[str]:
+        """Parse a GitHub remote URL into "owner/repo" (None if not a GitHub URL)."""
+        match = _REMOTE_RE.search(url.strip())
+        if not match:
+            return None
+        return f"{match.group('owner')}/{match.group('repo')}"
+
+    def _issue_url(self, number: int) -> str:
+        """URL of a GitHub issue in the configured repository."""
+        return f"https://github.com/{self.repo_name}/issues/{number}"
+
+    def _github_link_block(self, number: int) -> str:
+        """Link block appended to local issue descriptions."""
+        return f"\n\n---\n**GitHub Issue:** {self._issue_url(number)}"
+
+    def _linked_issue_number(self, description: str) -> Optional[int]:
+        """
+        Extract the GitHub issue number linked in a local description.
+
+        Only links to issues of the configured repository are considered
+        (links to other repositories or other issues in the text are ignored);
+        the last link wins, because the sync appends its link at the end.
+        """
+        pattern = re.compile(
+            r'https://github\.com/' + re.escape(self.repo_name) + r'/issues/(\d+)(?!\d)',
+            re.IGNORECASE,
+        )
+        matches = pattern.findall(description or "")
+        return int(matches[-1]) if matches else None
+
+    @staticmethod
+    def _local_id_from_body(body: str) -> Optional[int]:
+        """Extract the local issue ID that push_issue() writes into the GitHub body."""
+        match = re.search(r'\*\*Local Issue ID:\*\* #(\d+)(?!\d)', body or "")
+        return int(match.group(1)) if match else None
+
+    def _iter_repo_issues(self, state: str = 'all'):
+        """Iterate repository issues, skipping pull requests (the API returns both)."""
+        for gh_issue in self.repo.get_issues(state=state):
+            if getattr(gh_issue, 'pull_request', None):
+                continue
+            yield gh_issue
+
+    def _build_local_id_index(self) -> Dict[int, 'GHIssue']:
+        """Map local issue IDs (from GitHub issue bodies) to GitHub issues - one API pass."""
+        index = {}
+        for gh_issue in self._iter_repo_issues('all'):
+            local_id = self._local_id_from_body(gh_issue.body)
+            if local_id is not None and local_id not in index:
+                index[local_id] = gh_issue
+        return index
+
     def _issue_to_github_format(self, issue: Issue) -> Dict:
         """Konvertiert lokales Issue zu GitHub-Format"""
         labels = []
@@ -170,14 +228,10 @@ class GitHubSync:
         return body
     
     def _extract_github_number_from_body(self, description: str) -> Optional[int]:
-        """Extrahiert GitHub Issue Number aus dem Body"""
-        import re
-        match = re.search(r'github\.com/[^/]+/[^/]+/issues/(\d+)', description)
-        if match:
-            return int(match.group(1))
-        return None
+        """Extrahiert GitHub Issue Number aus dem Body (nur Links auf dieses Repository)"""
+        return self._linked_issue_number(description)
     
-    def _github_to_local_issue(self, gh_issue: GHIssue, local_id: Optional[int] = None) -> Dict:
+    def _github_to_local_issue(self, gh_issue: 'GHIssue', local_id: Optional[int] = None) -> Dict:
         """Konvertiert GitHub Issue zu lokalem Format"""
         # Status aus Labels extrahieren oder aus Issue State ableiten
         status = "todo"
@@ -215,9 +269,8 @@ class GitHubSync:
         
         # Füge GitHub Issue Link zur Beschreibung hinzu
         description = gh_issue.body or ""
-        gh_link = f"\n\n---\n**GitHub Issue:** https://github.com/{self.repo_name}/issues/{gh_issue.number}"
-        if gh_link not in description:
-            description += gh_link
+        if self._linked_issue_number(description) != gh_issue.number:
+            description += self._github_link_block(gh_issue.number)
         
         return {
             'id': local_id or gh_issue.number,
@@ -231,7 +284,8 @@ class GitHubSync:
             'updated_at': gh_issue.updated_at.isoformat()
         }
     
-    def push_issue(self, issue: Issue, update_existing: bool = True, board: Optional[IssueBoard] = None) -> GHIssue:
+    def push_issue(self, issue: Issue, update_existing: bool = True, board: Optional[IssueBoard] = None,
+                   local_id_index: Optional[Dict[int, 'GHIssue']] = None) -> 'GHIssue':
         """
         Pusht ein lokales Issue zu GitHub
         
@@ -239,34 +293,29 @@ class GitHubSync:
             issue: Lokales Issue
             update_existing: Aktualisiere existierende Issues
             board: Issue Board (optional, für lokales Update nach Push)
+            local_id_index: Vorab erstellter Index lokale ID -> GitHub Issue
+                            (vermeidet einen kompletten API-Durchlauf pro Issue)
         
         Returns:
             GitHub Issue Objekt
         """
         gh_data = self._issue_to_github_format(issue)
         
-        # Suche nach existierendem Issue (anhand Titel oder ID im Body)
+        # Suche nach existierendem Issue (anhand Link auf dieses Repo oder ID im Body)
         existing = None
         if update_existing:
-            # Prüfe erst ob Issue bereits GitHub Link hat
-            gh_link = f"/issues/"
-            if gh_link in issue.description:
-                # Extrahiere Issue Number
-                import re
-                match = re.search(r'/issues/(\d+)', issue.description)
-                if match:
-                    issue_num = int(match.group(1))
-                    try:
-                        existing = self.repo.get_issue(issue_num)
-                    except:
-                        pass
+            issue_num = self._linked_issue_number(issue.description)
+            if issue_num is not None:
+                try:
+                    existing = self.repo.get_issue(issue_num)
+                except GithubException:
+                    existing = None
             
             # Fallback: Suche nach Local Issue ID
             if not existing:
-                for gh_issue in self.repo.get_issues(state='all'):
-                    if f"Local Issue ID:** #{issue.id}" in (gh_issue.body or ""):
-                        existing = gh_issue
-                        break
+                if local_id_index is None:
+                    local_id_index = self._build_local_id_index()
+                existing = local_id_index.get(issue.id)
         
         if existing:
             # Aktualisiere existierendes Issue
@@ -296,15 +345,15 @@ class GitHubSync:
                 create_params['assignee'] = gh_data['assignee']
             
             gh_issue = self.repo.create_issue(**create_params)
+            if local_id_index is not None:
+                local_id_index[issue.id] = gh_issue
             
             # Aktualisiere lokales Issue mit GitHub Link
-            if board:
-                gh_link = f"\n\n---\n**GitHub Issue:** https://github.com/{self.repo_name}/issues/{gh_issue.number}"
-                if gh_link not in issue.description:
-                    board.update_issue(
-                        issue.id,
-                        description=issue.description + gh_link
-                    )
+            if board and self._linked_issue_number(issue.description) != gh_issue.number:
+                board.update_issue(
+                    issue.id,
+                    description=issue.description + self._github_link_block(gh_issue.number)
+                )
             
             return gh_issue
     
@@ -321,15 +370,16 @@ class GitHubSync:
         """
         synced_issues = []
         
-        for gh_issue in self.repo.get_issues(state=state):
+        # Index: GitHub Issue Number -> lokale ID (exakter Vergleich, kein Substring)
+        number_to_local = {}
+        for local_issue in board.issues:
+            number = self._linked_issue_number(local_issue.description)
+            if number is not None and number not in number_to_local:
+                number_to_local[number] = local_issue.id
+        
+        for gh_issue in self._iter_repo_issues(state):
             # Prüfe ob Issue bereits lokal existiert (anhand GitHub Issue Link im Body)
-            local_id = None
-            gh_link = f"/issues/{gh_issue.number}"
-            
-            for local_issue in board.issues:
-                if gh_link in local_issue.description:
-                    local_id = local_issue.id
-                    break
+            local_id = number_to_local.get(gh_issue.number)
             
             issue_data = self._github_to_local_issue(gh_issue, local_id)
             
@@ -355,6 +405,7 @@ class GitHubSync:
                     labels=issue_data['labels'],
                     assignee=issue_data['assignee']
                 )
+                number_to_local[gh_issue.number] = issue.id
             
             synced_issues.append(issue)
         
@@ -457,40 +508,47 @@ class GitHubSync:
                     # Speichere Status-Optionen
                     for option in field.get('options', []):
                         # Mappe Emoji-Status auf interne Werte
-                        name = option['name']
-                        if 'Todo' in name:
-                            self._status_options['todo'] = option['id']
-                        elif 'Progress' in name:
-                            self._status_options['in_progress'] = option['id']
-                        elif 'Done' in name:
-                            self._status_options['done'] = option['id']
-                        elif 'Blocked' in name:
-                            self._status_options['blocked'] = option['id']
+                        status = self._map_status_name(option['name'])
+                        if status:
+                            self._status_options[status] = option['id']
                     break
         
         except Exception as e:
             print(f"⚠️  Warnung: Konnte Project Board Daten nicht laden: {e}")
     
-    def _get_project_item_status(self, issue_node_id: str) -> Optional[str]:
+    @staticmethod
+    def _map_status_name(status_name: str) -> Optional[str]:
+        """Map a project board status option name to the internal status."""
+        if 'Todo' in status_name:
+            return 'todo'
+        if 'Progress' in status_name:
+            return 'in_progress'
+        if 'Done' in status_name:
+            return 'done'
+        if 'Blocked' in status_name:
+            return 'blocked'
+        return None
+
+    def _get_project_status_map(self) -> Dict[str, str]:
         """
-        Holt den Status eines Issues im Project Board
-        
-        Args:
-            issue_node_id: GitHub Issue Node ID
-        
+        Holt den Status aller Issues im Project Board (mit Pagination).
+
         Returns:
-            Status string ('todo', 'in_progress', 'done', 'blocked') oder None
+            Dict Issue Node ID -> Status ('todo', 'in_progress', 'done', 'blocked')
         """
         if not self._project_id:
-            return None
-        
+            return {}
+
         query = '''
-        query($projectId: ID!) {
+        query($projectId: ID!, $cursor: String) {
           node(id: $projectId) {
             ... on ProjectV2 {
-              items(first: 100) {
+              items(first: 100, after: $cursor) {
+                pageInfo {
+                  hasNextPage
+                  endCursor
+                }
                 nodes {
-                  id
                   content {
                     ... on Issue {
                       id
@@ -501,7 +559,6 @@ class GitHubSync:
                       ... on ProjectV2ItemFieldSingleSelectValue {
                         field {
                           ... on ProjectV2SingleSelectField {
-                            id
                             name
                           }
                         }
@@ -515,37 +572,45 @@ class GitHubSync:
           }
         }
         '''
+
+        status_map: Dict[str, str] = {}
+        cursor = None
+        while True:
+            data = self._graphql_query(query, {'projectId': self._project_id, 'cursor': cursor})
+            items = (data.get('node') or {}).get('items')
+            if not items:
+                break
+            for item in items.get('nodes', []):
+                node_id = (item.get('content') or {}).get('id')
+                if not node_id:
+                    continue
+                for field_value in (item.get('fieldValues') or {}).get('nodes', []):
+                    if (field_value.get('field') or {}).get('name') == 'Status':
+                        status = self._map_status_name(field_value.get('name', ''))
+                        if status:
+                            status_map[node_id] = status
+                        break
+            page_info = items.get('pageInfo') or {}
+            if not page_info.get('hasNextPage'):
+                break
+            cursor = page_info.get('endCursor')
+        return status_map
+
+    def _get_project_item_status(self, issue_node_id: str) -> Optional[str]:
+        """
+        Holt den Status eines Issues im Project Board
         
-        variables = {'projectId': self._project_id}
+        Args:
+            issue_node_id: GitHub Issue Node ID
         
+        Returns:
+            Status string ('todo', 'in_progress', 'done', 'blocked') oder None
+        """
         try:
-            data = self._graphql_query(query, variables)
-            
-            if not data.get('node') or not data['node'].get('items'):
-                return None
-            
-            # Suche nach dem Issue
-            for item in data['node']['items']['nodes']:
-                if item.get('content', {}).get('id') == issue_node_id:
-                    # Finde Status Field Value
-                    for field_value in item.get('fieldValues', {}).get('nodes', []):
-                        if field_value.get('field', {}).get('name') == 'Status':
-                            status_name = field_value.get('name', '')
-                            # Mappe zurück auf interne Werte
-                            if 'Todo' in status_name:
-                                return 'todo'
-                            elif 'Progress' in status_name:
-                                return 'in_progress'
-                            elif 'Done' in status_name:
-                                return 'done'
-                            elif 'Blocked' in status_name:
-                                return 'blocked'
-                    break
-        
+            return self._get_project_status_map().get(issue_node_id)
         except Exception as e:
             print(f"⚠️  Warnung: Status für Issue {issue_node_id[:10]}... nicht abrufbar: {e}")
-        
-        return None
+            return None
     
     def sync_all(self, board: IssueBoard, direction: str = 'both', sync_project_status: bool = True) -> Dict:
         """
@@ -575,9 +640,15 @@ class GitHubSync:
                 sync_project_status = False
         
         if direction in ['push', 'both']:
-            for issue in board.issues:
+            try:
+                # Einmaliger API-Durchlauf statt einer kompletten Suche pro Issue
+                local_id_index = self._build_local_id_index()
+            except Exception as e:
+                stats['errors'].append(f"Issue-Index laden: {str(e)}")
+                local_id_index = None
+            for issue in list(board.issues):
                 try:
-                    self.push_issue(issue, board=board)
+                    self.push_issue(issue, board=board, local_id_index=local_id_index)
                     stats['pushed'] += 1
                 except Exception as e:
                     stats['errors'].append(f"Push Issue #{issue.id}: {str(e)}")
@@ -589,34 +660,63 @@ class GitHubSync:
                 
                 # Synchronisiere Project Board Status
                 if sync_project_status and self._project_id:
-                    # Hole alle GitHub Issues
-                    gh_issues = list(self.repo.get_issues(state='all'))
+                    status_map = self._get_project_status_map()
                     
                     for issue in board.issues:
-                        # Versuche GitHub Issue zu finden (via Titel-Match)
-                        gh_issue = None
-                        for gh in gh_issues:
-                            if gh.title == issue.title:
-                                gh_issue = gh
-                                break
+                        # GitHub Issue über den Link in der lokalen Beschreibung finden
+                        number = self._linked_issue_number(issue.description)
+                        if number is None:
+                            continue
+                        try:
+                            gh_issue = self.repo.get_issue(number)
+                        except GithubException:
+                            continue
                         
-                        if gh_issue:
-                            # Hole Status aus Project Board
-                            project_status = self._get_project_item_status(gh_issue.node_id)
-                            if project_status and project_status != issue.status:
-                                print(f"   📊 Issue #{issue.id} '{issue.title[:30]}': {issue.status} → {project_status}")
-                                issue.status = project_status
-                                stats['project_synced'] += 1
+                        project_status = status_map.get(gh_issue.node_id)
+                        if project_status and project_status != issue.status:
+                            print(f"   📊 Issue #{issue.id} '{issue.title[:30]}': {issue.status} → {project_status}")
+                            issue.status = project_status
+                            stats['project_synced'] += 1
                     
                     # Speichere aktualisierte Issues
                     if stats['project_synced'] > 0:
                         board._save()
-                
+                        
             except Exception as e:
                 stats['errors'].append(f"Pull: {str(e)}")
         
         return stats
     
+    @staticmethod
+    def save_token(token: str, config_path: Optional[Path] = None) -> Path:
+        """
+        Speichert den Token in der Config-Datei mit Berechtigung 0600.
+
+        Die Datei wird direkt mit restriktiven Rechten angelegt (kein Zeitfenster,
+        in dem sie für andere lesbar ist) und atomar ersetzt.
+        """
+        config_path = Path(config_path) if config_path else Path.home() / CONFIG_FILE_NAME
+        config = {}
+        if config_path.exists():
+            with open(config_path, 'r', encoding='utf-8') as f:
+                config = json.load(f)
+        config['github_token'] = token
+
+        tmp_path = config_path.with_name(config_path.name + '.tmp')
+        fd = os.open(str(tmp_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump(config, f, indent=2)
+            os.chmod(tmp_path, 0o600)  # in case the file already existed
+            os.replace(tmp_path, config_path)
+        except Exception:
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+            raise
+        return config_path
+
     @staticmethod
     def setup_token_interactive():
         """Interaktive Token-Einrichtung"""
@@ -626,41 +726,25 @@ class GitHubSync:
         print("\nUm GitHub Issues zu synchronisieren, benötigen Sie einen")
         print("Personal Access Token von GitHub.")
         print("\nSchritte:")
-        print("1. Gehen Sie zu: https://github.com/settings/tokens")
-        print("2. Klicken Sie auf 'Generate new token (classic)'")
-        print("3. Wählen Sie 'repo' scope (voller Repository-Zugriff)")
+        print("1. Gehen Sie zu: https://github.com/settings/personal-access-tokens")
+        print("2. Erstellen Sie einen 'Fine-grained token' nur für dieses Repository")
+        print("3. Berechtigungen: 'Issues: Read and write' (und ggf. 'Projects')")
         print("4. Kopieren Sie den generierten Token")
         print("\nSpeichermethoden:")
         print("A) Umgebungsvariable (empfohlen):")
         print("   export GITHUB_TOKEN=your_token_here")
         print("   (Fügen Sie dies zu ~/.bashrc oder ~/.zshrc hinzu)")
         print("\nB) Config-Datei:")
-        print("   Speichern in ~/.vogel_config.json")
-        print("\nC) CLI-Parameter:")
-        print("   vogel-issues sync --github-token your_token_here")
+        print(f"   Speichern in ~/{CONFIG_FILE_NAME} (Berechtigung 600)")
         print("\n" + "=" * 60)
         
         choice = input("\nToken jetzt in Config-Datei speichern? [y/N]: ")
         
         if choice.lower() == 'y':
-            token = input("GitHub Token eingeben: ").strip()
+            # getpass: Token wird bei der Eingabe nicht angezeigt
+            token = getpass.getpass("GitHub Token eingeben (Eingabe unsichtbar): ").strip()
             if token:
-                import json
-                config_path = Path.home() / '.vogel_config.json'
-                config = {}
-                
-                if config_path.exists():
-                    with open(config_path, 'r') as f:
-                        config = json.load(f)
-                
-                config['github_token'] = token
-                
-                with open(config_path, 'w') as f:
-                    json.dump(config, f, indent=2)
-                
-                # Setze sichere Berechtigungen
-                config_path.chmod(0o600)
-                
+                config_path = GitHubSync.save_token(token)
                 print(f"\n✅ Token gespeichert in {config_path}")
                 print("⚠️  WICHTIG: Teilen Sie diese Datei niemals!")
                 return True

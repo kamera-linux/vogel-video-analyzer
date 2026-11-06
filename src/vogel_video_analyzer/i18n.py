@@ -10,6 +10,49 @@ import locale
 # Available translations
 TRANSLATIONS = {
     'en': {
+        # --- Additional messages (analyzer, summary, deletion, report) ---
+        'error_loading_model': 'Error loading model',
+        'troubleshoot_title': 'Troubleshooting steps:',
+        'troubleshoot_internet': 'Ensure internet connection (for auto-download)',
+        'troubleshoot_disk': 'Check disk space (~50MB for yolo26n.pt model)',
+        'troubleshoot_cache': 'Verify YOLO cache directory:',
+        'troubleshoot_manual': 'Alternatively, manually download from:',
+        'species_continue_basic': 'Continuing with basic bird detection only.',
+        'species_classifier_load_failed': 'Could not load species classifier:',
+        'species_classification_error': 'Species classification error (frame {frame}):',
+        'classification_error': 'Classification error:',
+        'local': 'local',
+        'using_gpu': 'Using GPU:',
+        'invalid_fps': 'Video has no valid frame rate: {path}',
+        'annotation_fps_reduced': 'Original FPS ({fps}) exceeds codec limits, output uses {output_fps} FPS (frames are skipped, playback speed unchanged)',
+        'annotation_codec_fallback': 'MP4V codec not available, trying XVID with AVI...',
+        'annotation_writer_failed': 'Could not open video writer. Try installing ffmpeg: sudo apt install ffmpeg',
+        'annotation_output_changed': 'Output changed to:',
+        'progress': 'Progress',
+        'annotation_no_audio': 'Original video has no audio track',
+        'ffmpeg_not_available_no_audio': 'ffmpeg not available - video saved without audio',
+        'ffmpeg_install_hint': 'Install ffmpeg to preserve audio:',
+        'annotation_audio_error': 'Could not merge audio:',
+        'summary_analyzing_frames': 'Analyzing {frames} frames at {fps} FPS...',
+        'summary_analysis_done': 'Analysis complete - {count} frames with birds detected',
+        'summary_no_segments': 'No bird activity segments found - video would be empty',
+        'summary_segments_keep': 'Segments to keep:',
+        'summary_original_duration': 'Original duration:',
+        'summary_summary_duration': 'Summary duration:',
+        'summary_compression': 'Compression: {percent}% shorter',
+        'summary_segment_failed': 'Warning: Failed to extract segment {index}',
+        'summary_concat_failed': 'ffmpeg concatenation failed',
+        'summary_ffmpeg_timeout': 'ffmpeg timeout - video too long',
+        'summary_ffmpeg_missing': 'ffmpeg not found - please install:',
+        'html_chartjs_missing': 'Chart.js could not be loaded, charts will not be displayed:',
+        'html_count': 'Count',
+        'delete_dry_run_hint': 'DRY RUN - nothing will be deleted',
+        'delete_would_delete': 'Would delete:',
+        'delete_skipped': 'Skipped',
+        'delete_skip_unreadable': 'no frame could be read (file possibly damaged)',
+        'delete_skip_mixed': 'folder also contains videos with birds',
+        'delete_skip_protected': 'protected directory (current directory, home or root)',
+        'delete_skip_unanalyzed': 'folder contains other videos that were not analyzed',
         # Loading and initialization
         'loading_model': 'Loading YOLO model:',
         'model_not_found': "Model '{model_name}' not found locally, will be auto-downloaded...",
@@ -79,7 +122,7 @@ TRANSLATIONS = {
         
         # Deletion
         'delete_files_title': 'DELETING VIDEO FILES WITH 0% BIRD CONTENT ({count} files)',
-        'delete_folders_title': 'DELETING FOLDERS WITH 0% BIRD CONTENT ({count} videos)',
+        'delete_folders_title': 'DELETING FOLDERS WITH 0% BIRD CONTENT ({count} folders)',
         'deleting': 'Deleting:',
         'deleting_folder': 'Deleting folder:',
         'delete_success': 'Successfully deleted',
@@ -170,6 +213,49 @@ TRANSLATIONS = {
     },
 
     'de': {
+        # --- Additional messages (analyzer, summary, deletion, report) ---
+        'error_loading_model': 'Fehler beim Laden des Modells',
+        'troubleshoot_title': 'Schritte zur Fehlerbehebung:',
+        'troubleshoot_internet': 'Internetverbindung prüfen (für automatischen Download)',
+        'troubleshoot_disk': 'Freien Speicherplatz prüfen (~50 MB für yolo26n.pt)',
+        'troubleshoot_cache': 'YOLO-Cache-Verzeichnis prüfen:',
+        'troubleshoot_manual': 'Alternativ manuell herunterladen von:',
+        'species_continue_basic': 'Fahre nur mit einfacher Vogelerkennung fort.',
+        'species_classifier_load_failed': 'Arten-Klassifikator konnte nicht geladen werden:',
+        'species_classification_error': 'Fehler bei der Artbestimmung (Frame {frame}):',
+        'classification_error': 'Klassifizierungsfehler:',
+        'local': 'lokal',
+        'using_gpu': 'Verwende GPU:',
+        'invalid_fps': 'Video hat keine gültige Bildrate: {path}',
+        'annotation_fps_reduced': 'Original-FPS ({fps}) überschreitet Codec-Grenzen, Ausgabe mit {output_fps} FPS (Frames werden übersprungen, Abspielgeschwindigkeit bleibt gleich)',
+        'annotation_codec_fallback': 'MP4V-Codec nicht verfügbar, versuche XVID mit AVI...',
+        'annotation_writer_failed': 'Video-Writer konnte nicht geöffnet werden. ffmpeg installieren: sudo apt install ffmpeg',
+        'annotation_output_changed': 'Ausgabe geändert zu:',
+        'progress': 'Fortschritt',
+        'annotation_no_audio': 'Originalvideo hat keine Tonspur',
+        'ffmpeg_not_available_no_audio': 'ffmpeg nicht verfügbar - Video ohne Ton gespeichert',
+        'ffmpeg_install_hint': 'ffmpeg installieren, um den Ton zu erhalten:',
+        'annotation_audio_error': 'Ton konnte nicht übernommen werden:',
+        'summary_analyzing_frames': 'Analysiere {frames} Frames mit {fps} FPS...',
+        'summary_analysis_done': 'Analyse abgeschlossen - {count} Frames mit Vögeln erkannt',
+        'summary_no_segments': 'Keine Segmente mit Vogelaktivität gefunden - Video wäre leer',
+        'summary_segments_keep': 'Beizubehaltende Segmente:',
+        'summary_original_duration': 'Originaldauer:',
+        'summary_summary_duration': 'Dauer der Zusammenfassung:',
+        'summary_compression': 'Kompression: {percent}% kürzer',
+        'summary_segment_failed': 'Warnung: Segment {index} konnte nicht extrahiert werden',
+        'summary_concat_failed': 'ffmpeg-Zusammenfügen fehlgeschlagen',
+        'summary_ffmpeg_timeout': 'ffmpeg-Zeitüberschreitung - Video zu lang',
+        'summary_ffmpeg_missing': 'ffmpeg nicht gefunden - bitte installieren:',
+        'html_chartjs_missing': 'Chart.js konnte nicht geladen werden, Diagramme werden nicht angezeigt:',
+        'html_count': 'Anzahl',
+        'delete_dry_run_hint': 'PROBELAUF - es wird nichts gelöscht',
+        'delete_would_delete': 'Würde löschen:',
+        'delete_skipped': 'Übersprungen',
+        'delete_skip_unreadable': 'kein Frame lesbar (Datei evtl. beschädigt)',
+        'delete_skip_mixed': 'Ordner enthält auch Videos mit Vögeln',
+        'delete_skip_protected': 'geschütztes Verzeichnis (aktuelles Verzeichnis, Home oder Root)',
+        'delete_skip_unanalyzed': 'Ordner enthält weitere, nicht analysierte Videos',
         # Loading and initialization
         'loading_model': 'Lade YOLO-Modell:',
         'model_not_found': "Modell '{model_name}' lokal nicht gefunden, wird automatisch heruntergeladen...",
@@ -239,7 +325,7 @@ TRANSLATIONS = {
         
         # Deletion
         'delete_files_title': 'LÖSCHE VIDEODATEIEN MIT 0% VOGELINHALT ({count} Dateien)',
-        'delete_folders_title': 'LÖSCHE ORDNER MIT 0% VOGELINHALT ({count} Videos)',
+        'delete_folders_title': 'LÖSCHE ORDNER MIT 0% VOGELINHALT ({count} Ordner)',
         'deleting': 'Lösche:',
         'deleting_folder': 'Lösche Ordner:',
         'delete_success': 'Erfolgreich gelöscht',
@@ -329,6 +415,49 @@ TRANSLATIONS = {
         'hailo_model_not_found': 'Modell nicht gefunden: {path}',
     },
     'ja': {
+        # --- Additional messages (analyzer, summary, deletion, report) ---
+        'error_loading_model': 'モデルの読み込みエラー',
+        'troubleshoot_title': 'トラブルシューティング:',
+        'troubleshoot_internet': 'インターネット接続を確認してください（自動ダウンロード用）',
+        'troubleshoot_disk': 'ディスク容量を確認してください（yolo26n.pt で約50MB）',
+        'troubleshoot_cache': 'YOLOキャッシュディレクトリを確認:',
+        'troubleshoot_manual': 'または手動でダウンロード:',
+        'species_continue_basic': '基本的な鳥検出のみで続行します。',
+        'species_classifier_load_failed': '種分類器を読み込めませんでした:',
+        'species_classification_error': '種分類エラー（フレーム {frame}）:',
+        'classification_error': '分類エラー:',
+        'local': 'ローカル',
+        'using_gpu': 'GPU使用:',
+        'invalid_fps': '動画のフレームレートが無効です: {path}',
+        'annotation_fps_reduced': '元のFPS（{fps}）がコーデックの上限を超えています。出力は {output_fps} FPS（フレームを間引き、再生速度は維持）',
+        'annotation_codec_fallback': 'MP4Vコーデックが利用できません。XVID/AVIを試します...',
+        'annotation_writer_failed': 'ビデオライターを開けません。ffmpegをインストールしてください: sudo apt install ffmpeg',
+        'annotation_output_changed': '出力先を変更:',
+        'progress': '進捗',
+        'annotation_no_audio': '元の動画に音声トラックがありません',
+        'ffmpeg_not_available_no_audio': 'ffmpegが利用できません - 音声なしで保存しました',
+        'ffmpeg_install_hint': '音声を保持するにはffmpegをインストール:',
+        'annotation_audio_error': '音声を結合できませんでした:',
+        'summary_analyzing_frames': '{frames} フレームを {fps} FPS で解析中...',
+        'summary_analysis_done': '解析完了 - 鳥が検出されたフレーム: {count}',
+        'summary_no_segments': '鳥の活動区間が見つかりません - 動画は空になります',
+        'summary_segments_keep': '保持する区間:',
+        'summary_original_duration': '元の長さ:',
+        'summary_summary_duration': '要約の長さ:',
+        'summary_compression': '圧縮: {percent}% 短縮',
+        'summary_segment_failed': '警告: 区間 {index} を抽出できませんでした',
+        'summary_concat_failed': 'ffmpegの結合に失敗しました',
+        'summary_ffmpeg_timeout': 'ffmpegタイムアウト - 動画が長すぎます',
+        'summary_ffmpeg_missing': 'ffmpegが見つかりません - インストールしてください:',
+        'html_chartjs_missing': 'Chart.jsを読み込めません。グラフは表示されません:',
+        'html_count': '件数',
+        'delete_dry_run_hint': 'ドライラン - 何も削除されません',
+        'delete_would_delete': '削除対象:',
+        'delete_skipped': 'スキップ',
+        'delete_skip_unreadable': 'フレームを読み取れません（ファイル破損の可能性）',
+        'delete_skip_mixed': 'フォルダに鳥を含む動画もあります',
+        'delete_skip_protected': '保護されたディレクトリ（カレント、ホーム、ルート）',
+        'delete_skip_unanalyzed': 'フォルダに未解析の動画があります',
         # Loading and initialization
         'loading_model': 'YOLOモデルを読み込んでいます：',
         'model_not_found': "モデル '{model_name}' がローカルで見つかりません。自動的にダウンロードします...",
@@ -398,7 +527,7 @@ TRANSLATIONS = {
         
         # Deletion
         'delete_files_title': '鳥コンテンツ0%のビデオファイルを削除（{count}ファイル）',
-        'delete_folders_title': '鳥コンテンツ0%のフォルダを削除（{count}本の動画）',
+        'delete_folders_title': '鳥コンテンツ0%のフォルダを削除（{count}フォルダ）',
         'deleting': '削除中：',
         'deleting_folder': 'フォルダを削除中：',
         'delete_success': '正常に削除されました',
@@ -490,6 +619,11 @@ TRANSLATIONS = {
 }
 
 
+def _language_code(locale_name):
+    """Extract the language part of a locale name: 'de_DE.UTF-8' -> 'de'."""
+    return locale_name.split('.')[0].split('@')[0].replace('-', '_').split('_')[0].lower()
+
+
 class I18n:
     """Internationalization handler"""
     
@@ -508,8 +642,8 @@ class I18n:
         
         Priority:
         1. VOGEL_LANG environment variable
-        2. LANG environment variable
-        3. locale.getdefaultlocale()
+        2. LANGUAGE, LC_ALL, LC_MESSAGES, LANG environment variables (POSIX order)
+        3. locale.getlocale()
         4. Fallback to 'en'
         
         Returns:
@@ -520,26 +654,25 @@ class I18n:
         if vogel_lang in TRANSLATIONS:
             return vogel_lang
         
-        # Check LANG environment variable
-        lang = os.environ.get('LANG', '').lower()
-        if 'de' in lang:
-            return 'de'
-        elif 'ja' in lang:
-            return 'ja'
-        elif 'en' in lang:
-            return 'en'
+        # Check locale environment variables (first non-empty one wins)
+        for var in ('LANGUAGE', 'LC_ALL', 'LC_MESSAGES', 'LANG'):
+            value = os.environ.get(var, '')
+            if not value:
+                continue
+            # LANGUAGE may contain a priority list like "de_DE:en"
+            for candidate in value.split(':'):
+                code = _language_code(candidate)
+                if code in TRANSLATIONS:
+                    return code
+            if var != 'LANGUAGE':
+                return 'en'  # Set but unsupported (e.g. "C", "fr_FR") -> English
         
-        # Try locale
+        # Try locale module
         try:
-            default_locale = locale.getdefaultlocale()[0]
-            if default_locale:
-                if default_locale.lower().startswith('de'):
-                    return 'de'
-                elif default_locale.lower().startswith('ja'):
-                    return 'ja'
-                elif default_locale.lower().startswith('en'):
-                    return 'en'
-        except:
+            code = _language_code(locale.getlocale()[0] or '')
+            if code in TRANSLATIONS:
+                return code
+        except (ValueError, TypeError):
             pass
         
         # Fallback to English
@@ -590,7 +723,6 @@ def get_i18n():
     Returns:
         I18n instance
     """
-    global _i18n_instance
     if _i18n_instance is None:
         init_i18n()
     return _i18n_instance

@@ -3,13 +3,13 @@ Tests für GitHub-Synchronisation (Mock-basiert)
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch
 from pathlib import Path
 import tempfile
 
 try:
     from vogel_video_analyzer.github_sync import GitHubSync, GITHUB_AVAILABLE
-    from vogel_video_analyzer.issue_board import IssueBoard, Issue
+    from vogel_video_analyzer.issue_board import IssueBoard
 except ImportError:
     pytest.skip("PyGithub nicht installiert", allow_module_level=True)
 
@@ -56,6 +56,8 @@ def test_token_from_env(mock_github, monkeypatch):
 def test_token_from_config(mock_github, tmp_path, monkeypatch):
     """Test: Token aus Config-Datei laden"""
     import json
+    monkeypatch.delenv('GITHUB_TOKEN', raising=False)
+    monkeypatch.delenv('GH_TOKEN', raising=False)
     
     # Erstelle temporäre Config
     config_file = tmp_path / '.vogel_config.json'
@@ -73,11 +75,12 @@ def test_token_from_config(mock_github, tmp_path, monkeypatch):
     assert sync.token == 'config_token_456'
 
 
-def test_missing_token(mock_github, monkeypatch):
+def test_missing_token(mock_github, monkeypatch, tmp_path):
     """Test: Fehler bei fehlendem Token"""
-    # Entferne alle Token-Quellen
+    # Entferne alle Token-Quellen (inkl. einer evtl. vorhandenen ~/.vogel_config.json)
     monkeypatch.delenv('GITHUB_TOKEN', raising=False)
     monkeypatch.delenv('GH_TOKEN', raising=False)
+    monkeypatch.setattr(Path, 'home', lambda: tmp_path)
     
     with pytest.raises(ValueError, match="GitHub Token nicht gefunden"):
         GitHubSync(repo='test/repo')
@@ -139,7 +142,9 @@ def test_github_to_local_issue(mock_github):
     issue_data = sync._github_to_local_issue(gh_issue)
     
     assert issue_data['title'] == "GitHub Issue"
-    assert issue_data['description'] == "GitHub Beschreibung"
+    # Beschreibung + angehängter Link auf das GitHub Issue (für spätere Zuordnung)
+    assert issue_data['description'].startswith("GitHub Beschreibung")
+    assert issue_data['description'].endswith("https://github.com/test/repo/issues/42")
     assert issue_data['status'] == "done"
     assert issue_data['priority'] == "critical"
     assert 'bug' in issue_data['labels']

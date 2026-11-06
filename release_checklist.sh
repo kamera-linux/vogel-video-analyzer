@@ -1,42 +1,61 @@
 #!/bin/bash
-# Release Checklist für v0.5.6
+# Release Checklist
 # ==============================
+# Version is read from src/vogel_video_analyzer/__init__.py.
+# Usage: ./release_checklist.sh [VERSION]   (default: current __version__)
 
-echo "📋 Release Preparation Checklist für v0.5.6"
+set -u
+cd "$(dirname "$0")"
+
+VERSION="${1:-$(sed -n 's/^__version__ = "\(.*\)"/\1/p' src/vogel_video_analyzer/__init__.py)}"
+if [ -z "$VERSION" ]; then
+    echo "❌ Could not determine version"
+    exit 1
+fi
+TAG="v${VERSION}"
+NOTES=".github/RELEASE_${TAG}.md"
+PREV_NOTES="$(ls .github/RELEASE_v*.md 2>/dev/null | sort -V | grep -v "RELEASE_${TAG}.md" | tail -1)"
+
+echo "📋 Release Preparation Checklist für ${TAG}"
 echo "=============================================="
 echo ""
 
 # 1. Check git status
 echo "✅ Step 1: Git Status"
 echo "---"
-git status
+git status --short
 echo ""
 
 # 2. Check version
 echo "✅ Step 2: Version Check"
 echo "---"
-python3 -c "from vogel_video_analyzer import __version__; print(f'Version: {__version__}')" 2>/dev/null || echo "Paket nicht installiert"
+echo "__init__.py: ${VERSION}"
+python3 -c "from vogel_video_analyzer import __version__; print(f'Installed: {__version__}')" 2>/dev/null || echo "Paket nicht installiert"
 echo ""
 
 # 3. Check CHANGELOG
 echo "✅ Step 3: CHANGELOG.md Check"
 echo "---"
-head -30 CHANGELOG.md | grep -A5 "0.5.6"
+if grep -q "\[${VERSION}\]" CHANGELOG.md; then
+    grep -A5 "\[${VERSION}\]" CHANGELOG.md | head -6
+else
+    echo "✗ No CHANGELOG entry for ${VERSION}"
+fi
 echo ""
 
-# 4. Check pyproject.toml
-echo "✅ Step 4: pyproject.toml Check"
+# 4. Run tests
+echo "✅ Step 4: Tests"
 echo "---"
-grep "YOLOv26" pyproject.toml | head -3
+python3 -m pytest -q --no-cov 2>&1 | tail -3 || echo "⚠ pytest not available"
 echo ""
 
 # 5. Check if release notes file exists
 echo "✅ Step 5: Release Notes File"
 echo "---"
-if [ -f ".github/RELEASE_v0.5.6.md" ]; then
-    echo "✓ .github/RELEASE_v0.5.6.md exists"
+if [ -f "${NOTES}" ]; then
+    echo "✓ ${NOTES} exists"
 else
-    echo "✗ .github/RELEASE_v0.5.6.md NOT found - needs to be created!"
+    echo "✗ ${NOTES} NOT found - needs to be created!"
 fi
 echo ""
 
@@ -45,7 +64,7 @@ echo "✅ Step 6: GitHub CLI Check"
 echo "---"
 if command -v gh &> /dev/null; then
     echo "✓ GitHub CLI (gh) installed"
-    gh --version
+    gh --version | head -1
 else
     echo "✗ GitHub CLI not found - install from: https://cli.github.com/"
 fi
@@ -65,16 +84,18 @@ echo "1. Verify all changes are committed:"
 echo "   git log --oneline -5"
 echo ""
 echo "2. Create release notes file:"
-echo "   cp .github/RELEASE_v0.5.5.md .github/RELEASE_v0.5.6.md"
-echo "   # Then edit: RELEASE_v0.5.6.md"
+if [ -n "${PREV_NOTES}" ]; then
+    echo "   cp ${PREV_NOTES} ${NOTES}"
+fi
+echo "   # Then edit: ${NOTES}"
 echo ""
 echo "3. Create and push Git tag:"
-echo "   git tag -a v0.5.6 -m 'Release v0.5.6: YOLOv26 Upgrade'"
-echo "   git push origin v0.5.6"
+echo "   git tag -a ${TAG} -m 'Release ${TAG}'"
+echo "   git push origin ${TAG}"
 echo ""
 echo "4. Create GitHub release:"
-echo "   python scripts/create_github_release.py v0.5.6"
+echo "   python scripts/create_github_release.py ${TAG}"
 echo ""
 echo "Or with auto-watch for PyPI workflow:"
-echo "   python scripts/create_github_release.py v0.5.6 --watch"
+echo "   python scripts/create_github_release.py ${TAG} --watch"
 echo ""

@@ -8,24 +8,37 @@ This module creates interactive HTML reports with:
 - Detection statistics and metadata
 """
 
+import html
 import json
 import base64
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List
 import cv2
-import numpy as np
-import urllib.request
-import urllib.parse
 
 from . import __version__
 from .i18n import t, get_language
 from .species_classifier import BirdSpeciesClassifier
 
-# Chart.js library will be embedded inline for HTMLPreview compatibility
-CHARTJS_CDN_URL = "https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"
-CHARTJS_ALLOWED_HOST = "cdn.jsdelivr.net"
+# Chart.js (v4.4.0, MIT License) is bundled with the package and embedded
+# inline, so reports work offline and nothing is downloaded at runtime.
+# Source: https://registry.npmjs.org/chart.js/-/chart.js-4.4.0.tgz (dist/chart.umd.js)
+# npm integrity: sha512-vQEj6d+z0dcsKLlQvbKIMYFHd3t8W/7L2vfJIbYcfyPcRx92CsHqECpueN8qVGNlKyDcr5wBrYAYKnfu/9Q1hQ==
+CHARTJS_VENDOR_PATH = Path(__file__).parent / "vendor" / "chart.umd.js"
 _CHARTJS_CACHE = None
+
+
+def _esc(value) -> str:
+    """HTML-escape a value for use in element content and attributes."""
+    return html.escape(str(value), quote=True)
+
+
+def _js_json(value) -> str:
+    """Serialize value as JSON that is safe to embed inside a <script> element."""
+    return (json.dumps(value, ensure_ascii=False)
+            .replace("<", "\\u003c")
+            .replace(">", "\\u003e")
+            .replace("&", "\\u0026"))
 
 
 class HTMLReporter:
@@ -41,26 +54,22 @@ class HTMLReporter:
         """
         self.data = analysis_data
         self.video_path = Path(video_path)
-        self.video_name = self.video_path.name        
+        self.video_name = self.video_path.name
+
     @staticmethod
     def _get_chartjs() -> str:
-        """Get Chart.js library code (download once and cache)."""
+        """Get the bundled Chart.js library code (read once and cache)."""
         global _CHARTJS_CACHE
         
         if _CHARTJS_CACHE is None:
             try:
-                parsed_url = urllib.parse.urlparse(CHARTJS_CDN_URL)
-                if parsed_url.scheme != "https" or parsed_url.netloc != CHARTJS_ALLOWED_HOST:
-                    raise ValueError("Invalid Chart.js CDN URL configuration")
-
-                with urllib.request.urlopen(CHARTJS_CDN_URL, timeout=10) as response:  # nosec B310
-                    _CHARTJS_CACHE = response.read().decode('utf-8')
-            except Exception as e:
-                print(f"⚠️  Warning: Could not download Chart.js: {e}")
-                print(f"   Charts will not be displayed in the HTML report.")
+                _CHARTJS_CACHE = CHARTJS_VENDOR_PATH.read_text(encoding='utf-8')
+            except OSError as e:
+                print(f"⚠️  {t('html_chartjs_missing')} {e}")
                 _CHARTJS_CACHE = "// Chart.js not available"
         
-        return _CHARTJS_CACHE        
+        return _CHARTJS_CACHE
+
     def generate_report(self, output_path: str, max_thumbnails: int = 50) -> None:
         """
         Generate and save an HTML report.
@@ -84,11 +93,11 @@ class HTMLReporter:
         chartjs_code = self._get_chartjs()
         
         html = f"""<!DOCTYPE html>
-<html lang="de">
+<html lang="{_esc(get_language())}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{t('html_title')}: {self.video_name}</title>
+    <title>{_esc(t('html_title'))}: {_esc(self.video_name)}</title>
     <script>
     {chartjs_code}
     </script>
@@ -101,7 +110,7 @@ class HTMLReporter:
         <header>
             <h1>🦅 {t('html_title')}</h1>
             <div class="video-info">
-                <p><strong>{t('html_video')}</strong> {self.video_name}</p>
+                <p><strong>{t('html_video')}</strong> {_esc(self.video_name)}</p>
                 <p><strong>{t('html_created')}</strong> {datetime.now().strftime('%d.%m.%Y %H:%M')}</p>
             </div>
         </header>
@@ -190,7 +199,6 @@ class HTMLReporter:
             return {'labels': ['0s'], 'values': [0]}
         
         # Group detections by time intervals (every 10 seconds)
-        fps = self.data.get('fps', 30)
         duration = self.data.get('duration_seconds', 0)
         interval_seconds = 10
         num_intervals = int(duration / interval_seconds) + 1
@@ -201,7 +209,6 @@ class HTMLReporter:
         for segment in segments:
             start_time = segment.get('start', 0)
             end_time = segment.get('end', 0)
-            detections = segment.get('detections', 1)
             
             start_interval = int(start_time / interval_seconds)
             end_interval = int(end_time / interval_seconds)
@@ -250,46 +257,44 @@ class HTMLReporter:
         # Get detections from analyzer data
         detections = self.data.get('detections', [])
         
-        if not detections:
+        if not detections or max_count <= 0:
             return []
         
-        thumbnails = []
-        cap = cv2.VideoCapture(str(self.video_path))
-        fps = self.data.get('fps', 30)
+        fps = self.data.get('fps') or 30
         
+        # Collect all detections with species info
+        all_detections = []
+        for detection in detections:
+            frame_num = detection.get('frame', 0)
+            for species_info in detection.get('species', []):
+                all_detections.append({
+                    'frame': frame_num,
+                    'species': species_info.get('species', 'Unknown'),
+                    'confidence': species_info.get('confidence', 0)
+                })
+        
+        # Best detections first, then read the video once in frame order
+        all_detections.sort(key=lambda x: x['confidence'], reverse=True)
+        selected = all_detections[:max_count]
+        wanted = {}
+        for detection in selected:
+            wanted.setdefault(detection['frame'], []).append(detection)
+        
+        frame_images = {}
+        cap = cv2.VideoCapture(str(self.video_path))
         try:
-            # Collect all detections with species info
-            all_detections = []
-            for detection in detections:
-                frame_num = detection.get('frame', 0)
-                species_list = detection.get('species', [])
-                
-                # Add each species detection from this frame
-                for species_info in species_list:
-                    all_detections.append({
-                        'frame': frame_num,
-                        'species': species_info.get('species', 'Unknown'),
-                        'confidence': species_info.get('confidence', 0)
-                    })
-            
-            # Sort by confidence and limit
-            all_detections.sort(key=lambda x: x['confidence'], reverse=True)
-            all_detections = all_detections[:max_count]
-            
-            for detection in all_detections:
-                frame_num = detection['frame']
-                species_name = detection['species']
-                confidence = detection['confidence']
-                
-                # Translate species name to current language
-                translated_species = BirdSpeciesClassifier.translate_species_name(species_name)
-                
-                # Seek to frame
-                cap.set(cv2.CAP_PROP_POS_FRAMES, frame_num)
-                ret, frame = cap.read()
-                
-                if not ret:
+            # Frame numbers from analyze_video() are 1-based (frame N = N-th frame read)
+            current = 0
+            last_wanted = max(wanted) if wanted else 0
+            while current < last_wanted:
+                current += 1
+                if current not in wanted:
+                    if not cap.grab():
+                        break
                     continue
+                ret, frame = cap.read()
+                if not ret:
+                    break
                 
                 # Resize for thumbnail (max 300px width)
                 h, w = frame.shape[:2]
@@ -298,25 +303,31 @@ class HTMLReporter:
                     frame = cv2.resize(frame, (300, int(h * scale)))
                 
                 # Convert to JPEG and base64
-                _, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-                img_base64 = base64.b64encode(buffer).decode('utf-8')
-                
-                thumbnails.append({
-                    'image': img_base64,
-                    'species': translated_species,
-                    'confidence': confidence * 100,
-                    'frame': frame_num,
-                    'timestamp': self._frame_to_timestamp(frame_num, fps)
-                })
-        
+                ok, buffer = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+                if ok:
+                    frame_images[current] = base64.b64encode(buffer).decode('utf-8')
         finally:
             cap.release()
+        
+        thumbnails = []
+        for detection in selected:
+            frame_num = detection['frame']
+            if frame_num not in frame_images:
+                continue
+            thumbnails.append({
+                'image': frame_images[frame_num],
+                # Translate species name to current language
+                'species': BirdSpeciesClassifier.translate_species_name(detection['species']),
+                'confidence': detection['confidence'] * 100,
+                'frame': frame_num,
+                'timestamp': self._frame_to_timestamp(frame_num, fps)
+            })
         
         return thumbnails
     
     def _frame_to_timestamp(self, frame_num: int, fps: float) -> str:
         """Convert frame number to timestamp string."""
-        seconds = frame_num / fps
+        seconds = frame_num / fps if fps else 0
         mins = int(seconds // 60)
         secs = int(seconds % 60)
         return f"{mins:02d}:{secs:02d}"
@@ -328,12 +339,12 @@ class HTMLReporter:
         for thumb in thumbnails:
             html_parts.append(f"""
                 <div class="thumbnail-card">
-                    <img src="data:image/jpeg;base64,{thumb['image']}" alt="{thumb['species']}">
+                    <img src="data:image/jpeg;base64,{thumb['image']}" alt="{_esc(thumb['species'])}">
                     <div class="thumbnail-info">
-                        <div class="species-name">{thumb['species']}</div>
+                        <div class="species-name">{_esc(thumb['species'])}</div>
                         <div class="thumbnail-meta">
                             <span>🎯 {thumb['confidence']:.1f}%</span>
-                            <span>🕐 {thumb['timestamp']}</span>
+                            <span>🕐 {_esc(thumb['timestamp'])}</span>
                         </div>
                     </div>
                 </div>
@@ -526,10 +537,10 @@ class HTMLReporter:
         new Chart(timelineCtx, {{
             type: 'line',
             data: {{
-                labels: {json.dumps(timeline_data['labels'])},
+                labels: {_js_json(timeline_data['labels'])},
                 datasets: [{{
-                    label: 'Erkennungen',
-                    data: {json.dumps(timeline_data['values'])},
+                    label: {_js_json(t('html_detections'))},
+                    data: {_js_json(timeline_data['values'])},
                     borderColor: '#667eea',
                     backgroundColor: 'rgba(102, 126, 234, 0.1)',
                     fill: true,
@@ -560,10 +571,10 @@ class HTMLReporter:
         new Chart(speciesCtx, {{
             type: 'bar',
             data: {{
-                labels: {json.dumps(species_data['labels'])},
+                labels: {_js_json(species_data['labels'])},
                 datasets: [{{
-                    label: 'Anzahl',
-                    data: {json.dumps(species_data['values'])},
+                    label: {_js_json(t('html_count'))},
+                    data: {_js_json(species_data['values'])},
                     backgroundColor: [
                         '#667eea', '#764ba2', '#f093fb', '#4facfe',
                         '#43e97b', '#fa709a', '#fee140', '#30cfd0',

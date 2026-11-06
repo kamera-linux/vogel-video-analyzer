@@ -5,6 +5,8 @@ Verwaltet Issues für Projekt-Tracking und Bug-Reporting
 
 import json
 import os
+import tempfile
+from dataclasses import fields as dataclass_fields
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional, Literal
@@ -34,8 +36,9 @@ class Issue:
     
     @classmethod
     def from_dict(cls, data: Dict) -> 'Issue':
-        """Erstellt Issue aus Dictionary"""
-        return cls(**data)
+        """Erstellt Issue aus Dictionary (unbekannte Felder werden ignoriert)"""
+        known = {f.name for f in dataclass_fields(cls)}
+        return cls(**{k: v for k, v in data.items() if k in known})
 
 
 class IssueBoard:
@@ -55,23 +58,54 @@ class IssueBoard:
         self._load()
     
     def _load(self):
-        """Lädt Issues aus der Speicherdatei"""
-        if self.storage_path.exists():
+        """Lädt Issues aus der Speicherdatei
+
+        Ist die Datei beschädigt, wird sie nach ``<name>.corrupt-<zeitstempel>``
+        verschoben, damit sie beim nächsten Speichern nicht überschrieben wird.
+        """
+        self.issues = []
+        if not self.storage_path.exists() or self.storage_path.stat().st_size == 0:
+            return
+        try:
+            with open(self.storage_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            if not isinstance(data, list):
+                raise ValueError("Erwartet wurde eine JSON-Liste von Issues")
+            self.issues = [Issue.from_dict(issue_data) for issue_data in data]
+        except (json.JSONDecodeError, KeyError, TypeError, ValueError, AttributeError) as e:
+            backup = self.storage_path.with_name(
+                f"{self.storage_path.name}.corrupt-{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            )
             try:
-                with open(self.storage_path, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    self.issues = [Issue.from_dict(issue_data) for issue_data in data]
-            except (json.JSONDecodeError, KeyError) as e:
+                self.storage_path.replace(backup)
                 print(f"⚠️  Warnung: Fehler beim Laden von {self.storage_path}: {e}")
-                self.issues = []
-        else:
+                print(f"   Beschädigte Datei gesichert als: {backup}")
+            except OSError as move_error:
+                print(f"⚠️  Warnung: Fehler beim Laden von {self.storage_path}: {e}")
+                print(f"   Sicherung fehlgeschlagen ({move_error}) - Datei bitte manuell prüfen")
+                raise
             self.issues = []
     
     def _save(self):
-        """Speichert Issues in die Speicherdatei"""
+        """Speichert Issues atomar in die Speicherdatei (temporäre Datei + os.replace)"""
         self.storage_path.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.storage_path, 'w', encoding='utf-8') as f:
-            json.dump([issue.to_dict() for issue in self.issues], f, indent=2, ensure_ascii=False)
+        fd, tmp_name = tempfile.mkstemp(
+            dir=str(self.storage_path.parent), prefix=f".{self.storage_path.name}.", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, 'w', encoding='utf-8') as f:
+                json.dump([issue.to_dict() for issue in self.issues], f, indent=2, ensure_ascii=False)
+                f.flush()
+                os.fsync(f.fileno())
+            if self.storage_path.exists():
+                os.chmod(tmp_name, self.storage_path.stat().st_mode & 0o777)
+            os.replace(tmp_name, self.storage_path)
+        except Exception:
+            try:
+                os.unlink(tmp_name)
+            except OSError:
+                pass
+            raise
     
     def _get_next_id(self) -> int:
         """Ermittelt die nächste verfügbare ID"""

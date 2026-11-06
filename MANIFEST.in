@@ -8,3 +8,5 @@ include SECURITY.md
 recursive-include src *.py
 recursive-include src *.typed
 recursive-include assets/flags *.png *.jpg *.jpeg *.md
+recursive-include src *.js
+recursive-include src/vogel_video_analyzer/vendor *.md

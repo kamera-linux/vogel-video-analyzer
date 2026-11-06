@@ -5,6 +5,61 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-11-06
+
+### Fixed
+- **`--delete-folder` safety**: a folder is only deleted if every video in it was analyzed and
+  none contains birds; the current directory (and its parents), the home directory and the
+  filesystem root are never deleted; folders with other, not analyzed videos are skipped
+- **Deletion of unreadable videos**: videos from which no frame could be read are no longer
+  treated as "0% birds" and are never deleted
+- **Species identification colours**: crops are converted from OpenCV BGR to RGB before
+  classification (red and blue were swapped)
+- **`--create-summary`** only counts birds above `--threshold` (any detected object counted before)
+- **`--create-summary`** no longer fails after a successful run (temp dir was removed twice)
+- **`--hailo-num-classes`** is now passed to the Hailo engine; single-class models use class ID 0
+- **Bird segments**: max. gap between detections is 2 s (was `2 × sample_rate` seconds)
+- **Annotated videos > 60 FPS** keep real-time speed (frames are skipped instead of slow motion)
+- Division by zero for videos without FPS / frame count; `--sample-rate 0` and thresholds
+  outside 0–1 are rejected
+- `--log`: console tee supports `isatty()`, `encoding`, `fileno()` (crashes in third-party libraries)
+- `python -m vogel_video_analyzer` now returns the exit code; exit code 1 if a video failed
+- Pixel fallback flag for `gb` (rendered grey)
+- Default species model of `VideoAnalyzer` now matches the CLI (`chriamue/bird-species-classifier`)
+- Species model load errors are reported (classification silently returned nothing before)
+- HTML report thumbnails show the detected frame (off by one)
+- GitHub sync: exact issue matching (`/issues/1` matched `/issues/12`), links to other
+  repositories are ignored, pull requests are skipped, project board pagination,
+  one API pass per sync instead of one per issue
+- Issue board: corrupt storage files are backed up instead of overwritten; atomic writes
+- Language detection respects `LANGUAGE`/`LC_ALL`/`LC_MESSAGES`; replaces deprecated
+  `locale.getdefaultlocale()`
+
+### Changed
+- **Hailo engine**: RGB input, letterbox pre-processing, HailoRT NMS-by-class output format,
+  YOLOv8 DFL raw-output decoding, inference pipeline opened once instead of per frame
+  (to be validated on hardware)
+- Annotation: fonts and flag icons are cached, text is rendered only in its region
+  (much faster)
+- Summary video / HTML thumbnails read frames sequentially instead of seeking
+- HTML report: Chart.js 4.4.0 is bundled (works offline, no runtime download); video and
+  species names are HTML-escaped; `lang` attribute follows the selected language
+- GitHub token setup uses hidden input and creates the config file with mode 0600
+- **Python ≥ 3.10 required** (Pillow 12 / current PyTorch); classifiers updated
+- More messages translated (EN/DE/JA)
+
+### Added
+- `--dry-run` for `--delete-file` / `--delete-folder`
+- CI workflow with ruff and pytest (Python 3.10–3.13); test suite extended from 35 to 131 tests
+- `py.typed` marker
+
+### Infrastructure
+- GitHub Actions pinned to commit SHAs; PyPI publishing prepared for Trusted Publishing (OIDC)
+- `yolo26n.pt` removed from the repository (downloaded automatically by ultralytics)
+- `test_yolov26_upgrade.py` moved to `scripts/check_yolov26_upgrade.py`
+- `release_checklist.sh` reads the version from `__init__.py`
+- `scripts/create_github_release.py` no longer uses `shell=True`
+
 ## [0.5.12] - 2026-03-31
 
 ### Added

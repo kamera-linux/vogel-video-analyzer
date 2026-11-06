@@ -162,6 +162,9 @@ vogel-analyze --delete-file *.mp4
 # Delete entire folders with 0% bird content  
 vogel-analyze --delete-folder ~/Videos/*/*.mp4
 
+# Preview what would be deleted (nothing is deleted, v0.6.0+)
+vogel-analyze --delete-folder --dry-run ~/Videos/*/*.mp4
+
 # Batch process directory
 vogel-analyze ~/Videos/Birds/**/*.mp4
 
@@ -580,7 +583,8 @@ else:
 | `--sample-rate` | Analyze every Nth frame | `5` | `1` - `∞` |
 | `--output` | Save JSON report | - | File path |
 | `--delete-file` | Auto-delete 0% videos | `False` | Flag |
-| `--delete-folder` | Auto-delete 0% folders | `False` | Flag |
+| `--delete-folder` | Auto-delete 0% folders (only if every video in the folder was analyzed and has 0%; never the current directory, home or root) | `False` | Flag |
+| `--dry-run` | Only show what `--delete-file`/`--delete-folder` would delete | `False` | Flag |
 | `--log` | Enable logging | `False` | Flag |
 
 ### Species Identification Options (v0.3.0+)

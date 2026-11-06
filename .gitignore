@@ -134,8 +134,10 @@ dmypy.json
 Thumbs.db
 
 # Project specific
-models/*.pt
-yolov8n.pt
+# Model weights are downloaded automatically by ultralytics
+*.pt
+*.onnx
+*.hef
 *.mp4
 *.avi
 test_videos/

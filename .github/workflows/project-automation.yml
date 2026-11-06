@@ -6,13 +6,15 @@ on:
   pull_request:
     types: [assigned, opened, closed, reopened]
 
+# All API calls use secrets.PROJECT_TOKEN; GITHUB_TOKEN needs no write access
+permissions:
+  contents: read
+
 jobs:
   update-project-status:
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      pull-requests: write
-      contents: read
+    # Secrets are not available for pull requests from forks
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
       
     steps:
       - name: Get Project Data
@@ -41,23 +43,23 @@ jobs:
                   }
                 }
               }
-            }' -f org=$ORGANIZATION -F number=$PROJECT_NUMBER > project_data.json
+            }' -f org="$ORGANIZATION" -F number="$PROJECT_NUMBER" > project_data.json
           
           cat project_data.json
           PROJECT_ID=$(jq -r '.data.user.projectV2.id' project_data.json)
-          echo "project_id=$PROJECT_ID" >> $GITHUB_OUTPUT
+          echo "project_id=$PROJECT_ID" >> "$GITHUB_OUTPUT"
           
           STATUS_FIELD_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .id' project_data.json)
-          echo "status_field_id=$STATUS_FIELD_ID" >> $GITHUB_OUTPUT
+          echo "status_field_id=$STATUS_FIELD_ID" >> "$GITHUB_OUTPUT"
           
           TODO_OPTION_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name | contains("Todo")) | .id' project_data.json)
-          echo "todo_option_id=$TODO_OPTION_ID" >> $GITHUB_OUTPUT
+          echo "todo_option_id=$TODO_OPTION_ID" >> "$GITHUB_OUTPUT"
           
           IN_PROGRESS_OPTION_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name | contains("Progress")) | .id' project_data.json)
-          echo "in_progress_option_id=$IN_PROGRESS_OPTION_ID" >> $GITHUB_OUTPUT
+          echo "in_progress_option_id=$IN_PROGRESS_OPTION_ID" >> "$GITHUB_OUTPUT"
           
           DONE_OPTION_ID=$(jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name | contains("Done")) | .id' project_data.json)
-          echo "done_option_id=$DONE_OPTION_ID" >> $GITHUB_OUTPUT
+          echo "done_option_id=$DONE_OPTION_ID" >> "$GITHUB_OUTPUT"
 
       - name: Add to project
         env:
@@ -65,43 +67,22 @@ jobs:
           PROJECT_ID: ${{ steps.get_project_data.outputs.project_id }}
           ITEM_ID: ${{ github.event.issue.node_id || github.event.pull_request.node_id }}
         run: |
-          # Check if item is already in project
+          # addProjectV2ItemById is idempotent: it returns the existing item
+          # if the issue/PR is already in the project (no pagination needed)
           ITEM_IN_PROJECT=$(gh api graphql -f query='
-            query($projectId: ID!) {
-              node(id: $projectId) {
-                ... on ProjectV2 {
-                  items(first: 100) {
-                    nodes {
-                      id
-                      content {
-                        ... on Issue {
-                          id
-                        }
-                        ... on PullRequest {
-                          id
-                        }
-                      }
-                    }
-                  }
+            mutation($projectId: ID!, $contentId: ID!) {
+              addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
+                item {
+                  id
                 }
               }
-            }' -f projectId=$PROJECT_ID | jq -r --arg ITEM_ID "$ITEM_ID" '.data.node.items.nodes[] | select(.content.id == $ITEM_ID) | .id')
+            }' -f projectId="$PROJECT_ID" -f contentId="$ITEM_ID" --jq '.data.addProjectV2ItemById.item.id')
           
-          if [ -z "$ITEM_IN_PROJECT" ]; then
-            echo "Adding item to project..."
-            gh api graphql -f query='
-              mutation($projectId: ID!, $contentId: ID!) {
-                addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
-                  item {
-                    id
-                  }
-                }
-              }' -f projectId=$PROJECT_ID -f contentId=$ITEM_ID > add_result.json
-            
-            ITEM_IN_PROJECT=$(jq -r '.data.addProjectV2ItemById.item.id' add_result.json)
+          if [ -z "$ITEM_IN_PROJECT" ] || [ "$ITEM_IN_PROJECT" = "null" ]; then
+            echo "::error::Could not add item to project"
+            exit 1
           fi
-          
-          echo "PROJECT_ITEM_ID=$ITEM_IN_PROJECT" >> $GITHUB_ENV
+          echo "PROJECT_ITEM_ID=$ITEM_IN_PROJECT" >> "$GITHUB_ENV"
 
       - name: Set status to In Progress (when assigned)
         if: github.event.action == 'assigned'
@@ -123,7 +104,7 @@ jobs:
                   id
                 }
               }
-            }' -f projectId=$PROJECT_ID -f itemId=$PROJECT_ITEM_ID -f fieldId=$STATUS_FIELD_ID -f optionId=$OPTION_ID
+            }' -f projectId="$PROJECT_ID" -f itemId="$PROJECT_ITEM_ID" -f fieldId="$STATUS_FIELD_ID" -f optionId="$OPTION_ID"
           
           echo "✅ Status set to In Progress"
 
@@ -147,7 +128,7 @@ jobs:
                   id
                 }
               }
-            }' -f projectId=$PROJECT_ID -f itemId=$PROJECT_ITEM_ID -f fieldId=$STATUS_FIELD_ID -f optionId=$OPTION_ID
+            }' -f projectId="$PROJECT_ID" -f itemId="$PROJECT_ITEM_ID" -f fieldId="$STATUS_FIELD_ID" -f optionId="$OPTION_ID"
           
           echo "✅ Status set to Todo"
 
@@ -171,6 +152,6 @@ jobs:
                   id
                 }
               }
-            }' -f projectId=$PROJECT_ID -f itemId=$PROJECT_ITEM_ID -f fieldId=$STATUS_FIELD_ID -f optionId=$OPTION_ID
+            }' -f projectId="$PROJECT_ID" -f itemId="$PROJECT_ITEM_ID" -f fieldId="$STATUS_FIELD_ID" -f optionId="$OPTION_ID"
           
           echo "✅ Status set to Done"

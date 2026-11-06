@@ -3,7 +3,7 @@ Bird species classification module using Hugging Face transformers
 """
 
 import warnings
-from typing import Optional, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 from pathlib import Path
 
 try:
@@ -13,6 +13,11 @@ try:
     SPECIES_AVAILABLE = True
 except ImportError:
     SPECIES_AVAILABLE = False
+
+try:
+    import cv2
+except ImportError:  # pragma: no cover - cv2 is a hard dependency of the package
+    cv2 = None
 
 from .i18n import t
 
@@ -49,7 +54,6 @@ BIRD_NAME_TRANSLATIONS = {
         'EURASIAN BULLFINCH': 'Gimpel',
         'EURASIAN GOLDEN ORIOLE': 'Pirol',
         'EURASIAN MAGPIE': 'Elster',
-        'HOUSE SPARROW': 'Haussperling',
         'COMMON HOUSE MARTIN': 'Mehlschwalbe',
         'BARN SWALLOW': 'Rauchschwalbe',
         'BARN OWL': 'Schleiereule',
@@ -100,7 +104,6 @@ BIRD_NAME_TRANSLATIONS = {
         'EURASIAN BULLFINCH': 'ウソ',
         'EURASIAN GOLDEN ORIOLE': 'ニシコウライウグイス',
         'EURASIAN MAGPIE': 'カササギ',
-        'HOUSE SPARROW': 'イエスズメ',
         'COMMON HOUSE MARTIN': 'ニシイワツバメ',
         'BARN SWALLOW': 'ツバメ',
         'BARN OWL': 'メンフクロウ',
@@ -142,6 +145,15 @@ GERMAN_TO_ENGLISH = {
 }
 
 
+def bgr_to_rgb(image):
+    """Convert an OpenCV BGR image (H, W, 3) to RGB. Other shapes are returned unchanged."""
+    if getattr(image, 'ndim', 0) == 3 and image.shape[2] == 3:
+        if cv2 is not None:
+            return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        return image[:, :, ::-1].copy()
+    return image
+
+
 class BirdSpeciesClassifier:
     """Classifies bird species using a pre-trained model from Hugging Face"""
     
@@ -178,12 +190,17 @@ class BirdSpeciesClassifier:
         self._load_model()
     
     def _load_model(self):
-        """Load the Hugging Face model (from Hub or local path)"""
+        """Load the Hugging Face model (from Hub or local path)
+
+        Raises:
+            RuntimeError: if the model cannot be loaded. The caller decides
+                          whether to continue without species identification.
+        """
         try:
             # Check if model_name is a local path
             model_path = Path(self.model_name)
             if model_path.exists() and model_path.is_dir():
-                print(f"🤖 {t('loading_species_model')} {model_path.name} (lokal)")
+                print(f"🤖 {t('loading_species_model')} {model_path.name} ({t('local')})")
                 model_source = str(model_path)
             else:
                 print(f"🤖 {t('loading_species_model')} {self.model_name}")
@@ -197,7 +214,7 @@ class BirdSpeciesClassifier:
             device = 0 if torch.cuda.is_available() else -1
             if device == 0:
                 device_name = torch.cuda.get_device_name(0)
-                print(f"   🎮 Using GPU: {device_name}")
+                print(f"   🎮 {t('using_gpu')} {device_name}")
             
             self.classifier = pipeline(
                 "image-classification",
@@ -210,15 +227,16 @@ class BirdSpeciesClassifier:
             
         except Exception as e:
             print(f"   ❌ {t('model_load_error')} {e}")
-            print(f"   {t('fallback_basic_detection')}")
             self.classifier = None
+            raise RuntimeError(f"{t('model_load_error')} {e}") from e
     
-    def classify_image(self, image, top_k: int = 3) -> List[Dict[str, any]]:
+    def classify_image(self, image, top_k: int = 3) -> List[Dict[str, Any]]:
         """
         Classify bird species in an image
         
         Args:
-            image: PIL Image or numpy array
+            image: PIL Image or numpy array in **RGB** order
+                   (use classify_crop()/classify_crops_batch() for OpenCV BGR frames)
             top_k: Return top K predictions
             
         Returns:
@@ -246,15 +264,15 @@ class BirdSpeciesClassifier:
             return filtered
             
         except Exception as e:
-            print(f"   ⚠️  Classification error: {e}")
+            print(f"   ⚠️  {t('classification_error')} {e}")
             return []
     
-    def classify_crop(self, frame, bbox: Tuple[int, int, int, int], top_k: int = 3) -> List[Dict[str, any]]:
+    def classify_crop(self, frame, bbox: Tuple[int, int, int, int], top_k: int = 3) -> List[Dict[str, Any]]:
         """
         Classify a cropped region of a frame
         
         Args:
-            frame: Full video frame (numpy array)
+            frame: Full video frame (numpy array, OpenCV BGR order)
             bbox: Bounding box (x1, y1, x2, y2)
             top_k: Return top K predictions
             
@@ -275,19 +293,19 @@ class BirdSpeciesClassifier:
             if cropped.size == 0:
                 return []
             
-            # Classify the crop
-            return self.classify_image(cropped, top_k=top_k)
+            # Classify the crop (OpenCV BGR -> RGB)
+            return self.classify_image(bgr_to_rgb(cropped), top_k=top_k)
             
         except Exception as e:
-            print(f"   ⚠️  Crop classification error: {e}")
+            print(f"   ⚠️  {t('classification_error')} {e}")
             return []
     
-    def classify_crops_batch(self, frame, bboxes: List[Tuple[int, int, int, int]], top_k: int = 3) -> List[List[Dict[str, any]]]:
+    def classify_crops_batch(self, frame, bboxes: List[Tuple[int, int, int, int]], top_k: int = 3) -> List[List[Dict[str, Any]]]:
         """
         Classify multiple cropped regions from the same frame in a batch (efficient for GPU)
         
         Args:
-            frame: Full video frame (numpy array)
+            frame: Full video frame (numpy array, OpenCV BGR order)
             bboxes: List of bounding boxes [(x1, y1, x2, y2), ...]
             top_k: Return top K predictions per crop
             
@@ -314,8 +332,8 @@ class BirdSpeciesClassifier:
                 cropped = frame[y1:y2, x1:x2]
                 
                 if cropped.size > 0:
-                    # Convert to PIL Image
-                    crops.append(Image.fromarray(cropped))
+                    # Convert OpenCV BGR -> RGB before creating the PIL image
+                    crops.append(Image.fromarray(bgr_to_rgb(cropped)))
                     valid_indices.append(idx)
             
             if not crops:
@@ -339,7 +357,7 @@ class BirdSpeciesClassifier:
             return results
             
         except Exception as e:
-            print(f"   ⚠️  Batch classification error: {e}")
+            print(f"   ⚠️  {t('classification_error')} {e}")
             return [[] for _ in bboxes]
 
     
@@ -453,7 +471,7 @@ class BirdSpeciesClassifier:
         return formatted
 
 
-def aggregate_species_detections(detections: List[Dict[str, any]]) -> Dict[str, Dict[str, any]]:
+def aggregate_species_detections(detections: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
     """
     Aggregate multiple species detections
     

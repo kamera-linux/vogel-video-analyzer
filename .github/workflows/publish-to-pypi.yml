@@ -3,56 +3,117 @@ name: Publish to PyPI
 on:
   release:
     types: [published]
-  workflow_dispatch:  # Allow manual triggering
+  workflow_dispatch:  # Allow manual triggering (publishes to Test PyPI)
 
+# Least privilege by default; jobs request what they need
 permissions:
-  contents: write  # Required for creating release assets
+  contents: read
 
 jobs:
-  build-and-publish:
-    name: Build and publish to PyPI
+  build:
+    name: Build distribution
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803  # v6.1.0
       with:
-        python-version: '3.11'
-        
-    - name: Install dependencies
+        persist-credentials: false
+
+    - name: Set up Python
+      uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1  # v6.3.0
+      with:
+        python-version: '3.12'
+
+    - name: Install build tools
       run: |
         python -m pip install --upgrade pip
         pip install build twine
-        
+
     - name: Build package
       run: python -m build
-      
+
     - name: Check package
-      run: twine check dist/*
-      
-    - name: Publish to Test PyPI
-      if: github.event_name == 'workflow_dispatch'
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
-      run: |
-        twine upload --repository testpypi dist/* --verbose
-        
+      run: twine check --strict dist/*
+
+    - name: Upload distribution
+      uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+      with:
+        name: dist
+        path: dist/
+        if-no-files-found: error
+
+  # Trusted Publishing (OIDC): no long-lived API token needed once the
+  # publisher is configured on PyPI (project settings -> Publishing:
+  # workflow "publish-to-pypi.yml", environment "pypi").
+  # Transition: while the PYPI_API_TOKEN secret exists it is still used;
+  # delete the secret after configuring the trusted publisher.
+  publish-pypi:
+    name: Publish to PyPI
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/vogel-video-analyzer/
+    permissions:
+      id-token: write  # Required for Trusted Publishing
+
+    steps:
+    - name: Download distribution
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        name: dist
+        path: dist/
+
     - name: Publish to PyPI
-      if: github.event_name == 'release'
-      env:
-        TWINE_USERNAME: __token__
-        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
-      run: |
-        twine upload dist/* --verbose
-        
-    - name: Create GitHub Release Assets
-      if: github.event_name == 'release'
-      continue-on-error: true
-      uses: softprops/action-gh-release@v1
+      uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
+      with:
+        password: ${{ secrets.PYPI_API_TOKEN }}  # empty -> Trusted Publishing
+        verbose: true
+
+  publish-testpypi:
+    name: Publish to Test PyPI
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/vogel-video-analyzer/
+    permissions:
+      id-token: write  # Required for Trusted Publishing
+
+    steps:
+    - name: Download distribution
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        name: dist
+        path: dist/
+
+    - name: Publish to Test PyPI
+      uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086  # v1.14.3
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        password: ${{ secrets.TEST_PYPI_API_TOKEN }}  # empty -> Trusted Publishing
+        verbose: true
+
+  release-assets:
+    name: Attach distribution to GitHub release
+    if: github.event_name == 'release'
+    needs: publish-pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for uploading release assets
+
+    steps:
+    - name: Download distribution
+      uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333  # v8.0.2
+      with:
+        name: dist
+        path: dist/
+
+    - name: Upload release assets
+      uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3  # v3.0.4
       with:
         files: |
           dist/*.whl

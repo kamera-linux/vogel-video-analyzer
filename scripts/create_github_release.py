@@ -15,27 +15,28 @@ Usage:
 """
 
 import argparse
+import json
+import re
+import shlex
+import shutil
 import subprocess
 import sys
-from pathlib import Path
-import re
 import time
-import json
+from pathlib import Path
 
 
 def run_command(cmd, check=True, capture_output=True):
-    """Run shell command and return output."""
+    """Run a command (list of arguments, no shell) and return its output."""
     try:
         result = subprocess.run(
             cmd,
-            shell=True,
             check=check,
             capture_output=capture_output,
             text=True
         )
         return result.stdout.strip() if capture_output else None
     except subprocess.CalledProcessError as e:
-        print(f"❌ Command failed: {cmd}")
+        print(f"❌ Command failed: {shlex.join(cmd)}")
         print(f"Error: {e.stderr}")
         sys.exit(1)
 
@@ -45,7 +46,7 @@ def get_latest_tag():
     print("🔍 Searching for latest Git tag...")
     
     # Get all tags sorted by version
-    tags = run_command("git tag --sort=-v:refname")
+    tags = run_command(["git", "tag", "--sort=-v:refname"])
     
     if not tags:
         print("❌ No Git tags found!")
@@ -71,7 +72,7 @@ def validate_tag_format(tag):
 
 def find_release_notes(tag, release_dir):
     """Find release notes file for the given tag."""
-    print(f"📝 Looking for release notes file...")
+    print("📝 Looking for release notes file...")
     
     # Try different filename patterns
     patterns = [
@@ -122,13 +123,13 @@ def extract_title_from_notes(notes_file):
 
 def check_tag_exists_on_remote(tag):
     """Check if tag exists on remote."""
-    result = run_command(f"git ls-remote --tags origin {tag}", check=False)
+    result = run_command(["git", "ls-remote", "--tags", "origin", tag], check=False)
     return bool(result)
 
 
 def check_release_exists(tag):
     """Check if GitHub release already exists."""
-    result = run_command(f"gh release view {tag}", check=False)
+    result = run_command(["gh", "release", "view", tag], check=False)
     return result != ""
 
 
@@ -139,14 +140,8 @@ def create_github_release(tag, notes_file, title=None, draft=False, prerelease=F
     # Build command
     cmd_parts = ["gh", "release", "create", tag]
     
-    # Title
-    if title:
-        cmd_parts.extend(["--title", f'"{title}"'])
-    else:
-        # Generate default title
-        version = tag.lstrip('v')
-        default_title = f"Release {tag}"
-        cmd_parts.extend(["--title", f'"{default_title}"'])
+    # Title (passed as a single argument - no shell quoting needed)
+    cmd_parts.extend(["--title", title or f"Release {tag}"])
     
     # Notes
     if notes_file:
@@ -167,10 +162,9 @@ def create_github_release(tag, notes_file, title=None, draft=False, prerelease=F
     cmd_parts.append("--verify-tag")
     
     # Execute
-    cmd = " ".join(cmd_parts)
-    print(f"\n💻 Command: {cmd}\n")
+    print(f"\n💻 Command: {shlex.join(cmd_parts)}\n")
     
-    run_command(cmd, capture_output=False)
+    run_command(cmd_parts, capture_output=False)
     
     print(f"\n✅ Release {tag} created successfully!")
     return True
@@ -188,8 +182,8 @@ def wait_for_workflow_trigger(tag, workflow_name="publish-to-pypi.yml", timeout=
     while time.time() - start_time < timeout:
         # Get recent workflow runs with title
         result = subprocess.run(
-            f'gh run list --workflow="{workflow_name}" --limit 5 --json status,databaseId,createdAt,displayTitle',
-            shell=True,
+            ["gh", "run", "list", f"--workflow={workflow_name}", "--limit", "5",
+             "--json", "status,databaseId,createdAt,displayTitle"],
             capture_output=True,
             text=True
         )
@@ -225,14 +219,13 @@ def watch_workflow_completion(run_id, workflow_name="publish-to-pypi.yml", timeo
     
     while time.time() - start_time < timeout:
         result = subprocess.run(
-            f'gh run view {run_id} --json status,conclusion',
-            shell=True,
+            ["gh", "run", "view", str(run_id), "--json", "status,conclusion"],
             capture_output=True,
             text=True
         )
         
         if result.returncode != 0:
-            print(f"\n⚠️  Failed to get workflow status")
+            print("\n⚠️  Failed to get workflow status")
             return None, None
         
         try:
@@ -270,7 +263,7 @@ def watch_workflow_completion(run_id, workflow_name="publish-to-pypi.yml", timeo
             time.sleep(5)
             
         except json.JSONDecodeError:
-            print(f"\n⚠️  Failed to parse workflow data")
+            print("\n⚠️  Failed to parse workflow data")
             return None, None
     
     if time.time() - start_time >= timeout:
@@ -285,8 +278,8 @@ def check_workflow_status(run_id=None, workflow_name="publish-to-pypi.yml"):
     if not run_id:
         # Get latest workflow run
         result = subprocess.run(
-            f'gh run list --workflow="{workflow_name}" --limit 1 --json status,conclusion,databaseId,workflowName,displayTitle,createdAt,url',
-            shell=True,
+            ["gh", "run", "list", f"--workflow={workflow_name}", "--limit", "1",
+             "--json", "status,conclusion,databaseId,workflowName,displayTitle,createdAt,url"],
             capture_output=True,
             text=True
         )
@@ -309,8 +302,7 @@ def check_workflow_status(run_id=None, workflow_name="publish-to-pypi.yml"):
     
     # Get detailed run information
     result = subprocess.run(
-        f'gh run view {run_id} --json status,conclusion,workflowName,displayTitle,url,createdAt',
-        shell=True,
+        ["gh", "run", "view", str(run_id), "--json", "status,conclusion,workflowName,displayTitle,url,createdAt"],
         capture_output=True,
         text=True
     )
@@ -350,7 +342,7 @@ def check_workflow_status(run_id=None, workflow_name="publish-to-pypi.yml"):
         print("=" * 60)
         
         # Show commands for further actions
-        print(f"\n💡 Useful commands:")
+        print("\n💡 Useful commands:")
         print(f"   Watch live:  gh run watch {run_id}")
         print(f"   View logs:   gh run view {run_id} --log")
         print(f"   Open web:    gh run view {run_id} --web")
@@ -432,14 +424,14 @@ Examples:
     args = parser.parse_args()
     
     # Check gh CLI is installed
-    if not run_command("which gh", check=False):
+    if not shutil.which("gh"):
         print("❌ GitHub CLI (gh) not found!")
         print("Install: https://cli.github.com/")
         sys.exit(1)
     
     # Check authentication
-    auth_status = run_command("gh auth status", check=False)
-    if not auth_status or "Logged in" not in auth_status:
+    auth = subprocess.run(["gh", "auth", "status"], capture_output=True, text=True)
+    if auth.returncode != 0:
         print("❌ Not authenticated with GitHub!")
         print("Run: gh auth login")
         sys.exit(1)
@@ -457,7 +449,7 @@ Examples:
         tag = get_latest_tag()
     
     # Check if tag exists locally
-    local_tags = run_command("git tag")
+    local_tags = run_command(["git", "tag"])
     if tag not in local_tags.split('\n'):
         print(f"❌ Tag '{tag}' not found locally!")
         print("Available tags:")
@@ -470,15 +462,15 @@ Examples:
         if not args.force:
             response = input(f"Push tag '{tag}' to remote? [y/N]: ")
             if response.lower() == 'y':
-                run_command(f"git push origin {tag}")
-                print(f"✅ Tag pushed to remote")
+                run_command(["git", "push", "origin", tag])
+                print("✅ Tag pushed to remote")
             else:
                 print("❌ Cannot create release without pushing tag first")
                 sys.exit(1)
         else:
-            run_command(f"git push origin {tag}")
+            run_command(["git", "push", "origin", tag])
     else:
-        print(f"✅ Tag exists on remote")
+        print("✅ Tag exists on remote")
     
     # Check if release already exists
     if check_release_exists(tag):
@@ -487,12 +479,12 @@ Examples:
         if not args.force:
             response = input("Delete and recreate? [y/N]: ")
             if response.lower() == 'y':
-                run_command(f"gh release delete {tag} --yes")
+                run_command(["gh", "release", "delete", tag, "--yes"])
                 print("✅ Existing release deleted")
             else:
                 sys.exit(1)
         else:
-            run_command(f"gh release delete {tag} --yes")
+            run_command(["gh", "release", "delete", tag, "--yes"])
     
     # Find release notes
     release_dir = Path(args.notes_dir)

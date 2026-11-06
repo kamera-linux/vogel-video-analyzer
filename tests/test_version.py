@@ -3,7 +3,6 @@
 Unit tests for version and module imports (pytest compatible)
 """
 
-import pytest
 import sys
 from pathlib import Path
 

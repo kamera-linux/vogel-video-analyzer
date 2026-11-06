@@ -149,6 +149,9 @@ vogel-analyze --delete-file *.mp4
 # Ganze Ordner mit 0% Vogelinhalt löschen
 vogel-analyze --delete-folder ~/Videos/*/*.mp4
 
+# Vorschau, was gelöscht würde (es wird nichts gelöscht, v0.6.0+)
+vogel-analyze --delete-folder --dry-run ~/Videos/*/*.mp4
+
 # Verzeichnis batch-verarbeiten
 vogel-analyze ~/Videos/Birds/**/*.mp4
 

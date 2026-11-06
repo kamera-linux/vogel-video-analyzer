@@ -28,17 +28,17 @@ classifiers = [
     "Intended Audience :: Developers",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Multimedia :: Video",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Recognition",
 ]
-requires-python = ">=3.8"
+# pillow>=12 (species extra) and current ultralytics/torch require Python >= 3.10
+requires-python = ">=3.10"
 dependencies = [
     "opencv-python>=4.8.0",
     "ultralytics>=8.4.14",
@@ -50,7 +50,7 @@ dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
     "black>=23.0",
-    "flake8>=6.0",
+    "ruff>=0.6",
     "mypy>=1.0",
 ]
 species = [
@@ -92,11 +92,11 @@ include = ["vogel_video_analyzer*"]
 version = {attr = "vogel_video_analyzer.__version__"}
 
 [tool.setuptools.package-data]
-vogel_video_analyzer = ["py.typed"]
+vogel_video_analyzer = ["py.typed", "vendor/*.js", "vendor/*.md"]
 
 [tool.black]
 line-length = 100
-target-version = ['py38', 'py39', 'py310', 'py311', 'py312', 'py313']
+target-version = ['py310', 'py311', 'py312', 'py313']
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -105,8 +105,16 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 addopts = "-v --cov=vogel_video_analyzer --cov-report=term-missing"
 
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+# Pyflakes (F), syntax errors (E9), bare except (E722), bugbear subset
+select = ["F", "E9", "E722", "B006", "B008"]
+
 [tool.mypy]
-python_version = "3.8"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = false

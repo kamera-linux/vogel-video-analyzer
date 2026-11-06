@@ -45,8 +45,8 @@ Step 3 – Copy yolov26n.hef to the Raspberry Pi and run:
 
   vogel-analyze --engine hailo --hef-model yolov26n.hef video.mp4
 
-Note: If you used a custom YOLOv26n trained only on bird data (e.g. 1 class),
-add --hailo-num-classes 1 and adjust --threshold and target class accordingly.
+Note: If you used a custom YOLOv26n trained only on bird data (1 class),
+add --hailo-num-classes 1 (the bird class ID is then automatically 0).
 
 For pre-compiled standard HEF files (YOLOv8n / YOLOv5 / YOLOv10):
   https://github.com/hailo-ai/hailo_model_zoo
@@ -56,14 +56,14 @@ Usage:
   from vogel_video_analyzer.hailo_engine import HailoDetector, HAILO_AVAILABLE
 """
 
+import shutil
+from contextlib import ExitStack
+from pathlib import Path
+
 import numpy as np
 import cv2
-from pathlib import Path
 from .i18n import t
 
-# ──────────────────────────────────────────────────────────────────────────────
-# Optional HailoRT import
-# ──────────────────────────────────────────────────────────────────────────────
 
 
 def export_to_onnx(model_path: str, output_path: str = None,
@@ -119,8 +119,7 @@ def export_to_onnx(model_path: str, output_path: str = None,
 
     # ultralytics writes the ONNX file next to the .pt file
     default_onnx = model_path.with_suffix(".onnx")
-    if default_onnx.exists() and default_onnx != output_path:
-        import shutil
+    if default_onnx.exists() and default_onnx.resolve() != output_path.resolve():
         shutil.move(str(default_onnx), str(output_path))
 
     print(f"\n\u2705 {t('hailo_export_complete').format(path=output_path.resolve())}")
@@ -233,17 +232,31 @@ class HailoDetector:
         results = detector(frame, verbose=False)
     so it can be used as a drop-in replacement for ``self.model`` in VideoAnalyzer.
 
-    Two output modes are supported automatically:
-      * NMS-integrated HEF  – single output tensor (N, 6): x1,y1,x2,y2,conf,cls
-        (coordinates normalised 0-1)
-      * Raw feature-map HEF – three output tensors at strides 8/16/32 with
-        anchor-free YOLOv8 encoding; soft NMS applied in Python.
+    Pre-processing: BGR → RGB conversion and letterbox resize (aspect ratio
+    preserved, grey padding) – the same pre-processing ultralytics uses.
 
-    Most Hailo Model Zoo HEF files use NMS-integrated mode.
+    Supported output formats (detected automatically):
+      * HailoRT NMS output (Hailo Model Zoo default, ``FormatOrder.HAILO_NMS*``):
+        per class a list of ``[y_min, x_min, y_max, x_max, score]`` (normalised)
+      * Legacy single tensor (N, 6): ``x1, y1, x2, y2, conf, cls`` (normalised)
+      * Raw feature maps (one or two tensors per stride):
+          - YOLOv8 DFL head: 64 box channels (4 × 16 bins) + num_classes
+          - Simple head:      4 box channels (cx, cy, w, h) + num_classes
+        NMS is applied in Python.
+
+    The inference pipeline (VStreams + network activation) is opened once and
+    kept open; call close() (or use the detector as a context manager) to
+    release the device.
+
+    Note: Most Hailo Model Zoo HEF files use the NMS output format.
     """
 
     # Standard COCO resolution used by most Hailo-compiled YOLO models
     DEFAULT_INPUT_SIZE = (640, 640)  # (height, width)
+    LETTERBOX_COLOR = (114, 114, 114)
+    RAW_CONF_THRESH = 0.01
+    RAW_IOU_THRESH = 0.45
+    DFL_BINS = 16
 
     def __init__(self, hef_path: str, input_size=None, num_classes: int = 80):
         """
@@ -254,7 +267,7 @@ class HailoDetector:
             input_size:  Override model input (height, width).  Auto-detected
                          from the HEF when None.
             num_classes: Number of output classes.  80 for standard COCO;
-                         adjust when using a custom-trained model.
+                         1 for a single-class bird model.
 
         Raises:
             RuntimeError:    hailo_platform is not installed.
@@ -267,7 +280,11 @@ class HailoDetector:
         if not self.hef_path.exists():
             raise FileNotFoundError(t('hailo_hef_not_found').format(name=hef_path))
 
+        if num_classes < 1:
+            raise ValueError(f"num_classes must be >= 1, got {num_classes}")
         self.num_classes = num_classes
+        self._pipeline = None
+        self._stack = None
 
         # ── Load the compiled model ──────────────────────────────────────────
         self._hef = HEF(str(self.hef_path))
@@ -307,8 +324,57 @@ class HailoDetector:
 
         mode = t('hailo_nms_mode') if self._has_nms_output else t('hailo_raw_mode')
         print(
-            f"   \u26a1 {t('hailo_engine_info').format(model=self.hef_path.name, w=self._input_w, h=self._input_h, mode=mode)}"
+            f"   ⚡ {t('hailo_engine_info').format(model=self.hef_path.name, w=self._input_w, h=self._input_h, mode=mode)}"
         )
+
+        # ── Open the inference pipeline once (re-opening per frame is slow) ──
+        self._open_pipeline()
+
+    # ── Lifecycle ────────────────────────────────────────────────────────────
+
+    def _open_pipeline(self):
+        stack = ExitStack()
+        try:
+            pipeline = stack.enter_context(
+                InferVStreams(self._network_group, self._input_params, self._output_params)
+            )
+            stack.enter_context(self._network_group.activate(self._network_group_params))
+        except Exception:
+            stack.close()
+            raise
+        self._stack = stack
+        self._pipeline = pipeline
+
+    def close(self):
+        """Close the inference pipeline and release the Hailo device."""
+        stack, self._stack, self._pipeline = self._stack, None, None
+        if stack is not None:
+            try:
+                stack.close()
+            except Exception:
+                pass
+        if getattr(self, "_device", None) is not None:
+            try:
+                release = getattr(self._device, "release", None)
+                if callable(release):
+                    release()
+            except Exception:
+                pass
+            self._device = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        self.close()
+        return False
+
+    def __del__(self):
+        """Release Hailo device resources."""
+        try:
+            self.close()
+        except Exception:
+            pass
 
     # ── Public interface ─────────────────────────────────────────────────────
 
@@ -323,119 +389,179 @@ class HailoDetector:
         Returns:
             List[_MockResult] – one element, mimicking ultralytics output.
         """
+        if self._pipeline is None:
+            raise RuntimeError("HailoDetector is closed")
+
         frame_h, frame_w = frame.shape[:2]
 
-        # Preprocess: resize + keep as uint8 (HailoRT expects uint8 NHWC)
-        resized = cv2.resize(frame, (self._input_w, self._input_h))
-        input_arr = resized[np.newaxis]  # (1, H, W, 3)
+        # Preprocess: BGR → RGB, letterbox to model input, uint8 NHWC
+        input_img, scale, pad_x, pad_y = letterbox(
+            frame, (self._input_h, self._input_w), self.LETTERBOX_COLOR
+        )
+        input_img = cv2.cvtColor(input_img, cv2.COLOR_BGR2RGB)
+        input_data = {self._input_name: np.ascontiguousarray(input_img[np.newaxis])}
 
-        input_data = {self._input_name: input_arr}
+        output_data = self._pipeline.infer(input_data)
 
-        # Run on Hailo NPU
-        with self._network_group.activate(self._network_group_params):
-            with InferVStreams(
-                self._network_group,
-                self._input_params,
-                self._output_params,
-            ) as pipeline:
-                output_data = pipeline.infer(input_data)
-
-        # Post-process
+        # Post-process → boxes in model-input pixel coordinates
         if self._has_nms_output:
-            detections = self._parse_nms_output(output_data, frame_w, frame_h)
+            raw_dets = self._parse_nms_output(output_data)
         else:
-            detections = self._parse_multi_output(output_data, frame_w, frame_h)
+            raw_dets = self._parse_multi_output(output_data)
+
+        detections = []
+        for x1, y1, x2, y2, conf, cls_id in raw_dets:
+            # Undo letterbox → original frame pixels
+            ox1 = int(np.clip((x1 - pad_x) / scale, 0, frame_w))
+            oy1 = int(np.clip((y1 - pad_y) / scale, 0, frame_h))
+            ox2 = int(np.clip((x2 - pad_x) / scale, 0, frame_w))
+            oy2 = int(np.clip((y2 - pad_y) / scale, 0, frame_h))
+            if ox2 <= ox1 or oy2 <= oy1:
+                continue
+            detections.append(_MockBox(ox1, oy1, ox2, oy2, float(conf), int(cls_id)))
 
         return [_MockResult(detections)]
 
     # ── Private helpers ──────────────────────────────────────────────────────
 
-    def _detect_nms_output(self, output_infos) -> bool:
+    @staticmethod
+    def _detect_nms_output(output_infos) -> bool:
         """
-        Heuristic: a single output whose last dimension is 6 indicates
-        an NMS-integrated model with format [x1, y1, x2, y2, conf, cls].
+        Detect NMS-integrated output:
+          * HailoRT NMS format order (FormatOrder.HAILO_NMS / HAILO_NMS_BY_CLASS ...)
+          * or a single output whose last dimension is 6 (legacy x1,y1,x2,y2,conf,cls)
         """
+        for info in output_infos:
+            order = getattr(getattr(info, "format", None), "order", None)
+            if order is not None and "NMS" in str(order).upper():
+                return True
         if len(output_infos) == 1:
             shape = output_infos[0].shape
             if len(shape) >= 2 and shape[-1] == 6:
                 return True
         return False
 
-    def _parse_nms_output(self, output_data: dict,
-                          orig_w: int, orig_h: int) -> list:
+    def _parse_nms_output(self, output_data: dict) -> list:
         """
-        Parse NMS-integrated output (shape: (1, N, 6) or (N, 6)).
-        Coordinates are normalised to [0, 1].
+        Parse NMS-integrated output.
+
+        Returns:
+            list of (x1, y1, x2, y2, conf, cls_id) in model-input pixels.
         """
         raw = output_data[self._output_names[0]]
+        dets = []
+
+        # HailoRT NMS format: [batch][class] -> array (k, 5) of
+        # [y_min, x_min, y_max, x_max, score], normalised to [0, 1]
+        if isinstance(raw, (list, tuple)):
+            per_class = raw[0] if raw and isinstance(raw[0], (list, tuple)) else raw
+            for cls_id, class_dets in enumerate(per_class):
+                if cls_id >= self.num_classes:
+                    break
+                arr = np.asarray(class_dets, dtype=np.float32).reshape(-1, 5)
+                for y_min, x_min, y_max, x_max, score in arr:
+                    if score <= 0.0:
+                        continue
+                    dets.append((x_min * self._input_w, y_min * self._input_h,
+                                 x_max * self._input_w, y_max * self._input_h,
+                                 float(score), cls_id))
+            return dets
+
+        # Legacy tensor format: (1, N, 6) or (N, 6): x1, y1, x2, y2, conf, cls (normalised)
+        raw = np.asarray(raw)
         if raw.ndim == 3:
             raw = raw[0]  # remove batch dim → (N, 6)
-
-        detections = []
-        for det in raw:
-            x1_n, y1_n, x2_n, y2_n, conf, cls_id = det
-            if conf <= 0.0:
+        for x1_n, y1_n, x2_n, y2_n, conf, cls_id in raw.reshape(-1, 6):
+            if conf <= 0.0 or int(cls_id) >= self.num_classes:
                 continue
-            x1 = int(np.clip(x1_n * orig_w, 0, orig_w))
-            y1 = int(np.clip(y1_n * orig_h, 0, orig_h))
-            x2 = int(np.clip(x2_n * orig_w, 0, orig_w))
-            y2 = int(np.clip(y2_n * orig_h, 0, orig_h))
-            detections.append(_MockBox(x1, y1, x2, y2, float(conf), int(cls_id)))
+            dets.append((x1_n * self._input_w, y1_n * self._input_h,
+                         x2_n * self._input_w, y2_n * self._input_h,
+                         float(conf), int(cls_id)))
+        return dets
 
-        return detections
-
-    def _parse_multi_output(self, output_data: dict,
-                             orig_w: int, orig_h: int) -> list:
+    def _group_raw_outputs(self, output_data: dict) -> list:
         """
-        Decode raw YOLOv8 anchor-free multi-scale outputs (3 tensors at
-        strides 8, 16, 32) and apply NMS.
+        Group raw output tensors by grid size (one group per stride) and
+        concatenate their channels (box channels first, class channels last).
 
-        Each tensor has shape (1, H, W, 4 + num_classes) where the first
-        4 channels are the box regression (cx, cy, w, h in grid units).
+        Returns:
+            list of (stride, tensor(H, W, C)) sorted by stride.
+        """
+        groups = {}
+        for name in self._output_names:
+            if name not in output_data:
+                continue
+            pred = np.asarray(output_data[name], dtype=np.float32)
+            if pred.ndim == 4:
+                pred = pred[0]  # remove batch dim → (H, W, C)
+            if pred.ndim != 3:
+                continue
+            groups.setdefault(pred.shape[:2], []).append(pred)
+
+        result = []
+        for (grid_h, grid_w), tensors in groups.items():
+            nc = self.num_classes
+            # Box tensor first: the tensor that is NOT the class tensor
+            tensors.sort(key=lambda a: (a.shape[-1] == nc, a.shape[-1]))
+            stride = self._input_h / grid_h
+            result.append((stride, np.concatenate(tensors, axis=-1)))
+        result.sort(key=lambda item: item[0])
+        return result
+
+    def _parse_multi_output(self, output_data: dict) -> list:
+        """
+        Decode raw multi-scale YOLO outputs and apply NMS.
+
+        Each scale has C = box_channels + num_classes channels where
+        box_channels is 64 (YOLOv8 DFL, 4 × 16 bins, distances l,t,r,b)
+        or 4 (cx, cy, w, h in grid units).
+
+        Returns:
+            list of (x1, y1, x2, y2, conf, cls_id) in model-input pixels.
 
         Note: For best Hailo performance prefer an NMS-integrated HEF.
         """
-        STRIDES = [8, 16, 32]
-        IOU_THRESH = 0.45
-        CONF_THRESH = 0.01
+        nc = self.num_classes
+        all_boxes, all_scores, all_classes = [], [], []
 
-        all_boxes: list = []
-        all_scores: list = []
-        all_classes: list = []
+        for stride, pred in self._group_raw_outputs(output_data):
+            grid_h, grid_w, channels = pred.shape
+            box_channels = channels - nc
+            if box_channels not in (4, 4 * self.DFL_BINS):
+                continue  # Unknown head layout
 
-        for name, stride in zip(sorted(self._output_names), STRIDES):
-            if name not in output_data:
-                continue
-            pred = output_data[name]
-            if pred.ndim == 4:
-                pred = pred[0]  # remove batch dim → (H, W, C)
+            box_pred = pred[..., :box_channels]
+            cls_pred = pred[..., box_channels:]
 
-            grid_h, grid_w = pred.shape[:2]
+            # Some HEFs already include the sigmoid in the class output
+            if cls_pred.min() < 0.0 or cls_pred.max() > 1.0:
+                cls_pred = 1.0 / (1.0 + np.exp(-cls_pred))
+            cls_ids = np.argmax(cls_pred, axis=-1)
+            cls_confs = np.max(cls_pred, axis=-1)
 
-            box_pred = pred[..., :4]       # cx, cy, w, h – grid-unit
-            cls_pred = pred[..., 4:]       # raw class logits
+            grid_x, grid_y = np.meshgrid(
+                np.arange(grid_w, dtype=np.float32), np.arange(grid_h, dtype=np.float32)
+            )
 
-            cls_scores = 1.0 / (1.0 + np.exp(-cls_pred))  # sigmoid
-            cls_ids = np.argmax(cls_scores, axis=-1)
-            cls_confs = np.max(cls_scores, axis=-1)
+            if box_channels == 4 * self.DFL_BINS:
+                # YOLOv8 DFL decode: softmax over bins → expected distance
+                bins = box_pred.reshape(grid_h, grid_w, 4, self.DFL_BINS)
+                bins = np.exp(bins - bins.max(axis=-1, keepdims=True))
+                bins /= bins.sum(axis=-1, keepdims=True)
+                dist = (bins * np.arange(self.DFL_BINS, dtype=np.float32)).sum(axis=-1)
+                cx, cy = grid_x + 0.5, grid_y + 0.5
+                x1 = (cx - dist[..., 0]) * stride
+                y1 = (cy - dist[..., 1]) * stride
+                x2 = (cx + dist[..., 2]) * stride
+                y2 = (cy + dist[..., 3]) * stride
+            else:
+                cx = (grid_x + box_pred[..., 0]) * stride
+                cy = (grid_y + box_pred[..., 1]) * stride
+                w = np.exp(np.clip(box_pred[..., 2], -10, 10)) * stride
+                h = np.exp(np.clip(box_pred[..., 3], -10, 10)) * stride
+                x1, y1, x2, y2 = cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2
 
-            xs = np.arange(grid_w, dtype=np.float32)
-            ys = np.arange(grid_h, dtype=np.float32)
-            grid_x, grid_y = np.meshgrid(xs, ys)
-
-            # Anchor-free decode
-            cx = (grid_x + box_pred[..., 0]) * stride
-            cy = (grid_y + box_pred[..., 1]) * stride
-            w = np.exp(np.clip(box_pred[..., 2], -10, 10)) * stride
-            h = np.exp(np.clip(box_pred[..., 3], -10, 10)) * stride
-
-            # Normalise to [0, 1]
-            x1 = (cx - w / 2) / self._input_w
-            y1 = (cy - h / 2) / self._input_h
-            x2 = (cx + w / 2) / self._input_w
-            y2 = (cy + h / 2) / self._input_h
-
-            mask = cls_confs > CONF_THRESH
+            mask = cls_confs > self.RAW_CONF_THRESH
             if not np.any(mask):
                 continue
 
@@ -446,43 +572,47 @@ class HailoDetector:
         if not all_boxes:
             return []
 
-        boxes_norm = np.concatenate(all_boxes)
+        boxes = np.concatenate(all_boxes)
         scores = np.concatenate(all_scores)
         classes = np.concatenate(all_classes)
 
-        # Scale to original frame pixels for NMS
-        boxes_px = boxes_norm * np.array([orig_w, orig_h, orig_w, orig_h],
-                                          dtype=np.float32)
         # cv2.dnn.NMSBoxes expects [x, y, w, h]
         boxes_xywh = [
-            [float(b[0]), float(b[1]),
-             float(b[2] - b[0]), float(b[3] - b[1])]
-            for b in boxes_px
+            [float(b[0]), float(b[1]), float(b[2] - b[0]), float(b[3] - b[1])]
+            for b in boxes
         ]
-
         indices = cv2.dnn.NMSBoxes(
-            boxes_xywh, scores.tolist(), CONF_THRESH, IOU_THRESH
+            boxes_xywh, scores.tolist(), self.RAW_CONF_THRESH, self.RAW_IOU_THRESH
         )
         if len(indices) == 0:
             return []
 
-        indices = [int(i) for i in np.array(indices).flatten()]
-        detections = []
-        for idx in indices:
-            x1 = int(np.clip(boxes_px[idx, 0], 0, orig_w))
-            y1 = int(np.clip(boxes_px[idx, 1], 0, orig_h))
-            x2 = int(np.clip(boxes_px[idx, 2], 0, orig_w))
-            y2 = int(np.clip(boxes_px[idx, 3], 0, orig_h))
-            detections.append(
-                _MockBox(x1, y1, x2, y2, float(scores[idx]), int(classes[idx]))
-            )
+        return [
+            (float(boxes[i, 0]), float(boxes[i, 1]), float(boxes[i, 2]), float(boxes[i, 3]),
+             float(scores[i]), int(classes[i]))
+            for i in (int(i) for i in np.array(indices).flatten())
+        ]
 
-        return detections
 
-    def __del__(self):
-        """Release Hailo device resources."""
-        try:
-            if hasattr(self, "_device"):
-                del self._device
-        except Exception:
-            pass
+def letterbox(image: np.ndarray, new_shape, color=(114, 114, 114)):
+    """
+    Resize image to new_shape (height, width) keeping the aspect ratio and pad
+    the rest (same as ultralytics' LetterBox with center=True).
+
+    Returns:
+        (padded_image, scale, pad_x, pad_y) – a model-input coordinate x maps
+        back to the original image via (x - pad_x) / scale.
+    """
+    h, w = image.shape[:2]
+    new_h, new_w = new_shape
+    scale = min(new_h / h, new_w / w)
+    resized_w, resized_h = int(round(w * scale)), int(round(h * scale))
+    if (resized_w, resized_h) != (w, h):
+        image = cv2.resize(image, (resized_w, resized_h), interpolation=cv2.INTER_LINEAR)
+    pad_x = (new_w - resized_w) / 2
+    pad_y = (new_h - resized_h) / 2
+    top, bottom = int(round(pad_y - 0.1)), int(round(pad_y + 0.1))
+    left, right = int(round(pad_x - 0.1)), int(round(pad_x + 0.1))
+    padded = cv2.copyMakeBorder(image, top, bottom, left, right,
+                                cv2.BORDER_CONSTANT, value=color)
+    return padded, scale, left, top
